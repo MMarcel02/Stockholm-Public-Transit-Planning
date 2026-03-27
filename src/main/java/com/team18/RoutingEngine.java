@@ -81,12 +81,9 @@ public class RoutingEngine {
                         walkStep.put("duration", walkMinutesHaversine);
                         walkStep.put("startTime", startTime);
 
-                        // --- YOUR DEBUG PROFILING DATA ---
                         walkStep.put("debug_dist_haversine", distanceMetersHaversine);
                         walkStep.put("debug_dist_equi", distanceMetersEqui);
                         walkStep.put("debug_error_percent", errorPercentage);
-                        walkStep.put("debug_time_haversine_ns", timeHaversineNs);
-                        walkStep.put("debug_time_equi_ns", timeEquiNs);
                         walkStep.put("debug_speedup", speedMultiplier);
 
                         sendOk(new Object[]{ walkStep });
