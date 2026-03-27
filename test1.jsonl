@@ -1,0 +1,4 @@
+{"load": "data/stockholm/sl_gtfs.zip"}
+{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30"}
+
+{"ping": "sanity check"}
