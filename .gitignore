@@ -1,5 +1,6 @@
 target/
 .settings/
+.vscode/
 
 /data/stockholm/*
 !/data/stockholm/README.md
