@@ -143,7 +143,6 @@ public class RoutingEngine {
                         } else {
                             // this is the default we will use in production
                             double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
-                            routeStep.put("distance", distanceMetersEqui);
                             routeStep.put("duration", (int) Math.round(distanceMetersEqui / WALKING_SPEED));
                         }
 

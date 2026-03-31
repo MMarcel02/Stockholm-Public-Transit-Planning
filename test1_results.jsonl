@@ -1,6 +1,6 @@
 {"ok":{"pong":"sanity check"}}
 {"ok":"loaded"}
-{"ok":[{"distance":25930.887211732574,"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
-{"ok":[{"distance":25930.887211732574,"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
-{"ok":[{"distance":5685.319720020794,"duration":68,"mode":"walk","startTime":"08:30","to":{"lat":59.25,"lon":18.00}}]}
-{"ok":[{"distance":918.9914719644814,"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
+{"ok":[{"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
+{"ok":[{"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
+{"ok":[{"duration":68,"mode":"walk","startTime":"08:30","to":{"lat":59.25,"lon":18.00}}]}
+{"ok":[{"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
