@@ -75,7 +75,7 @@ public class RoutingEngine {
                                 while (reader.readLine() != null) {
                                     lines++; 
                                 }
-                                System.out.println("Loaded: " + entry.getName() + " Lines: " + lines);
+                                System.err.println("Loaded: " + entry.getName() + " Lines: " + lines);
                             }
                         }
                         sendOk("loaded");
@@ -118,12 +118,12 @@ public class RoutingEngine {
                         if (isDebug) {
                             // this is the mode in which we can compare different approaches
                             long startHaversine = System.nanoTime();
-                            double distanceMetersHaversine = GeoCalculator.calculateHaversineDistance(latFrom, latTo, lonFrom, lonTo);
+                            double distanceMetersHaversine = GeoCalculator.calculateHaversineDistance(latFrom, lonFrom, latTo, lonTo);
                             long endHaversine = System.nanoTime();
                             long timeHaversineNs = endHaversine - startHaversine;
     
                             long startEqui = System.nanoTime();
-                            double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, latTo, lonFrom, lonTo);
+                            double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
                             long endEqui = System.nanoTime();
                             long timeEquiNs = endEqui - startEqui;
     
@@ -144,7 +144,8 @@ public class RoutingEngine {
                             routeStep.put("DEBUG_speedup", speedMultiplier);
                         } else {
                             // this is the default we will use in production
-                            double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, latTo, lonFrom, lonTo);
+                            double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
+                            routeStep.put("distance", distanceMetersEqui);
                             routeStep.put("duration", (int) Math.round(distanceMetersEqui / 83.33));
                         }
 

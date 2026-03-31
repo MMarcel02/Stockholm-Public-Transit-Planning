@@ -1,17 +1,6 @@
-Loaded: sl/ Lines: 0
-Loaded: sl/agency.txt Lines: 15
-Loaded: sl/attributions.txt Lines: 100242
-Loaded: sl/booking_rules.txt Lines: 43
-Loaded: sl/calendar.txt Lines: 958
-Loaded: sl/calendar_dates.txt Lines: 21799
-Loaded: sl/feed_info.txt Lines: 2
-Loaded: sl/routes.txt Lines: 607
-Loaded: sl/shapes.txt Lines: 3006941
-Loaded: sl/stops.txt Lines: 21815
-Loaded: sl/stop_times.txt Lines: 1947271
-Loaded: sl/transfers.txt Lines: 24737
-Loaded: sl/trips.txt Lines: 100242
-{"ok":"loaded"}
-{"error":"Bad request"}
-{"ok":[{"debug_dist_equi":5820.635921649608,"debug_dist_haversine":5655.3973405445595,"debug_error_percent":2.9217855290276953,"debug_speedup":540.4131994261119,"duration":68,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
 {"ok":{"pong":"sanity check"}}
+{"ok":"loaded"}
+{"ok":[{"distance":25930.887211732574,"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
+{"ok":[{"distance":25930.887211732574,"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
+{"ok":[{"distance":5685.319720020794,"duration":68,"mode":"walk","startTime":"08:30","to":{"lat":59.25,"lon":18.00}}]}
+{"ok":[{"distance":918.9914719644814,"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}

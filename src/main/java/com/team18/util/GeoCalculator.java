@@ -1,7 +1,7 @@
 package com.team18.util;
 
 public class GeoCalculator {
-    private static final int EARTH_RADIUS = 6371;
+    private static final int EARTH_RADIUS = 6371000;
 
     // This formula approximates the distance, its faster than the haversine one but less accurate over long distances
     // for our need (over the distance of a city) it should be relatively accurate, but we should measure and compare  

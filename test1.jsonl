@@ -9,11 +9,12 @@
 
 
 // Typical routeFrom request
-{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30"}
+{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.4, "lon": 18.25}, "startingAt": "08:30"}
 
 // Debug mode tests
-{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": true}
+// {"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": true}
 
 // These should process like the typical routeFrom request without crashing
-{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": false}
+{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.4, "lon": 18.25}, "startingAt": "08:30", "debug":true}
+{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.25, "lon": 18.00}, "startingAt": "08:30", "debug": true}
 {"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": null}
