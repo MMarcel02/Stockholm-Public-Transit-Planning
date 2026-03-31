@@ -45,7 +45,6 @@ public class RouteResultAnalyzer {
             
         } catch (IOException e) {
             System.err.println("Error reading the file. Make sure " + filename + " exists in this directory.");
-            e.printStackTrace();
         }
     }
 }
