@@ -109,37 +109,47 @@ public class RoutingEngine {
                         double latTo = ((Number) toNode.get("lat")).doubleValue();
                         double lonTo = ((Number) toNode.get("lon")).doubleValue();
 
-                        long startHaversine = System.nanoTime();
-                        double distanceMetersHaversine = GeoCalculator.calculateHaversineDistance(latFrom, latTo, lonFrom, lonTo);
-                        long endHaversine = System.nanoTime();
-                        long timeHaversineNs = endHaversine - startHaversine;
+                        Map<String, Object> routeStep = new java.util.LinkedHashMap<>();
+                        routeStep.put("mode", "walk");
+                        routeStep.put("to", toNode);
+                        routeStep.put("startTime", startTime);
 
-                        long startEqui = System.nanoTime();
-                        double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, latTo, lonFrom, lonTo);
-                        long endEqui = System.nanoTime();
-                        long timeEquiNs = endEqui - startEqui;
-
-                        int walkMinutesHaversine = (int) Math.round(distanceMetersHaversine / 83.33);
+                        // we use the Boolean.TRUE.equals to prevent null pointer exceptions and safe casting
+                        boolean isDebug = request.containsKey("debug") && Boolean.TRUE.equals(request.get("debug"));
                         
-                        double errorPercentage = Math.abs(distanceMetersHaversine - distanceMetersEqui) / distanceMetersHaversine * 100.0;
-
-                        double speedMultiplier = 0;
-                        if (timeEquiNs > 0) {
-                            speedMultiplier = (double) timeHaversineNs / timeEquiNs;
+                        if (isDebug) {
+                            // this is the mode in which we can compare different approaches
+                            long startHaversine = System.nanoTime();
+                            double distanceMetersHaversine = GeoCalculator.calculateHaversineDistance(latFrom, latTo, lonFrom, lonTo);
+                            long endHaversine = System.nanoTime();
+                            long timeHaversineNs = endHaversine - startHaversine;
+    
+                            long startEqui = System.nanoTime();
+                            double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, latTo, lonFrom, lonTo);
+                            long endEqui = System.nanoTime();
+                            long timeEquiNs = endEqui - startEqui;
+    
+                            int walkMinutesHaversine = (int) Math.round(distanceMetersHaversine / 83.33);
+                            
+                            double errorPercentage = Math.abs(distanceMetersHaversine - distanceMetersEqui) / distanceMetersHaversine * 100.0;
+    
+                            double speedMultiplier = 0;
+                            if (timeEquiNs > 0) {
+                                speedMultiplier = (double) timeHaversineNs / timeEquiNs;
+                            }
+                            
+                            routeStep.put("duration", walkMinutesHaversine);
+                            routeStep.put("debug_dist_haversine", distanceMetersHaversine);
+                            routeStep.put("debug_dist_equi", distanceMetersEqui);
+                            routeStep.put("debug_error_percent", errorPercentage);
+                            routeStep.put("debug_speedup", speedMultiplier);
+                        } else {
+                            // this is the default we will use in production
+                            double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, latTo, lonFrom, lonTo);
+                            routeStep.put("duration", (int) Math.round(distanceMetersEqui / 83.33));
                         }
 
-                        Map<String, Object> walkStep = new java.util.LinkedHashMap<>();
-                        walkStep.put("mode", "walk");
-                        walkStep.put("to", toNode);
-                        walkStep.put("duration", walkMinutesHaversine);
-                        walkStep.put("startTime", startTime);
-
-                        walkStep.put("debug_dist_haversine", distanceMetersHaversine);
-                        walkStep.put("debug_dist_equi", distanceMetersEqui);
-                        walkStep.put("debug_error_percent", errorPercentage);
-                        walkStep.put("debug_speedup", speedMultiplier);
-
-                        sendOk(new Object[]{ walkStep });
+                        sendOk(new Object[]{ routeStep });
 
                     } catch (ClassCastException | NullPointerException e) {
                         sendError("Coordinates must be formatted as numbers");
