@@ -113,7 +113,6 @@ public class RoutingEngine {
                         routeStep.put("to", toNode);
                         routeStep.put("startTime", startTime);
 
-                        // we use the Boolean.TRUE.equals to prevent null pointer exceptions and safe casting
                         boolean isDebug = request.containsKey("debug") && request.get("debug").equals("true");
                         
                         if (isDebug) {

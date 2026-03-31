@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 public class RouteResultAnalyzer {
     // Calcs average of speedup and error rate for the random stockholm routes, so we can compare methods of crow flies distance
     public static void main(String[] args) {
-        // Replace with the actual name of your results file
         String filename = "stockholm_routes_results.jsonl"; 
         
         double totalErrorPercent = 0.0;
@@ -41,11 +40,11 @@ public class RouteResultAnalyzer {
                 System.out.printf("Average Error Percent: %.2f%%%n", avgError);
                 System.out.printf("Average Speedup: %.2fx%n", avgSpeedup);
             } else {
-                System.out.println("No valid 'debug_error_percent' or 'debug_speedup' data found in the file.");
+                System.out.println("No valid 'DEBUG_error_percent' or 'DEBUG_speedup' data found in the file.");
             }
             
         } catch (IOException e) {
-            System.err.println("Error reading the file. Make sure '" + filename + "' exists in this directory.");
+            System.err.println("Error reading the file. Make sure " + filename + " exists in this directory.");
             e.printStackTrace();
         }
     }

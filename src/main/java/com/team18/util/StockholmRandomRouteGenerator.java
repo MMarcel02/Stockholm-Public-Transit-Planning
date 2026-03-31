@@ -8,7 +8,7 @@ import java.util.Locale;
 public class StockholmRandomRouteGenerator {
 
     // Generates random routes around stocholm area so we can measure the accuracy and speedup of equirectangular vs haversine methods
-    //Rough box for stockholm area
+    // Rough box for stockholm area
     private static final double MIN_LAT = 59.2500;
     private static final double MAX_LAT = 59.4000;
     private static final double MIN_LON = 17.9000;
