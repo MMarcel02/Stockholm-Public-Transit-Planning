@@ -29,8 +29,8 @@ public class StockholmRandomRouteGenerator {
                 String time = generateRandomTime();
 
                 String jsonLine = String.format(Locale.US,
-                        "{\"routeFrom\": {\"lat\": %.4f, \"lon\": %.4f}, \"to\": {\"lat\": %.4f, \"lon\": %.4f}, \"startingAt\": \"%s\"}\n",
-                        fromLat, fromLon, toLat, toLon, time);
+                        "{\"routeFrom\": {\"lat\": %.4f, \"lon\": %.4f}, \"to\": {\"lat\": %.4f, \"lon\": %.4f}, \"startingAt\": \"%s\", \"debug\": \"%s\"}\n",
+                        fromLat, fromLon, toLat, toLon, time, true);
                 
                 writer.write(jsonLine);
             }

@@ -14,7 +14,6 @@ import java.io.OutputStreamWriter;
 import java.nio.file.NoSuchFileException;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.zip.*;
 import java.io.InputStream;
 
@@ -115,7 +114,7 @@ public class RoutingEngine {
                         routeStep.put("startTime", startTime);
 
                         // we use the Boolean.TRUE.equals to prevent null pointer exceptions and safe casting
-                        boolean isDebug = request.containsKey("debug") && Boolean.TRUE.equals(request.get("debug"));
+                        boolean isDebug = request.containsKey("debug") && request.get("debug").equals("true");
                         
                         if (isDebug) {
                             // this is the mode in which we can compare different approaches
@@ -137,12 +136,13 @@ public class RoutingEngine {
                             if (timeEquiNs > 0) {
                                 speedMultiplier = (double) timeHaversineNs / timeEquiNs;
                             }
+
+                            errorPercentage = (double) Math.round(errorPercentage * 100) / 100;
+                            speedMultiplier = (double) Math.round(speedMultiplier * 100) / 100;
                             
                             routeStep.put("duration", walkMinutesHaversine);
-                            routeStep.put("debug_dist_haversine", distanceMetersHaversine);
-                            routeStep.put("debug_dist_equi", distanceMetersEqui);
-                            routeStep.put("debug_error_percent", errorPercentage);
-                            routeStep.put("debug_speedup", speedMultiplier);
+                            routeStep.put("DEBUG_error_percent", errorPercentage);
+                            routeStep.put("DEBUG_speedup", speedMultiplier);
                         } else {
                             // this is the default we will use in production
                             double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, latTo, lonFrom, lonTo);

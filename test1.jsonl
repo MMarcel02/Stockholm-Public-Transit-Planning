@@ -1,7 +1,19 @@
+// Test to make sure engine is reading JSON
+{"ping": "sanity check"}
+
+//Typical load request
 {"load": "data/stockholm/sl.zip"}
+// Can use to test  loading exceptions (note: these will terminate the routing engine)
 // {"load": "data/stockholm/stops.txt"}
 // {"load": "data/stockholm/fake.zip"}
 
+
+// Typical routeFrom request
 {"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30"}
 
-{"ping": "sanity check"}
+// Debug mode tests
+{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": true}
+
+// These should process like the typical routeFrom request without crashing
+{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": false}
+{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": null}

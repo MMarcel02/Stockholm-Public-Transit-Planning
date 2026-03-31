@@ -16,8 +16,8 @@ public class RouteResultAnalyzer {
         double totalSpeedup = 0.0;
         int count = 0;
         
-        Pattern errorPattern = Pattern.compile("\"debug_error_percent\"\\s*:\\s*([\\d.]+)");
-        Pattern speedupPattern = Pattern.compile("\"debug_speedup\"\\s*:\\s*([\\d.]+)");
+        Pattern errorPattern = Pattern.compile("\"DEBUG_error_percent\"\\s*:\\s*([\\d.]+)");
+        Pattern speedupPattern = Pattern.compile("\"DEBUG_speedup\"\\s*:\\s*([\\d.]+)");
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
