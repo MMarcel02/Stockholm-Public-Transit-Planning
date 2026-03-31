@@ -14,21 +14,26 @@ public class RouteResultAnalyzer {
         double totalErrorPercent = 0.0;
         double totalSpeedup = 0.0;
         int count = 0;
+        int lineCount = 0;
         
-        Pattern errorPattern = Pattern.compile("\"DEBUG_error_percent\"\\s*:\\s*([\\d.]+)");
+        Pattern errorPattern = Pattern.compile("\"DEBUG_error_percent\"\\s*:\\s*([-+]?[\\d.]+(?:[eE][-+]?\\d+)?)");
         Pattern speedupPattern = Pattern.compile("\"DEBUG_speedup\"\\s*:\\s*([\\d.]+)");
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
             String line;
-            while ((line = reader.readLine()) != null) {
-                Matcher errorMatcher = errorPattern.matcher(line);
-                Matcher speedupMatcher = speedupPattern.matcher(line);
-                
-                if (errorMatcher.find() && speedupMatcher.find()) {
-                    totalErrorPercent += Double.parseDouble(errorMatcher.group(1));
-                    totalSpeedup += Double.parseDouble(speedupMatcher.group(1));
-                    count++;
+            while ((line = reader.readLine()) != null) { 
+                // Ignore first 100 routes while JVM warms up (to get rid of misleading speedups)
+                if (lineCount >= 100) {
+                    Matcher errorMatcher = errorPattern.matcher(line);
+                    Matcher speedupMatcher = speedupPattern.matcher(line);
+                    
+                    if (errorMatcher.find() && speedupMatcher.find()) {
+                        totalErrorPercent += Double.parseDouble(errorMatcher.group(1));
+                        totalSpeedup += Double.parseDouble(speedupMatcher.group(1));
+                        count++;
+                    }
                 }
+                lineCount++;
             }
             
             // Calculate and print the averages rounded to 2 decimal places
@@ -37,7 +42,7 @@ public class RouteResultAnalyzer {
                 double avgSpeedup = totalSpeedup / count;
                 
                 System.out.println("Successfully processed " + count + " routes.");
-                System.out.printf("Average Error Percent: %.2f%%%n", avgError);
+                System.out.printf("Average Error Percent: %.8f%%%n", avgError);
                 System.out.printf("Average Speedup: %.2fx%n", avgSpeedup);
             } else {
                 System.out.println("No valid 'DEBUG_error_percent' or 'DEBUG_speedup' data found in the file.");

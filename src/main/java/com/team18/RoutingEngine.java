@@ -22,9 +22,10 @@ import com.leastfixedpoint.json.JSONSyntaxError;
 import com.leastfixedpoint.json.JSONWriter;
 
 public class RoutingEngine {
+    private final double WALKING_SPEED = 83.33; // For walking speed of 5km/h but in metres/minute, since duration is in minutes
+
     private JSONReader requestReader = new JSONReader(new InputStreamReader(System.in));
     private JSONWriter<OutputStreamWriter> responseWriter = new JSONWriter<>(new OutputStreamWriter(System.out));
-
     public static void main(String[] args) throws IOException {
         new RoutingEngine().run();
     }
@@ -127,7 +128,7 @@ public class RoutingEngine {
                             long endEqui = System.nanoTime();
                             long timeEquiNs = endEqui - startEqui;
     
-                            int walkMinutesHaversine = (int) Math.round(distanceMetersHaversine / 83.33);
+                            int walkMinutesHaversine = (int) Math.round(distanceMetersHaversine / WALKING_SPEED);
                             
                             double errorPercentage = Math.abs(distanceMetersHaversine - distanceMetersEqui) / distanceMetersHaversine * 100.0;
     
@@ -135,9 +136,6 @@ public class RoutingEngine {
                             if (timeEquiNs > 0) {
                                 speedMultiplier = (double) timeHaversineNs / timeEquiNs;
                             }
-
-                            errorPercentage = (double) Math.round(errorPercentage * 100) / 100;
-                            speedMultiplier = (double) Math.round(speedMultiplier * 100) / 100;
                             
                             routeStep.put("duration", walkMinutesHaversine);
                             routeStep.put("DEBUG_error_percent", errorPercentage);
@@ -146,7 +144,7 @@ public class RoutingEngine {
                             // this is the default we will use in production
                             double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
                             routeStep.put("distance", distanceMetersEqui);
-                            routeStep.put("duration", (int) Math.round(distanceMetersEqui / 83.33));
+                            routeStep.put("duration", (int) Math.round(distanceMetersEqui / WALKING_SPEED));
                         }
 
                         sendOk(new Object[]{ routeStep });
