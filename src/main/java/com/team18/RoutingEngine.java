@@ -4,11 +4,19 @@ package com.team18;
 
 import com.team18.util.GeoCalculator;
 
+import java.io.BufferedReader;
 import java.io.EOFException;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.nio.file.NoSuchFileException;
+import java.util.Enumeration;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.zip.*;
+import java.io.InputStream;
 
 import com.leastfixedpoint.json.JSONReader;
 import com.leastfixedpoint.json.JSONSyntaxError;
@@ -38,14 +46,59 @@ public class RoutingEngine {
 
             if (json instanceof Map<?,?>) {
                 Map<?,?> request = (Map<?,?>) json;
+
+                // Just a sanity check to make sure routing engine is processing requests
+                // should be removed in final version as spec only wants load and route requests
                 if (request.containsKey("ping")) {
                     sendOk(Map.of("pong", request.get("ping")));
                     continue;
                 }
 
+                // Helpful resource
+                //https://www.baeldung.com/java-read-zip-files
+                if (request.containsKey("load")) {
+                    String zipFilePath = (String) request.get("load");
+                    try (ZipFile zipFile = new ZipFile(zipFilePath)) {
+                        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+                        while (entries.hasMoreElements()) {
+                            ZipEntry entry = entries.nextElement();
+
+                            // the enumeration already goes through whats inside the directories
+                            // so if we have a directory we can just skip it to avoid errors
+                            if (entry.isDirectory()) continue;
+                            try (InputStream inputStream = zipFile.getInputStream(entry)) {
+                                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                                BufferedReader reader = new BufferedReader(inputStreamReader);
+
+                                // Here we go line by line, we will implement our graph generation here by parsing the files
+                                // The line counting is only to prove it works, we will get rid of this in the actual implementation
+                                int lines = 0;
+                                while (reader.readLine() != null) {
+                                    lines++; 
+                                }
+                                System.out.println("Loaded: " + entry.getName() + " Lines: " + lines);
+                            }
+                        }
+                        sendOk("loaded");
+                        continue;
+                    } catch (FileNotFoundException | NoSuchFileException e) {
+                        sendError("File doesn't exist at the path provided: " + zipFilePath);
+                        sendError("Terminating...");
+                        break;
+                    } catch (ZipException e) {
+                        sendError("File exists but isn't a valid zip: " + zipFilePath);
+                        sendError("Terminating...");
+                        break;
+                    } catch (IOException e) {
+                        sendError("File exists and is a valid zip, something went wrong while reading: " + zipFilePath);
+                        sendError("Terminating...");
+                        break;
+                    }
+                }
+
                 // Crow flight calculator for now using both formulas to test for accuracy 
                 // for accuracy for the speedup we can feed lots of routes and only look at the last few (as JVM needs to warm up)
-                if (request.containsKey("routeFrom") && request.containsKey("to")) {
+                if (request.containsKey("routeFrom") && request.containsKey("to") && request.containsKey("startingAt")) {
                     try {
                         Map<?,?> fromNode = (Map<?,?>) request.get("routeFrom");                        
                         Map<?,?> toNode = (Map<?,?>) request.get("to");                        
