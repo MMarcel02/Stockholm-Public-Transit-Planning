@@ -1,5 +1,5 @@
 package com.team18.model;
 
-public class Node {
+public class Trip {
     
 }

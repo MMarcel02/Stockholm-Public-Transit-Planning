@@ -65,17 +65,14 @@ public class RoutingEngine {
                         parser.loadFromZip(zipFilePath);
                         sendOk("loaded");
                     } catch (FileNotFoundException | NoSuchFileException e) {
-                        sendError("File doesn't exist at the path provided: " + zipFilePath);
-                        sendError("Terminating...");
-                        break;
+                        sendError("Fatal: File doesn't exist at the path provided: " + zipFilePath);
+                        System.exit(1);
                     } catch (ZipException e) {
-                        sendError("File exists but isn't a valid zip: " + zipFilePath);
-                        sendError("Terminating...");
-                        break;
+                        sendError("Fatal: File exists but isn't a valid zip: " + zipFilePath);
+                        System.exit(1);
                     } catch (IOException e) {
-                        sendError("File exists and is a valid zip, something went wrong while reading: " + zipFilePath);
-                        sendError("Terminating...");
-                        break;
+                        sendError("Fatal: Loading error: " + e.getMessage());
+                        System.exit(1);
                     } 
                 }
 

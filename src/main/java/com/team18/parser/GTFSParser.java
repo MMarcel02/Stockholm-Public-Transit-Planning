@@ -9,12 +9,19 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.team18.model.Route;
 import com.team18.model.Stop;
+
+// Can check what GTFS data is required and formatting guidelines at link below
+//https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
 
 public class GTFSParser {
 
     public Map<String, String> agencies = new HashMap<>();
     public Map<String, Stop> stops = new HashMap<>();
+    public Map<String, Route> routes = new HashMap<>();
+
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -35,6 +42,9 @@ public class GTFSParser {
                     } 
                     if (entry.getName().endsWith("stops.txt")) {
                         parseStops(reader);
+                    } 
+                    if (entry.getName().endsWith("routes.txt")) {
+                        parseRoutes(reader);
                     } 
 
 
@@ -65,6 +75,10 @@ public class GTFSParser {
             else if(col.equals("stop_lat")) latIndex = i;
             else if(col.equals("stop_lon")) lonIndex = i;
         }
+        
+        if (idIndex == -1 || nameIndex == -1 || latIndex == -1 || lonIndex == -1) {
+            throw new IOException("Missing required columns in stops.txt");
+        }
 
         String line;
         while ((line = reader.readLine()) != null) {
@@ -77,17 +91,26 @@ public class GTFSParser {
                 String latString = lineSplit[latIndex].trim();
                 String lonString = lineSplit[lonIndex].trim();
 
-                double lat = Double.parseDouble(latString);
-                double lon = Double.parseDouble(lonString);
-                
+                if (id.isEmpty() || name.isEmpty() || latString.isEmpty() || lonString.isEmpty()) {
+                    throw new IOException("Missing required data for a particular stop (id, name or coordinates): " + line);
+                }
+
+                double lat;
+                double lon;
+
+                try {
+                    lat = Double.parseDouble(latString);
+                    lon = Double.parseDouble(lonString);
+                } catch (NumberFormatException e) {
+                    throw new IOException("Invalid coordinate format for stop: " + line);
+                }
+
                 stops.put(id, new Stop(id, name, lat, lon));
                 
-            } catch (ArrayIndexOutOfBoundsException e) {
-                System.err.println("Skipping malformed line (too short): " + line);
-            } catch (NumberFormatException e) {
-                System.err.println("Skipping line with invalid numbers: " + line);
-            } catch (IllegalArgumentException e) {
-                System.err.println("Skipping line due to missing vital data: " + line);
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
         }
     }
@@ -103,20 +126,93 @@ public class GTFSParser {
             else if(col.equals("agency_name")) nameIndex = i;
         }
 
+        // agency_id is optional if only one agency according to GTFS
+        if (nameIndex == -1) {
+            throw new IOException("Missing required column agency_name in agency.txt");
+        }
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+            try {
+                String id;
+                if (idIndex != -1) {
+                    id = lineSplit[idIndex].replace("\"", "").trim();
+                } else {
+                    id = "default"; 
+                }
+                String name = lineSplit[nameIndex].replace("\"", "").trim();
+
+                if (id.isEmpty() || name.isEmpty()) {
+                    throw new IOException("Missing required data for a particular agency (id or name): " + line);
+                }
+
+                agencies.put(id, name);
+            } catch (IOException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+            }
+        }
+    }
+
+    public void parseRoutes(BufferedReader reader) throws IOException {
+        String firstLine = reader.readLine();
+        if (firstLine == null) return;
+        String[] colNames = firstLine.split(",");
+        int idIndex = -1, agencyIndex = -1, shortNameIndex = -1, longNameIndex = -1;
+        for (int i = 0; i < colNames.length; i++) {
+            String col = colNames[i].trim();
+            if (col.equals("route_id")) idIndex = i;
+            else if(col.equals("agency_id")) agencyIndex = i;
+            else if(col.equals("route_short_name")) shortNameIndex = i;
+            else if(col.equals("route_long_name")) longNameIndex = i;
+        }
+
+        if (idIndex == -1) {
+            throw new IOException("Missing required column route_id in routes.txt");
+        }
+
+        if (shortNameIndex == -1 && longNameIndex == -1) {
+            throw new IOException("Missing both columns: route_short_name and route_long_name. Min. of 1 required");
+        }
+
         String line;
         while ((line = reader.readLine()) != null) {
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
             try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
-                String name = lineSplit[nameIndex].replace("\"", "").trim();
-
-                agencies.put(id, name);
                 
-            } catch (ArrayIndexOutOfBoundsException e) {
-                System.err.println("Skipping malformed line (too short): " + line);
-            } catch (IllegalArgumentException e) {
-                System.err.println("Skipping line due to missing vital data: " + line);
+                if (id.isEmpty()) {
+                    throw new IOException("Missing required data for a particular route (id): " + line);
+                }
+
+                String operator;
+                if (agencies.size() == 1) {
+                    // In GTFS data, agency_id column is only needed if more than one agency
+                    operator = agencies.values().iterator().next(); 
+                } else if (agencyIndex != -1) {
+                    String agencyID = lineSplit[agencyIndex].replace("\"", "").trim();
+                    operator = agencies.get(agencyID);
+                    if (operator == null) {
+                        throw new IOException("Agency ID '" + agencyID + "' found in routes but not defined in agency.txt");
+                    }
+                } else {
+                    throw new IOException("Multiple agencies exist in agency.txt but there is no column in routes.txt for agency_id");
+                }
+
+                // Conditional check in case one column is missing (only one is guaranteed in GTFS datasets)
+                String shortName = (shortNameIndex != -1) ? lineSplit[shortNameIndex].replace("\"", "").trim() : "";
+                String longName = (longNameIndex != -1) ? lineSplit[longNameIndex].replace("\"", "").trim() : "";
+
+                routes.put(id, new Route(id, operator, shortName, longName));
+                
+            } catch (IOException e) {
+                throw e; 
+            } catch (Exception e) {
+                throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
         }
     }
