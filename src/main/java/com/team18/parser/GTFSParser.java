@@ -115,7 +115,7 @@ public class GTFSParser {
 
         String line;
         while ((line = reader.readLine()) != null) {
-            // AI generated regex to make sure we dont split along , inside the name (if something like that exists)
+            // AI generated regex to make sure we dont split along commas inside the name (if something like that exists)
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
             try {
@@ -258,12 +258,13 @@ public class GTFSParser {
         String firstLine = reader.readLine();
         if (firstLine == null) return;
         String[] colNames = firstLine.split(",");
-        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1;
+        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1, headSignIndex = -1;
         for (int i = 0; i < colNames.length; i++) {
             String col = colNames[i].trim();
             if (col.equals("trip_id")) idIndex = i;
             else if(col.equals("service_id")) serviceIdIndex = i;
             else if(col.equals("route_id")) routeIdIndex = i;
+            else if(col.equals("trip_headsign")) headSignIndex = i;
         }
 
         if (idIndex == -1 || serviceIdIndex == -1 || routeIdIndex == -1) {
@@ -279,6 +280,9 @@ public class GTFSParser {
                 String serviceId = lineSplit[serviceIdIndex].replace("\"", "").trim();
                 String routeId = lineSplit[routeIdIndex].replace("\"", "").trim();
 
+                
+                String headSign = (headSignIndex != -1) ? lineSplit[headSignIndex].replace("\"", "").trim() : "";
+
                 if (id.isEmpty() || serviceId.isEmpty() || routeId.isEmpty()) {
                     throw new IOException("Missing required data for a particular trip (trip_id, service_id, route_id): " + line);
                 }
@@ -288,7 +292,7 @@ public class GTFSParser {
                     throw new IOException("RouteID not found in routes: " + routeId);
                 }
 
-                Trip newTrip = new Trip(id, route, serviceId);
+                Trip newTrip = new Trip(id, route, serviceId, headSign);
                 trips.put(id, newTrip);
                 route.trips.add(newTrip);
 
