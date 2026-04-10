@@ -26,40 +26,50 @@ public class GTFSParser {
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            Map<String, ZipEntry> entryMap = new HashMap<>();
+
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-
-                // the enumeration already goes through whats inside the directories
-                // so if we have a directory we can just skip it to avoid errors
                 if (entry.isDirectory()) continue;
-                System.out.println(entry.getName());
-                try (InputStream inputStream = zipFile.getInputStream(entry)) {
-                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                    BufferedReader reader = new BufferedReader(inputStreamReader);
+                if (entry.getName().endsWith("agency.txt")) entryMap.put("agency", entry);
+                if (entry.getName().endsWith("stops.txt")) entryMap.put("stops", entry);
+                if (entry.getName().endsWith("routes.txt")) entryMap.put("routes", entry);
+            }
 
-                    if (entry.getName().endsWith("agency.txt")) {
-                        parseAgencies(reader);
-                    } 
-                    if (entry.getName().endsWith("stops.txt")) {
-                        parseStops(reader);
-                    } 
-                    if (entry.getName().endsWith("routes.txt")) {
-                        parseRoutes(reader);
-                    } 
-
-
-                    // if (entry.getName().endsWith("stop_times.txt")) {
-                    //     parseStops(reader);
-                    // } 
-                    // if (entry.getName().endsWith("transfers.txt")) {
-                    //     parseStops(reader);
-                    // } 
-                    // if (entry.getName().endsWith("trips.txt")) {
-                    //     parseStops(reader);
-                    // } 
+            String[] requiredFiles = {"agency","stops","routes"};
+            for (String reqFile : requiredFiles) {
+                if (!entryMap.containsKey(reqFile)) {
+                    throw new IOException("Missing file: " + reqFile + ".txt");
                 }
             }
+
+            parseEntry(zipFile, entryMap.get("agency"), "agency");
+            parseEntry(zipFile, entryMap.get("stops"), "stops");
+            parseEntry(zipFile, entryMap.get("routes"), "routes");
+
         }
+    }
+
+
+    public void parseEntry(ZipFile zipFile, ZipEntry zipEntry, String type) throws IOException{
+        System.out.println("Parsing: " + type);
+        try (InputStream inputStream = zipFile.getInputStream(zipEntry)) {
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader reader = new BufferedReader(inputStreamReader);
+            switch (type) {
+                case "agency":
+                    parseAgencies(reader);
+                    break;
+                case "stops":
+                    parseStops(reader);
+                    break;
+                case "routes":
+                    parseRoutes(reader);
+                    break;
+                default:
+                    throw new IOException("Unknown file type: " + type);
+            }
+        } 
     }
 
     public void parseStops(BufferedReader reader) throws IOException {
