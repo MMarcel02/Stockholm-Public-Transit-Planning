@@ -1,5 +1,18 @@
 {"ok":{"pong":"sanity check"}}
+sl/agency.txt
+sl/attributions.txt
+sl/booking_rules.txt
+sl/calendar.txt
+sl/calendar_dates.txt
+sl/feed_info.txt
+sl/routes.txt
+sl/shapes.txt
+sl/stops.txt
+sl/stop_times.txt
+sl/transfers.txt
+sl/trips.txt
 {"ok":"loaded"}
+{"error":"Bad request"}
 {"ok":[{"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
 {"ok":[{"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
 {"ok":[{"duration":68,"mode":"walk","startTime":"08:30","to":{"lat":59.25,"lon":18.00}}]}

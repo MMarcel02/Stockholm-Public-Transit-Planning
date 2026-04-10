@@ -1,5 +1,7 @@
 package com.team18;
 
+import com.team18.parser.GTFSParser;
+
 // Needs to stay in this folder and with this title as defined in the project manual
 
 import com.team18.util.GeoCalculator;
@@ -58,29 +60,10 @@ public class RoutingEngine {
                 //https://www.baeldung.com/java-read-zip-files
                 if (request.containsKey("load")) {
                     String zipFilePath = (String) request.get("load");
-                    try (ZipFile zipFile = new ZipFile(zipFilePath)) {
-                        Enumeration<? extends ZipEntry> entries = zipFile.entries();
-                        while (entries.hasMoreElements()) {
-                            ZipEntry entry = entries.nextElement();
-
-                            // the enumeration already goes through whats inside the directories
-                            // so if we have a directory we can just skip it to avoid errors
-                            if (entry.isDirectory()) continue;
-                            try (InputStream inputStream = zipFile.getInputStream(entry)) {
-                                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                                BufferedReader reader = new BufferedReader(inputStreamReader);
-
-                                // Here we go line by line, we will implement our graph generation here by parsing the files
-                                // The line counting is only to prove it works, we will get rid of this in the actual implementation
-                                int lines = 0;
-                                while (reader.readLine() != null) {
-                                    lines++; 
-                                }
-                                System.err.println("Loaded: " + entry.getName() + " Lines: " + lines);
-                            }
-                        }
+                    try {
+                        GTFSParser parser = new GTFSParser();
+                        parser.loadFromZip(zipFilePath);
                         sendOk("loaded");
-                        continue;
                     } catch (FileNotFoundException | NoSuchFileException e) {
                         sendError("File doesn't exist at the path provided: " + zipFilePath);
                         sendError("Terminating...");
@@ -93,7 +76,7 @@ public class RoutingEngine {
                         sendError("File exists and is a valid zip, something went wrong while reading: " + zipFilePath);
                         sendError("Terminating...");
                         break;
-                    }
+                    } 
                 }
 
                 // Crow flight calculator for now using both formulas to test for accuracy 
