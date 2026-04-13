@@ -8,7 +8,9 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 import com.team18.model.Route;
 import com.team18.model.Stop;
@@ -24,6 +26,7 @@ public class GTFSParser {
     public Map<String, Stop> stops = new HashMap<>();
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
+    public Map<String, List<StopTime>> stopDepartures = new HashMap<>();
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -128,8 +131,12 @@ public class GTFSParser {
                     throw new IOException("Invalid coordinate format for stop: " + line);
                 }
 
+                if(lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    throw new IOException("Out of valid range for stop" + id);
+                }
+
                 stops.put(id, new Stop(id, name, lat, lon));
-                
+
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
@@ -351,6 +358,16 @@ public class GTFSParser {
                 throw e;
             } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+            }
+        }
+
+        //Populate stopDepartures, from that we can see the departures from the stop
+        for(Trip trip : trips.values()){
+            for(StopTime stopTime : trip.stopTimes){
+                if(!stopDepartures.containsKey(stopTime.stop.id)){
+                    stopDepartures.put(stopTime.stop.id, new ArrayList<>());
+                }
+                stopDepartures.get(stopTime.stop.id).add(stopTime);
             }
         }
     }
