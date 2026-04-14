@@ -371,15 +371,10 @@ public class GTFSParser {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
         }
-
-        //Populate stopDepartures, from that we can see the departures from the stop
-        for(Trip trip : trips.values()){
-            for(StopTime stopTime : trip.stopTimes){
-                if(!stopDepartures.containsKey(stopTime.stop.id)){
-                    stopDepartures.put(stopTime.stop.id, new ArrayList<>());
-                }
-                stopDepartures.get(stopTime.stop.id).add(stopTime);
-            }
+        
+        // Sorting into ascending order
+        for (Trip trip : trips.values()) {
+            trip.stopTimes.sort((st1, st2) -> Integer.compare(st1.stopSequence, st2.stopSequence));
         }
     }
 

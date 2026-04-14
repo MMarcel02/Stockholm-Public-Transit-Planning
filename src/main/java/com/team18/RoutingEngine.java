@@ -1,6 +1,8 @@
 package com.team18;
 
 import com.team18.parser.GTFSParser;
+import com.team18.routing.raptor.RaptorBuilder;
+import com.team18.routing.raptor.RaptorNetwork;
 
 // Needs to stay in this folder and with this title as defined in the project manual
 
@@ -63,6 +65,8 @@ public class RoutingEngine {
                     try {
                         GTFSParser parser = new GTFSParser();
                         parser.loadFromZip(zipFilePath);
+                        RaptorBuilder builder = new RaptorBuilder();
+                        RaptorNetwork raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
                         sendOk("loaded");
                     } catch (FileNotFoundException | NoSuchFileException e) {
                         sendError("Fatal: File doesn't exist at the path provided: " + zipFilePath);

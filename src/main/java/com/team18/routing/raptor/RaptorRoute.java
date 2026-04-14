@@ -10,7 +10,7 @@ import java.util.List;
 
 public class RaptorRoute {
     
-    public final String id;
+    public final int id;
     public final List<Stop> stops;
     public final List<Trip> trips;
 
@@ -19,7 +19,7 @@ public class RaptorRoute {
     public final String longName;
     public final String headSign;
 
-    public RaptorRoute(String id, Route parentRoute, List<Stop> patternStops, List<Trip> patternTrips) {
+    public RaptorRoute(int id, Route parentRoute, List<Stop> patternStops, List<Trip> patternTrips) {
         this.id = id;
         
         this.stops = patternStops; 
@@ -35,5 +35,5 @@ public class RaptorRoute {
         } else {
             this.headSign = "";
         }
-    }
+    }   
 }
