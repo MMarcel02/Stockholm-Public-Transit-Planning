@@ -1,12 +1,12 @@
 package com.team18.gui;
 
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView; 
+import javafx.scene.image.ImageView;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCode;
 
-import java.io.FileInputStream; 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 public class Map
@@ -39,25 +39,25 @@ public class Map
 			dragStartX = ev.getSceneX();
 			dragStartY = ev.getSceneY();
 
-			mapPreDragX = view.getX();
-			mapPreDragY = view.getY();
+			Rectangle2D viewport = view.getViewport();
+
+			mapPreDragX = viewport.getMinX();
+			mapPreDragY = viewport.getMinY();
 		});
 
 		view.setOnMouseDragged(ev -> {
 			Rectangle2D viewport = view.getViewport();
 
-			// TODO: this is horrendous :))
-			// Basically we need a formula to convert from screen pixels to
-			// viewport pixels.
-			// But before that we need to figure out the proper way to move it
-			// in the first place. There is something very off about that.
-			double pixelRatio = 0.1;
+			double w = viewport.getMaxX() - viewport.getMinX();
+			double h = viewport.getMaxY() - viewport.getMinY();
+
+			double x = (dragStartX - ev.getSceneX()) / 1200 * w;
+			double y = (dragStartY - ev.getSceneY()) / 700 * h;
 
 			view.setViewport(new Rectangle2D(
-						viewport.getMinX() - pixelRatio*(ev.getSceneX() - dragStartX),
-						viewport.getMinY() - pixelRatio*(ev.getSceneY() - dragStartY),
-						viewport.getWidth(),
-						viewport.getHeight()));
+						mapPreDragX + x,
+						mapPreDragY + y,
+						viewport.getWidth(), viewport.getHeight()));
 		});
 
 		view.setOnMouseMoved(ev -> {
@@ -103,5 +103,14 @@ public class Map
 	{
 		return view;
 	}
-}
 
+
+	private void moveView(double x, double y)
+	{
+		double width = view.getBoundsInParent().getWidth();
+		double height = view.getBoundsInParent().getHeight();
+
+		view.setX((x - view.getX()) - width/2);
+		view.setY((y - view.getY()) - height/2);
+	}
+}
