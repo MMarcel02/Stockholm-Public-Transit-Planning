@@ -5,6 +5,7 @@ import javafx.scene.image.ImageView;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCode;
+import javafx.geometry.Bounds;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,8 +17,7 @@ public class Map
 
 	private double dragStartX = 0;
 	private double dragStartY = 0;
-	private double mapPreDragX = 0;
-	private double mapPreDragY = 0;
+	private Rectangle2D viewportBeforeDrag;
 
 	public Map()
 	{
@@ -28,6 +28,7 @@ public class Map
 			return;
 		}
 
+		
 		view.setFitWidth(1200);
 		view.setPreserveRatio(true);
 
@@ -39,34 +40,37 @@ public class Map
 			dragStartX = ev.getSceneX();
 			dragStartY = ev.getSceneY();
 
-			Rectangle2D viewport = view.getViewport();
-
-			mapPreDragX = viewport.getMinX();
-			mapPreDragY = viewport.getMinY();
+			viewportBeforeDrag = view.getViewport();
 		});
 
 		view.setOnMouseDragged(ev -> {
 			Rectangle2D viewport = view.getViewport();
 
-			double w = viewport.getMaxX() - viewport.getMinX();
-			double h = viewport.getMaxY() - viewport.getMinY();
+			Bounds bounds = view.getBoundsInParent();
 
-			double x = (dragStartX - ev.getSceneX()) / 1200 * w;
-			double y = (dragStartY - ev.getSceneY()) / 700 * h;
+			// Convert from screen-space into viewport-space coordinates
+
+			double x = (dragStartX - ev.getSceneX())
+				/ bounds.getWidth() * viewport.getWidth();
+			double y = (dragStartY - ev.getSceneY())
+				/ bounds.getWidth() * viewport.getWidth();
 
 			view.setViewport(new Rectangle2D(
-						mapPreDragX + x,
-						mapPreDragY + y,
+						viewportBeforeDrag.getMinX() + x,
+						viewportBeforeDrag.getMinY() + y,
 						viewport.getWidth(), viewport.getHeight()));
 		});
 
-		view.setOnMouseMoved(ev -> {
-		});
-
 		view.setOnScroll(ev -> {
-			double delta = ev.getDeltaY() * 2;
+			Rectangle2D viewport = view.getViewport();
 
-			view.setFitWidth(view.getFitWidth() + delta);
+			// Delta Y is scaled this way to maintain the aspect ratio
+			double dx = ev.getDeltaY() * 2;
+			double dy = dx / viewport.getWidth() * viewport.getHeight();
+
+			view.setViewport(new Rectangle2D(
+						viewport.getMinX(), viewport.getMinY(),
+						viewport.getWidth() + dx, viewport.getHeight() + dy));
 		});
 	}
 
