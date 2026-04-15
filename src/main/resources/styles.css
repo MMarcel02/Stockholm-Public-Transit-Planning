@@ -1,0 +1,36 @@
+#sidebar {
+    -fx-padding: 20;
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+    -fx-border-width: 0 1 0 0;
+}
+
+.header-label {
+    -fx-font-weight: bold;
+    -fx-font-size: 20px;
+}
+
+.input-field {
+    -fx-padding: 12;
+    -fx-font-size: 14px;
+    -fx-background-radius: 4;
+    -fx-border-color: #b0b0b0;
+    -fx-border-radius: 4;
+}
+
+.primary-button {
+    -fx-background-color: #2196F3;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 12;
+    -fx-cursor: hand;
+}
+
+.secondary-button {
+    -fx-background-color: #eeeeee;
+    -fx-text-fill: #333333;
+    -fx-font-weight: bold;
+    -fx-padding: 12;
+    -fx-border-color: #cccccc;
+    -fx-cursor: hand;
+}
