@@ -151,12 +151,12 @@ public class RaptorAlgorithm {
                 for (int i = 0; i < numStops ; i++) {
                     int stopIdInRoute = routeStopsArr[stopsOffset + i];
                     
-                    // 1. Wait until we reach the stop we ACTUALLY transferred to
+                    // Wait until we reach the stop we can actually board 
                     if (stopIdInRoute == earliestBoardingStopId) foundBoardingStop = true;
 
                     if (foundBoardingStop) {
                         
-                        // Found a trip, so rounding the bus
+                        // Found a trip, so lets follow it
                         if (relativeTripIndex != -1) {
                             // stopTimesOffset gets us to the block of trips for this route
                             // then we grab our specific trip in the block with (relativeTripIndex * numStops * 2)
@@ -239,6 +239,7 @@ public class RaptorAlgorithm {
             targetArrivalTimePerRound[round] = targetArrivalTimePerRound[round -1];
             targetParentPerRound[round] = targetParentPerRound[round -1];
 
+            // Check if walking from newly marked stops is faster than taking the bus 
             for (int stopId : markedStops) {
                 if (walkTimeToTarget[stopId] != Integer.MAX_VALUE) {
                     int arrivalAtTarget = arrivalTimesPerRound[(round * totalStops) + stopId] + walkTimeToTarget[stopId];
