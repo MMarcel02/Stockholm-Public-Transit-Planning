@@ -9,10 +9,10 @@ public class StockholmRandomRouteGenerator {
 
     // Generates random routes around stocholm area so we can measure the accuracy and speedup of equirectangular vs haversine methods
     // Rough box for stockholm area
-    private static final double MIN_LAT = 59.2500;
-    private static final double MAX_LAT = 59.4000;
-    private static final double MIN_LON = 17.9000;
-    private static final double MAX_LON = 18.2500;
+    private static final double MIN_LAT = 59.1800;
+    private static final double MAX_LAT = 59.5500;
+    private static final double MIN_LON = 17.6000;
+    private static final double MAX_LON = 19.0000;
     
     private static final Random random = new Random();
 
