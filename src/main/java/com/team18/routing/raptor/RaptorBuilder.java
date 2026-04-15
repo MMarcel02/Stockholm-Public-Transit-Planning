@@ -174,9 +174,20 @@ public class RaptorBuilder {
 
         // Last value stores end of array offset
         stopsArr[stops.size() * 2] = currStopRoutesOffset;
+        stopsArr[stops.size() * 2 + 1] = currTransferOffset;
 
         // Need to pass all arrays as parameters
-        return new RaptorNetwork();
+        return new RaptorNetwork(
+            stopLookup, 
+            stringToIntMap, 
+            raptorRouteLookup, 
+            routesArr, 
+            routeStopsArr, 
+            stopTimesArr, 
+            stopsArr, 
+            stopRoutes, 
+            transfersArr
+        );
     }
 
 }

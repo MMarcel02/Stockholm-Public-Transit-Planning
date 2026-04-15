@@ -17,6 +17,7 @@ import com.team18.model.Stop;
 import com.team18.model.StopTime;
 import com.team18.model.Trip;
 import com.team18.model.Calendar;
+import com.team18.util.ParsingUtil;
 
 // Can check what GTFS data is required and formatting guidelines at link below
 //https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
@@ -345,8 +346,8 @@ public class GTFSParser {
                 if (trip == null) throw new IOException("TripID not found in trips: " + tripId);
                 if (stop == null) throw new IOException("StopID not found in trips: " + stopId);
 
-                int arrTime = parseStopTime(arrivalTimeString);
-                int depTime = parseStopTime(departureTimeString);
+                int arrTime = ParsingUtil.parseStopTime(arrivalTimeString);
+                int depTime = ParsingUtil.parseStopTime(departureTimeString);
 
                 if (depTime == -1 && arrTime != -1) {
                     depTime = arrTime; 
