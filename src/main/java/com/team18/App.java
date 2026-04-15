@@ -1,9 +1,11 @@
 package com.team18;
 
+import com.team18.gui.GuiApp;
+
 public class App 
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World!" );
+        GuiApp.main(args);
     }
 }
