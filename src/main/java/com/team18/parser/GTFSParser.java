@@ -28,6 +28,8 @@ public class GTFSParser {
     public Map<String, Stop> stops = new HashMap<>();
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
+    public Map<String, Calendar> calendar = new HashMap<>();
+
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
