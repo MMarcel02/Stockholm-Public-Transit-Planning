@@ -16,6 +16,7 @@ import com.team18.model.Route;
 import com.team18.model.Stop;
 import com.team18.model.StopTime;
 import com.team18.model.Trip;
+import com.team18.model.Calendar;
 
 // Can check what GTFS data is required and formatting guidelines at link below
 //https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
@@ -27,6 +28,7 @@ public class GTFSParser {
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
     public Map<String, List<StopTime>> stopDepartures = new HashMap<>();
+    public Map<String, Calendar> calendar = new HashMap<>();
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -41,6 +43,7 @@ public class GTFSParser {
                 if (entry.getName().endsWith("routes.txt")) entryMap.put("routes", entry);
                 if (entry.getName().endsWith("trips.txt")) entryMap.put("trips", entry);
                 if (entry.getName().endsWith("stop_times.txt")) entryMap.put("stop_times", entry);
+                if (entry.getName().endsWith("calendar.txt")) entryMap.put("calendar", entry);
 
             }
 
@@ -56,6 +59,7 @@ public class GTFSParser {
             parseEntry(zipFile, entryMap.get("routes"), "routes");
             parseEntry(zipFile, entryMap.get("trips"), "trips");
             parseEntry(zipFile, entryMap.get("stop_times"), "stop_times");
+            parseEntry(zipFile, entryMap.get("calendar"), "calendar");
 
         }
     }
@@ -81,6 +85,9 @@ public class GTFSParser {
                     break;
                 case "stop_times":
                     parseStopTimes(reader);
+                    break;
+                case "calendar":
+                    parseCalendar(reader);
                     break;
                 default:
                     throw new IOException("Unknown file type: " + type);
@@ -385,6 +392,68 @@ public class GTFSParser {
             return secondsAfterMidnight;
         } catch (NumberFormatException e) {
             throw new IOException("Time string failed parsing into number");
+        }
+    }
+
+    public void parseCalendar(BufferedReader reader) throws IOException {
+        String firstLine = reader.readLine();
+        if (firstLine == null) return;
+        String[] colNames = firstLine.split(",");
+        int idIndex = -1, day1Index = -1, day2Index = -1, day3Index = -1, day4Index = -1, day5Index = -1, day6Index = -1, day7Index = -1, startDateIndex = -1, endDateIndex = -1;
+        for (int i = 0; i < colNames.length; i++) {
+            String col = colNames[i].trim();
+            if (col.equals("service_id")) idIndex = i;
+            else if(col.equals("monday")) day1Index = i;
+            else if(col.equals("tuesday")) day2Index = i;
+            else if(col.equals("wednesday")) day3Index = i;
+            else if(col.equals("thursday")) day4Index = i;
+            else if(col.equals("friday")) day5Index = i;
+            else if(col.equals("saturday")) day6Index = i;
+            else if(col.equals("sunday")) day7Index = i;
+            else if(col.equals("start_date")) startDateIndex = i;
+            else if(col.equals("end_date")) endDateIndex = i;
+        }
+
+        if (idIndex == -1 || day1Index == -1 || day2Index == -1 || day3Index == -1 || day4Index == -1 || day5Index == -1 || day6Index == -1 || day7Index == -1 || startDateIndex == -1 || endDateIndex == -1){
+            throw new IOException("Missing required columns in calendar.txt");
+        }
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+             try {
+                String id = lineSplit[idIndex].replace("\"", "").trim();
+                String monday = lineSplit[day1Index].replace("\"", "").trim();
+                String tuesday = lineSplit[day2Index].replace("\"", "").trim();
+                String wednesday = lineSplit[day3Index].replace("\"", "").trim();
+                String thursday = lineSplit[day4Index].replace("\"", "").trim();
+                String friday = lineSplit[day5Index].replace("\"", "").trim();
+                String saturday = lineSplit[day6Index].replace("\"", "").trim();
+                String sunday = lineSplit[day7Index].replace("\"", "").trim();
+                String week = monday.concat(tuesday).concat(wednesday).concat(thursday).concat(friday).concat(saturday).concat(sunday);
+                String startDate = lineSplit[startDateIndex].replace("\"", "").trim();
+                String endDate = lineSplit[endDateIndex].replace("\"", "").trim();
+
+                if(id.isEmpty()){
+                    throw new IOException("Missing required service id for a particular period: " + line);
+                }
+                
+                if(week.length() < 7){
+                    throw new IOException("Missing required activity information for a particular period: " + line);
+                }
+
+                if(startDate.isEmpty() || endDate.isEmpty()){
+                    throw new IOException("Incomplete period for a particular service: " + line);
+                }
+
+                calendar.put(id, new Calendar(id, week, startDate, endDate));
+
+             } catch (IOException e) {
+                throw e;
+             } catch (Exception e) {
+                throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+             }
         }
     }
 }
