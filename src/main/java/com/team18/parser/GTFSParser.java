@@ -28,8 +28,6 @@ public class GTFSParser {
     public Map<String, Stop> stops = new HashMap<>();
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
-    public Map<String, List<StopTime>> stopDepartures = new HashMap<>();
-    public Map<String, Calendar> calendar = new HashMap<>();
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -379,22 +377,6 @@ public class GTFSParser {
         }
     }
 
-    public int parseStopTime(String timeString) throws IOException{
-        if (timeString == null || timeString.isEmpty()) {
-            return -1;
-        }
-        try {
-            String[] timeSplit = timeString.split(":");
-            int hours = Integer.parseInt(timeSplit[0]);
-            int minutes = Integer.parseInt(timeSplit[1]);
-            int seconds = Integer.parseInt(timeSplit[2]);
-            int secondsAfterMidnight = hours*3600 + minutes*60 + seconds;
-            return secondsAfterMidnight;
-        } catch (NumberFormatException e) {
-            throw new IOException("Time string failed parsing into number");
-        }
-    }
-
     public void parseCalendar(BufferedReader reader) throws IOException {
         String firstLine = reader.readLine();
         if (firstLine == null) return;
@@ -456,4 +438,6 @@ public class GTFSParser {
              }
         }
     }
+
+
 }
