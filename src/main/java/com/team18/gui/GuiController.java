@@ -19,6 +19,7 @@ public class GuiController {
 
         if (map.getMapGroup() != null) {
             mapContainer.getChildren().add(map.getMapGroup());
+            map.enableInteraction(mapContainer);
         }
     }
 
