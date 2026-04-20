@@ -1,0 +1,12 @@
+target/
+.settings/
+.vscode/
+
+/data/stockholm/*
+!/data/stockholm/README.md
+
+stockholm_routes.jsonl
+stockholm_routes_results.jsonl
+
+*.swp
+
