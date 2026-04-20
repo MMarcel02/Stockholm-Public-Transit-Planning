@@ -17,6 +17,7 @@ import com.team18.model.Stop;
 import com.team18.model.StopTime;
 import com.team18.model.Trip;
 import com.team18.model.Calendar;
+import com.team18.model.CalendarDates;
 
 // Can check what GTFS data is required and formatting guidelines at link below
 //https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
@@ -29,6 +30,7 @@ public class GTFSParser {
     public Map<String, Trip> trips = new HashMap<>();
     public Map<String, List<StopTime>> stopDepartures = new HashMap<>();
     public Map<String, Calendar> calendar = new HashMap<>();
+    public Map<String, CalendarDates> calendar_dates = new HashMap<>();
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -44,6 +46,7 @@ public class GTFSParser {
                 if (entry.getName().endsWith("trips.txt")) entryMap.put("trips", entry);
                 if (entry.getName().endsWith("stop_times.txt")) entryMap.put("stop_times", entry);
                 if (entry.getName().endsWith("calendar.txt")) entryMap.put("calendar", entry);
+                if (entry.getName().endsWith("calendar_dates.txt")) entryMap.put("calendar_dates", entry);
 
             }
 
@@ -60,6 +63,7 @@ public class GTFSParser {
             parseEntry(zipFile, entryMap.get("trips"), "trips");
             parseEntry(zipFile, entryMap.get("stop_times"), "stop_times");
             parseEntry(zipFile, entryMap.get("calendar"), "calendar");
+            parseEntry(zipFile, entryMap.get("calendar_dates"), "calendar_dates");
 
         }
     }
@@ -88,6 +92,9 @@ public class GTFSParser {
                     break;
                 case "calendar":
                     parseCalendar(reader);
+                    break;
+                case "calendar_dates":
+                    parseCalendarDates(reader);
                     break;
                 default:
                     throw new IOException("Unknown file type: " + type);
@@ -450,6 +457,49 @@ public class GTFSParser {
                 calendar.put(id, new Calendar(id, week, startDate, endDate));
 
              } catch (IOException e) {
+                throw e;
+             } catch (Exception e) {
+                throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+             }
+        }
+    }
+    public void parseCalendarDates(BufferedReader reader) throws IOException {
+        String firstLine = reader.readLine();
+        if (firstLine == null) return;
+        String[] colNames = firstLine.split(",");
+        int idIndex = -1, dateIndex = -1, exceptionIndex = -1;
+        for(int i = 0; i < colNames.length; i++){
+            String col = colNames[i].trim();
+            if (col.equals("service_id")) idIndex = i;
+            else if(col.equals("date")) dateIndex = i;
+            else if(col.equals("exception_type")) exceptionIndex = i;
+        }
+        if(idIndex == -1 || dateIndex == -1 || exceptionIndex == -1){
+            throw new IOException("Missing required columns in calendar_dates.txt");
+        }
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+             try {
+                String id = lineSplit[idIndex].replace("\"", "").trim();
+                String date = lineSplit[dateIndex].replace("\"", "").trim();
+                String exceptionType = lineSplit[exceptionIndex].replace("\"", "").trim();
+
+                
+                if(id.isEmpty()){
+                    throw new IOException("Missing required service id for a particular date: " + line);
+                }
+                if(date.isEmpty()){
+                    throw new IOException("Missing date for a particular service: " + line);
+                }
+                if(exceptionType.isEmpty()){
+                    throw new IOException("Missing exception type for a particular service/date: " + line);
+                }
+
+                calendar_dates.put(id, new CalendarDates(id, date, exceptionType));
+                
+             }catch (IOException e) {
                 throw e;
              } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
