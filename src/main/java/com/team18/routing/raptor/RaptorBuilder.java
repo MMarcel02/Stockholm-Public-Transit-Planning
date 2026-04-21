@@ -20,8 +20,9 @@ public class RaptorBuilder {
 
     public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips) {
 
-        // Generate raptorRoutes (cant rely on routes from GTFS)
-        // Each entry in map is a raptorRoute
+        // Stage 0: Generate RaptorRoutes
+        //         Each RaptorRoute is a unique order of stops (not neccessairly the same as the routes in GTFS data)
+        //         Sort all trips in each RaptorRoute by earliest departure time
         Map<List<Stop>, List<Trip>> raptorMap = new HashMap<>();
 
         for (Trip trip : trips.values()) {
@@ -35,7 +36,6 @@ public class RaptorBuilder {
             raptorMap.get(stopsInRoute).add(trip);
         }
 
-        // Sort all trips in each raptorRoute from first to last of the day
         for (List<Trip> raptorTrips : raptorMap.values()) {
             raptorTrips.sort((trip1, trip2) -> {
                 int firstTripForTrip1 = trip1.stopTimes.get(0).departureTime;
@@ -44,10 +44,10 @@ public class RaptorBuilder {
             });
         }
 
-        // Build raptorNetwork
+        // Stage 1: Build RaptorNetwork
+        //          Calculate size needed for all primitve arrays
         int totalRaptorRoutes = raptorMap.size();
         
-        // Calculate how many stops are in all the routes
         int totalRouteStops = 0;
         for (List<Stop> stopsInRoute : raptorMap.keySet()) {
             totalRouteStops += stopsInRoute.size();
@@ -101,17 +101,22 @@ public class RaptorBuilder {
             }
         }
 
+        // Stage 2: Initialize all primitive arrays
+        //          raptorRouteLookup[] indexed by routeId, for fetching our actual route information after algorithm finishes
+        //          routesArr[] each route has 4 values in routesArr [#trips, #stops, pointer to routeStops, pointer to stopTimes]
+        //          routeStopsArr[] all stops for every route
+        //          stopTimesArr[] all stopTimes for every trip for every route, each stop time has 2 values [arrivalTime, departureTime]
+        //          stopsArr[] all stops, each stop has 2 values [routeOffset, transferOffset]
+        //          stopRoutes[] all routes for each stop 
+        //          transfersArr[] all transfers within walking distance of each stop, each transfer has 2 values [targetStopId, walkTimeSeconds]
 
-        // Need a lookup array to get the routes information after all calculation (e.g. operator name)
         RaptorRoute[] raptorRouteLookup = new RaptorRoute[totalRaptorRoutes];
-        
-        int[] routesArr = new int[totalRaptorRoutes * 4];   // Each route has 4 values in routesArr [#trips, #stops, pointer to routeStops, pointer to stopTimes]
-        int[] routeStopsArr = new int[totalRouteStops];     // Represents all stops for each route
-        int[] stopTimesArr = new int[totalStopTimes * 2];   // Each stopTime has 2 values [arrivalTime, departureTime]
-
-        int[] stopsArr = new int[(stops.size() * 2 ) + 2];  // Each stop has 2 values [routeOffset, transferOffset]
-        int[] stopRoutes = new int[totalRouteStops];        // Represents all routes for each stop
-        int[] transfersArr = new int[totalTransferCount * 2]; // Each transfer has 2 values [targetStopId, walkTimeSeconds]
+        int[] routesArr = new int[totalRaptorRoutes * 4];   
+        int[] routeStopsArr = new int[totalRouteStops];     
+        int[] stopTimesArr = new int[totalStopTimes * 2];   
+        int[] stopsArr = new int[(stops.size() * 2 ) + 2];
+        int[] stopRoutes = new int[totalRouteStops];        
+        int[] transfersArr = new int[totalTransferCount * 2]; 
         
         int currRouteIndex = 0;
         int currStopsOffset = 0;
@@ -146,6 +151,8 @@ public class RaptorBuilder {
             currRouteIndex++;
         }
 
+        // Stage 3: Flatten dynamic arrays to primitive arrays
+
         // Flattening our tempStopRoutes 
         int currStopRoutesOffset = 0;
 
@@ -174,11 +181,9 @@ public class RaptorBuilder {
             }
         }
 
-        // Last value stores end of array offset
         stopsArr[stops.size() * 2] = currStopRoutesOffset;
         stopsArr[stops.size() * 2 + 1] = currTransferOffset;
 
-        // Need to pass all arrays as parameters
         return new RaptorNetwork(
             stopLookup, 
             raptorRouteLookup, 
