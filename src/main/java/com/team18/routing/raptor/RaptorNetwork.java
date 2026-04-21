@@ -1,12 +1,10 @@
 package com.team18.routing.raptor;
 
-import java.util.Map;
 import com.team18.model.Stop;
 
 public class RaptorNetwork {
 
     public final Stop[] stopLookup;
-    public final Map<String, Integer> stringToIntMap;
     public final RaptorRoute[] raptorRouteLookup;
 
     public final int[] routesArr;
@@ -18,7 +16,6 @@ public class RaptorNetwork {
 
     public RaptorNetwork(
             Stop[] stopLookup, 
-            Map<String, Integer> stringToIntMap, 
             RaptorRoute[] raptorRouteLookup,
             int[] routesArr, 
             int[] routeStopsArr, 
@@ -28,7 +25,6 @@ public class RaptorNetwork {
             int[] transfersArr) {
         
         this.stopLookup = stopLookup;
-        this.stringToIntMap = stringToIntMap;
         this.raptorRouteLookup = raptorRouteLookup;
         this.routesArr = routesArr;
         this.routeStopsArr = routeStopsArr;

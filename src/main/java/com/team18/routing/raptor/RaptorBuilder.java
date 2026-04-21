@@ -13,6 +13,10 @@ import com.team18.util.GeoCalculator;
 
 
 public class RaptorBuilder {
+    private final int MAX_WALK_TIME_SECONDS = 1800; // 30 minutes (can play around with this)
+    private final double WALK_SPEED_MPS = 50.0 / 36.0; // 5km/h in metres/second
+    private final double MAX_WALK_DISTANCE = MAX_WALK_TIME_SECONDS * WALK_SPEED_MPS;
+
 
     public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips) {
 
@@ -79,20 +83,18 @@ public class RaptorBuilder {
         for (int i = 0; i < stops.size(); i++) {
             tempTransfers.add(new ArrayList<>());
         }
-
-        double MAX_WALK_DISTANCE_METERS = 500.0; 
-        double WALKING_SPEED_MPS = 1.4;
+        
         int totalTransferCount = 0;
-
         for (int i = 0; i < stops.size(); i++) {
             Stop initialStop = stopLookup[i];
             for (int j = 0; j < stops.size(); j++) {
+                if (i == j) continue;
                 Stop targetStop = stopLookup[j];
 
                 double distanceBetweenStops = GeoCalculator.calculateEquirectangularDistance(initialStop.lat, initialStop.lon, targetStop.lat, targetStop.lon);
 
-                if (distanceBetweenStops <= MAX_WALK_DISTANCE_METERS) {
-                    int walkTimeSeconds = (int) Math.round(distanceBetweenStops / WALKING_SPEED_MPS);
+                if (distanceBetweenStops <= MAX_WALK_DISTANCE) {
+                    int walkTimeSeconds = (int) Math.round(distanceBetweenStops / WALK_SPEED_MPS);
                     tempTransfers.get(i).add(new int[]{j, walkTimeSeconds});
                     totalTransferCount++;
                 }
@@ -179,7 +181,6 @@ public class RaptorBuilder {
         // Need to pass all arrays as parameters
         return new RaptorNetwork(
             stopLookup, 
-            stringToIntMap, 
             raptorRouteLookup, 
             routesArr, 
             routeStopsArr, 
