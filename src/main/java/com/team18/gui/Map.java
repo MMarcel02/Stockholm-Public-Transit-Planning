@@ -35,6 +35,11 @@ public class Map {
     private double centerLocalX;
     private double centerLocalY;
 
+    // Map Center Tile Reference (Class fields, NOT local variables!)
+    private int zoom = 14;
+    private int centerTileX;
+    private int centerTileY;
+
     public Map() {
         mapGroup = new Group();
         drawingLayer = new Pane();
@@ -42,14 +47,17 @@ public class Map {
         // Set map center to Stockholm
         double lat = 59.3293;
         double lon = 18.0686;
-        int zoom = 14;
+
+        // NO 'int' here - saving to class field
+        zoom = 14;
 
         // Convert lat/lon into pixel coordinates
         double worldX = (lon + 180) / 360 * (1 << zoom) * TILE_SIZE;
         double worldY = (1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom) * TILE_SIZE;
 
-        int centerTileX = (int) Math.floor(worldX / TILE_SIZE);
-        int centerTileY = (int) Math.floor(worldY / TILE_SIZE);
+        // NO 'int' here - saving to class fields so getLocalCoords can use them later!
+        centerTileX = (int) Math.floor(worldX / TILE_SIZE);
+        centerTileY = (int) Math.floor(worldY / TILE_SIZE);
 
         // How far inside the tile the exact point is
         double pixelOffsetX = worldX - centerTileX * TILE_SIZE;
@@ -92,6 +100,19 @@ public class Map {
         centerLocalY = TILE_RADIUS * TILE_SIZE + pixelOffsetY;
 
         mapGroup.getChildren().add(drawingLayer);
+    }
+
+    // Convert any Lat/Lon into local X/Y coordinates on our drawing layer
+    public double[] getLocalCoords(double lat, double lon) {
+        // 1. Calculate the absolute world pixel position at this zoom level
+        double worldX = (lon + 180) / 360 * (1 << zoom) * TILE_SIZE;
+        double worldY = (1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom) * TILE_SIZE;
+
+        // 2. Adjust using the class fields (which hold Stockholm's anchor point)
+        double localX = worldX - (centerTileX - TILE_RADIUS) * TILE_SIZE;
+        double localY = worldY - (centerTileY - TILE_RADIUS) * TILE_SIZE;
+
+        return new double[]{localX, localY};
     }
 
     // Connect map to UI container and enable interaction
