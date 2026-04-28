@@ -19,8 +19,10 @@ public class StockholmRandomRouteGenerator {
     public static void main(String[] args) {
         int numRoutes = 10000;
         String filename = "stockholm_routes.jsonl";
+        String loadString = "{\"load\": \"data/stockholm/sl.zip\"}\n";
 
         try (FileWriter writer = new FileWriter(filename)) {
+            writer.write(loadString);
             for (int i = 0; i < numRoutes; i++) {
                 double fromLat = getRandomCoordinate(MIN_LAT, MAX_LAT);
                 double fromLon = getRandomCoordinate(MIN_LON, MAX_LON);
