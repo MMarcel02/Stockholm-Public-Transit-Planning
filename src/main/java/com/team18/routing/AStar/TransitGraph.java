@@ -15,14 +15,14 @@ public class TransitGraph {
 
     private final double WALKING_SPEED = 83.33;
 
-    private void build(GTFSParser parser){
+    public void build(GTFSParser parser){
         //Main method
         System.err.println("Building the graph... ");
 
         buildTransitEdges(parser);
     }
 
-    private void buildTransitEdges(GTFSParser parser){
+    public void buildTransitEdges(GTFSParser parser){
         for(Trip trip : parser.trips.values()){
             List<StopTime> stopTimes = new ArrayList<>(trip.stopTimes);
 
