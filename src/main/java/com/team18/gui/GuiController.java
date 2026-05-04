@@ -1,9 +1,17 @@
 package com.team18.gui;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
+import javafx.scene.shape.Circle;
+import javafx.scene.control.Tooltip;
+
+import com.team18.parser.GTFSParser;
+import com.team18.model.Stop;
+
+import java.util.Collection;
 
 public class GuiController {
 
@@ -23,21 +31,54 @@ public class GuiController {
             mapContainer.getChildren().add(map.getMapGroup());
             map.enableInteraction(mapContainer);
         }
+
+        new Thread(() -> {
+            try {
+                System.out.println("Loading GTFS data...");
+                GTFSParser parser = new GTFSParser();
+
+                parser.loadFromZip("data/stockholm/sl.zip");
+
+                System.out.println("Data loaded! Drawing stops on map...");
+
+                Platform.runLater(() -> {
+                    displayAllStops(parser.stops.values());
+                });
+
+            } catch (Exception e) {
+                System.err.println("Failed to load GTFS data: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    public void displayAllStops(Collection<Stop> stops) {
+        map.getDrawingLayer().getChildren().clear();
+
+        for (Stop stop : stops) {
+            double[] coords = map.getLocalCoords(stop.lat, stop.lon);
+
+            Circle dot = new Circle(3);
+            dot.setCenterX(coords[0]);
+            dot.setCenterY(coords[1]);
+            dot.getStyleClass().add("stop-marker");
+
+            Tooltip.install(dot, new Tooltip(stop.name));
+
+            map.getDrawingLayer().getChildren().add(dot);
+        }
     }
 
     @FXML
     public void handlePlanJourney() {
         try {
-            // get values from input fields
             String start = startField.getText();
             String end = endField.getText();
             String time = timeField.getText();
 
-            // split "lat,lon"
             String[] startParts = start.split(",");
             String[] endParts = end.split(",");
 
-            // convert to numbers
             double startLat = Double.parseDouble(startParts[0].trim());
             double startLon = Double.parseDouble(startParts[1].trim());
 
