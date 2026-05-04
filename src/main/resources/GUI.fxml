@@ -9,7 +9,11 @@
             <Label text="Navigation" styleClass="header-label"/>
             <TextField fx:id="startField" promptText="Start Location" styleClass="input-field"/>
             <TextField fx:id="endField" promptText="End Location" styleClass="input-field"/>
+            <TextField fx:id="timeField" promptText="Start Time (HH:MM)" styleClass="input-field"/>
+
             <Button text="Plan Journey" onAction="#handlePlanJourney" styleClass="primary-button" maxWidth="Infinity"/>
+
+            <Label fx:id="resultLabel" text="Route result will appear here" wrapText="true"/>
 
             <Separator/>
 
