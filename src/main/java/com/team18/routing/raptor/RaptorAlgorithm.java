@@ -11,8 +11,9 @@ import java.util.Map;
 import com.team18.model.RouteStep;
 import com.team18.model.Stop;
 import com.team18.util.GeoCalculator;
+import com.team18.routing.Router;
 
-public class RaptorAlgorithm {
+public class RaptorAlgorithm implements Router {
     
     private final int MAX_WALK_TIME_SECONDS = 1800; // 30 minutes (can play around with this)
     private final double WALK_SPEED_MPS = 50.0 / 36.0; // 5km/h in metres/second
@@ -41,7 +42,7 @@ public class RaptorAlgorithm {
         this.transfersArr = raptorNetwork.transfersArr;
     }
 
-    public List<RouteStep> compute(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight) {
+    public List<RouteStep> getFastestTrip(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight) {
         // Stage 0: Initialization:
         //         Create needed arrays and fill with default values 
         //         Update arrival time and mark all stops we can walk to from our source
