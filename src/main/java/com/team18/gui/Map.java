@@ -15,6 +15,9 @@ public class Map {
 	private double LATITUDE = 59.3293;
 	private double LONGITUDE = 18.0686;
 	private int ZOOM = 14;
+
+	private int tileX;
+	private int tileY;
 	
 	private Group mapGroup;
 	private Pane drawingLayer;
@@ -31,6 +34,9 @@ public class Map {
 		// OpenStreetMap Web Mercator Math
 		int centerX = (int) Math.floor((LONGITUDE + 180) / 360 * (1 << ZOOM));
 		int centerY = (int) Math.floor((1 - Math.log(Math.tan(Math.toRadians(LATITUDE)) + 1 / Math.cos(Math.toRadians(LATITUDE))) / Math.PI) / 2 * (1 << ZOOM));
+
+		tileX = centerX;
+		tileY = centerY;
 
 		int leftX = centerX - 2;
 		int leftY = centerY - 2;
@@ -72,13 +78,12 @@ public class Map {
 			}
 		}
 
-		mapGroup.getChildren().add(drawingLayer);
+		addPoint(59.313650878452314, 18.104653138757136);
+		addPoint(59.3077798481696, 18.07660456762615);
+		addPoint(59.332060428376295, 18.076506636176518);
+		addPoint(59.318493460788126, 18.02615659784773);
 
-		Circle point = new Circle();
-		point.setCenterX(0.5*5*256);
-		point.setCenterY(0.5*5*256);
-		point.setRadius(10);
-		drawingLayer.getChildren().add(point);
+		mapGroup.getChildren().add(drawingLayer);
 
 		mapGroup.setOnMousePressed(ev -> {
 			// Save initial coordinates for panning
@@ -99,4 +104,18 @@ public class Map {
 
 	public Group getMapGroup() { return mapGroup; }
 	public Pane getDrawingLayer() { return drawingLayer; }
+
+	public void addPoint(double lat, double lon) {
+		double n = Math.pow(2, ZOOM);
+		double leftLon = (tileX - 2) / n * 360.0 - 180.0;
+		double rightLon = (tileX + 3) / n * 360.0 - 180.0;
+		double topLat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY - 2) / n)))) * 180.0 / Math.PI;
+		double bottomLat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY + 3) / n)))) * 180.0 / Math.PI;
+
+		Circle point = new Circle();
+		point.setCenterX(((lon - leftLon) / (rightLon - leftLon)) * 5 * 256);
+		point.setCenterY((1 - (lat - bottomLat) / (topLat - bottomLat)) * 5 * 256);
+		point.setRadius(5);
+		drawingLayer.getChildren().add(point);
+	}
 }

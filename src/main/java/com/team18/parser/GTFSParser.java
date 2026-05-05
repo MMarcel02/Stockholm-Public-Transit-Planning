@@ -18,6 +18,7 @@ import com.team18.model.StopTime;
 import com.team18.model.Trip;
 import com.team18.model.Calendar;
 import com.team18.model.CalendarDates;
+import com.team18.util.ParsingUtil;
 
 // Can check what GTFS data is required and formatting guidelines at link below
 //https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
@@ -28,9 +29,9 @@ public class GTFSParser {
     public Map<String, Stop> stops = new HashMap<>();
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
-    public Map<String, List<StopTime>> stopDepartures = new HashMap<>();
     public Map<String, Calendar> calendar = new HashMap<>();
     public Map<String, CalendarDates> calendar_dates = new HashMap<>();
+
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -122,7 +123,7 @@ public class GTFSParser {
 
         String line;
         while ((line = reader.readLine()) != null) {
-            // AI generated regex to make sure we dont split along , inside the name (if something like that exists)
+            // AI generated regex to make sure we dont split along commas inside the name (if something like that exists)
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
             try {
@@ -265,12 +266,13 @@ public class GTFSParser {
         String firstLine = reader.readLine();
         if (firstLine == null) return;
         String[] colNames = firstLine.split(",");
-        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1;
+        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1, headSignIndex = -1;
         for (int i = 0; i < colNames.length; i++) {
             String col = colNames[i].trim();
             if (col.equals("trip_id")) idIndex = i;
             else if(col.equals("service_id")) serviceIdIndex = i;
             else if(col.equals("route_id")) routeIdIndex = i;
+            else if(col.equals("trip_headsign")) headSignIndex = i;
         }
 
         if (idIndex == -1 || serviceIdIndex == -1 || routeIdIndex == -1) {
@@ -286,6 +288,9 @@ public class GTFSParser {
                 String serviceId = lineSplit[serviceIdIndex].replace("\"", "").trim();
                 String routeId = lineSplit[routeIdIndex].replace("\"", "").trim();
 
+                
+                String headSign = (headSignIndex != -1) ? lineSplit[headSignIndex].replace("\"", "").trim() : "";
+
                 if (id.isEmpty() || serviceId.isEmpty() || routeId.isEmpty()) {
                     throw new IOException("Missing required data for a particular trip (trip_id, service_id, route_id): " + line);
                 }
@@ -295,7 +300,7 @@ public class GTFSParser {
                     throw new IOException("RouteID not found in routes: " + routeId);
                 }
 
-                Trip newTrip = new Trip(id, route, serviceId);
+                Trip newTrip = new Trip(id, route, serviceId, headSign);
                 trips.put(id, newTrip);
                 route.trips.add(newTrip);
 
@@ -348,8 +353,8 @@ public class GTFSParser {
                 if (trip == null) throw new IOException("TripID not found in trips: " + tripId);
                 if (stop == null) throw new IOException("StopID not found in trips: " + stopId);
 
-                int arrTime = parseStopTime(arrivalTimeString);
-                int depTime = parseStopTime(departureTimeString);
+                int arrTime = ParsingUtil.parseStopTime(arrivalTimeString);
+                int depTime = ParsingUtil.parseStopTime(departureTimeString);
 
                 if (depTime == -1 && arrTime != -1) {
                     depTime = arrTime; 
@@ -374,31 +379,10 @@ public class GTFSParser {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
         }
-
-        //Populate stopDepartures, from that we can see the departures from the stop
-        for(Trip trip : trips.values()){
-            for(StopTime stopTime : trip.stopTimes){
-                if(!stopDepartures.containsKey(stopTime.stop.id)){
-                    stopDepartures.put(stopTime.stop.id, new ArrayList<>());
-                }
-                stopDepartures.get(stopTime.stop.id).add(stopTime);
-            }
-        }
-    }
-
-    public int parseStopTime(String timeString) throws IOException{
-        if (timeString == null || timeString.isEmpty()) {
-            return -1;
-        }
-        try {
-            String[] timeSplit = timeString.split(":");
-            int hours = Integer.parseInt(timeSplit[0]);
-            int minutes = Integer.parseInt(timeSplit[1]);
-            int seconds = Integer.parseInt(timeSplit[2]);
-            int secondsAfterMidnight = hours*3600 + minutes*60 + seconds;
-            return secondsAfterMidnight;
-        } catch (NumberFormatException e) {
-            throw new IOException("Time string failed parsing into number");
+        
+        // Sorting into ascending order
+        for (Trip trip : trips.values()) {
+            trip.stopTimes.sort((st1, st2) -> Integer.compare(st1.stopSequence, st2.stopSequence));
         }
     }
 
