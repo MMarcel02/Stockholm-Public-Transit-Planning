@@ -1,20 +1,22 @@
-//package com.team18;
-//
-//import static org.junit.Assert.assertTrue;
-//
-//import org.junit.Test;
-//
-///**
-// * Unit test for simple App.
-// */
-//public class AppTest 
-//{
-//    /**
-//     * Rigorous Test :-)
-//     */
+package com.team18;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class AppTest 
+{
+
+   @Test
+   public void shouldAnswerWithTrue()
+   {
+       assertTrue( true );
+   }
+
 //    @Test
-//    public void shouldAnswerWithTrue()
-//    {
-//        assertTrue( true );
+//    void engineShouldReturnLoadedOnLoad() {
+//     RoutingEngine engine = new RoutingEngine();
+//     engine.run();
+//     String input = "{\"load\": \"data/stockholm/sl.zip\"}";
+
 //    }
-//}
+}

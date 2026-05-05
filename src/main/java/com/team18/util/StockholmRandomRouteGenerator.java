@@ -17,7 +17,7 @@ public class StockholmRandomRouteGenerator {
     private static final Random random = new Random();
 
     public static void main(String[] args) {
-        int numRoutes = 10000;
+        int numRoutes = 10500;
         String filename = "stockholm_routes.jsonl";
         String loadString = "{\"load\": \"data/stockholm/sl.zip\"}\n";
 
@@ -31,8 +31,8 @@ public class StockholmRandomRouteGenerator {
                 String time = generateRandomTime();
 
                 String jsonLine = String.format(Locale.US,
-                        "{\"routeFrom\": {\"lat\": %.4f, \"lon\": %.4f}, \"to\": {\"lat\": %.4f, \"lon\": %.4f}, \"startingAt\": \"%s\", \"debug\": \"%s\"}\n",
-                        fromLat, fromLon, toLat, toLon, time, true);
+                        "{\"routeFrom\": {\"lat\": %.4f, \"lon\": %.4f}, \"to\": {\"lat\": %.4f, \"lon\": %.4f}, \"startingAt\": \"%s\"\n",
+                        fromLat, fromLon, toLat, toLon, time);
                 
                 writer.write(jsonLine);
             }
