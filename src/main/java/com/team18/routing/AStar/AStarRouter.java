@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import com.team18.model.Edge;
 import com.team18.model.RouteNode;
+import com.team18.model.RouteStep;
 import com.team18.parser.GTFSParser;
 import com.team18.model.Stop;
 import com.team18.util.GeoCalculator;
@@ -12,8 +13,7 @@ import com.team18.util.GeoCalculator;
 public class AStarRouter {
 
     private List<RouteNode> openList = new ArrayList<RouteNode>();
-    private List<RouteNode> closedList = new ArrayList<RouteNode>();
-    private List<RouteNode> finalRoute = new ArrayList<RouteNode>();
+    private List<RouteStep> closedList = new ArrayList<RouteStep>();
     private static int openListIndex = 0;
 
     public void aStarRouteCalculator(GTFSParser parser, Stop source, Stop destination, int startTimeSec){
@@ -37,7 +37,7 @@ public class AStarRouter {
                 }
             }
 
-            RouteNode q = openList.remove(qIndex); //q is our current stop
+            RouteNode q = openList.get(qIndex); //q is our current stop
 
             List<Edge> successorList = graph.adjacency.get(q.stop.id); //use the id of q to get its adjacent stops from the graph
 
@@ -55,12 +55,14 @@ public class AStarRouter {
 
                     //if our current successor is already in the open list with a smaller f, or is in the closed list it will be skipped
                     if(!checkOpenList(successorList, i, fCurrent) || !checkClosedList(successorList, i)){
-                        RouteNode newNode = new RouteNode(successorList.get(i).dest, gCurrent, hCurrent, 0, openList.get(qIndex), null);
+                        
+                        RouteNode newNode = new RouteNode(successorList.get(i).dest, gCurrent, hCurrent, 0, openList.get(qIndex), successorList.get(i));
                         openList.add(newNode);
                     }
                 }
             }
-            closedList.add(openList.get(qIndex));
+            RouteStep routeStep = new RouteStep(openList.get(qIndex).stop.lat, openList.get(qIndex).stop.lon, openList.get(qIndex).edgeFromParent.travelTimeSeconds, openList.get(qIndex).edgeFromParent.departureTime);
+            closedList.add(routeStep);
             openList.remove(qIndex);
             //the closed list will be our final route
 
@@ -87,7 +89,7 @@ public class AStarRouter {
         int i = 0;
         boolean check = false;
         while(closedList.isEmpty()){
-            if(closedList.get(i).stop.equals(list.get(i).dest)){
+            if(closedList.get(i).latTo == (list.get(index).dest.lat) && closedList.get(i).lonTo == (list.get(index).dest.lon)){
                 check = true;
             }
         }
