@@ -11,9 +11,9 @@ import java.util.regex.Pattern;
 public class WalkingMethodAnalyzer {
     
     private static final int WARMUP_ITERATIONS = 500;
+    private static final String ROUTES_FILE = "stockholm_routes.jsonl";
 
     public static void main(String[] args) {
-        String filename = "stockholm_routes.jsonl";
         
         double totalErrorPercent = 0.0;
         long totalTimeHaversineNs = 0;
@@ -23,7 +23,7 @@ public class WalkingMethodAnalyzer {
         
         Pattern coordPattern = Pattern.compile("\"routeFrom\": \\{\"lat\": ([\\d.]+), \"lon\": ([\\d.]+)\\}, \"to\": \\{\"lat\": ([\\d.]+), \"lon\": ([\\d.]+)\\}");
         
-        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(ROUTES_FILE))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.contains("load")) continue; 
@@ -67,7 +67,7 @@ public class WalkingMethodAnalyzer {
             }
             
         } catch (IOException e) {
-            System.err.println("Error reading the file. Make sure " + filename + " exists in this directory.");
+            System.err.println("Error reading the file. Make sure " + ROUTES_FILE + " exists in this directory.");
         }
     }
 }
