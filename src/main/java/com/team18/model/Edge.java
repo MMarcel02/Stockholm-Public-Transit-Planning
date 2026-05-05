@@ -8,7 +8,7 @@ public class Edge {
     public int departureTime;
     public int travelTimeSeconds;
     public double travelWalkTimeSeconds;
-    public Trip trip;
+    public Trip trip; //Packages information we need that is not included in `Route`, only needed headSign from it.
 
     public Edge(Stop dest, String mode, String tripId, int departureTime, int travelTimeSeconds, double travelWalkTimeSeconds, Trip trip) {
         this.dest = dest;

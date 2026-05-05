@@ -61,6 +61,8 @@ public class AStarRouter {
                     }
                 }
             }
+
+            // TODO: Line 66 looks a bit nutty, needs shortening.
             RouteStep routeStep = new RouteStep(openList.get(qIndex).stop.lat, openList.get(qIndex).stop.lon, openList.get(qIndex).edgeFromParent.travelTimeSeconds, openList.get(qIndex).edgeFromParent.departureTime, openList.get(qIndex).stop.name, openList.get(qIndex).edgeFromParent.trip.route.operator, openList.get(qIndex).edgeFromParent.trip.route.shortName, openList.get(qIndex).edgeFromParent.trip.route.longName, openList.get(qIndex).edgeFromParent.trip.headSign);
             closedList.add(routeStep);
             openList.remove(qIndex);
