@@ -43,7 +43,7 @@ public class RaptorAlgorithm implements Router{
         this.transfersArr = raptorNetwork.transfersArr;
     }
 
-    public List<RouteStep> getFastestRoute(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight) {
+    public List<RouteStep> getFastestTrip(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight) {
         // Stage 0: Initialization:
         //         Create needed arrays and fill with default values
         //         Update arrival time and mark all stops we can walk to from our source
