@@ -11,19 +11,22 @@ import com.team18.util.GeoCalculator;
 
 public class AStarRouter {
 
-    public static List<RouteNode> openList = new ArrayList<RouteNode>();
-    public static List<RouteNode> closedList = new ArrayList<RouteNode>();
-    public static List<RouteNode> finalRoute = new ArrayList<RouteNode>();
-    public static int openListIndex = 0;
+    private List<RouteNode> openList = new ArrayList<RouteNode>();
+    private List<RouteNode> closedList = new ArrayList<RouteNode>();
+    private List<RouteNode> finalRoute = new ArrayList<RouteNode>();
+    private static int openListIndex = 0;
 
-    public static void aStarRouteCalculator(Stop source, Stop destination){
+    public void aStarRouteCalculator(GTFSParser parser, Stop source, Stop destination, int startTimeSec){
         TransitGraph graph = new TransitGraph();
-        GTFSParser parser = new GTFSParser();
+
         graph.build(parser);
+
         //Initialising the open list
-        RouteNode node = new RouteNode(source, 0, 0, 0, null, null);
+        RouteNode node = new RouteNode(source, 0, heuristic(source, destination), startTimeSec, null, null);
         openList.add(openListIndex, node);
+
         openListIndex++;
+        
         while(!openList.isEmpty()){
             double fCompare = openList.get(0).f;
             int qIndex = 0;
@@ -34,9 +37,11 @@ public class AStarRouter {
                 }
             }
 
-            Stop q = openList.get(qIndex).stop; //q is our current stop
-            List<Edge> successorList = graph.adjacency.get(q.id); //use the id of q to get its adjacent stops from the graph
-            double gOld = openList.get(openListIndex).g;    //gOld is the travel time up to the current stop
+            RouteNode q = openList.remove(qIndex); //q is our current stop
+
+            List<Edge> successorList = graph.adjacency.get(q.stop.id); //use the id of q to get its adjacent stops from the graph
+
+            double gOld = openList.get(qIndex).g;    //gOld is the travel time up to the current stop
             for(int i = 0; i < successorList.size(); i++){
                 double gCurrent = gOld + successorList.get(i).travelTimeSeconds; //gCurrent is the travel time up to the current successor
 
@@ -50,9 +55,9 @@ public class AStarRouter {
 
                     //if our current successor is already in the open list with a smaller f, or is in the closed list it will be skipped
                     if(!checkOpenList(successorList, i, fCurrent) || !checkClosedList(successorList, i)){
-                    RouteNode newNode = new RouteNode(successorList.get(i).dest, gCurrent, hCurrent, 0, openList.get(qIndex), null);
-                    openList.add(newNode);
-                     }
+                        RouteNode newNode = new RouteNode(successorList.get(i).dest, gCurrent, hCurrent, 0, openList.get(qIndex), null);
+                        openList.add(newNode);
+                    }
                 }
             }
             closedList.add(openList.get(qIndex));
@@ -62,8 +67,12 @@ public class AStarRouter {
         }
         
     }
+
+    public static double heuristic(Stop from, Stop to) {
+        return (double)GeoCalculator.calculateHaversineDistance(from.lat, from.lon, to.lat, to.lon);
+    }
     
-    public static boolean checkOpenList(List<Edge> list, int index, double fCurrent){
+    public boolean checkOpenList(List<Edge> list, int index, double fCurrent){
         int i = 0;
         boolean check = false;
         while(openList.isEmpty()){
@@ -74,7 +83,7 @@ public class AStarRouter {
         return check;
     }
 
-    public static boolean checkClosedList(List<Edge> list, int index){
+    public boolean checkClosedList(List<Edge> list, int index){
         int i = 0;
         boolean check = false;
         while(closedList.isEmpty()){
