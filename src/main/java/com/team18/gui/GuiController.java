@@ -1,6 +1,7 @@
 package com.team18.gui;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.routing.raptor.RaptorBuilder;
+import com.team18.routing.Router;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.util.ParsingUtil;
 
@@ -165,10 +166,10 @@ public class GuiController {
             System.out.println("Routing from: (" + startLat + ", " + startLon + ") to (" + endLat + ", " + endLon + ")");
 
             // --- RUN REAL RAPTOR ALGORITHM ---
-            RaptorAlgorithm raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
+            Router raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
 
             // Save it to the class variable so your teammate can draw it later
-            currentRoute = raptorAlgorithm.compute(startLat, startLon, endLat, endLon, startTimeSeconds);
+            currentRoute = raptorAlgorithm.getFastestTrip(startLat, startLon, endLat, endLon, startTimeSeconds);
 
             // Display it in your sidebar!
             displayRouteInstructions(currentRoute);
