@@ -9,11 +9,23 @@
 
 
 // Typical routeFrom request
-{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.4, "lon": 18.25}, "startingAt": "08:30"}
 
-// Debug mode tests
-{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": true}
+// Should be a 0 minute walk
+{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.2500, "lon": 17.9000}, "startingAt": "08:30"}
 
-// These should process like the typical routeFrom request without crashing
-{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.25, "lon": 18.00}, "startingAt": "08:30", "debug": false}
-{"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": null}
+// Stops where its faster to walk than take the bus
+{"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.2500, "lon": 17.950}, "startingAt": "08:30"}
+
+// From stockholm central to stockholm odenplan
+{"routeFrom": {"lat": 59.3301, "lon": 18.0582}, "to": {"lat": 59.3428, "lon": 18.0494}, "startingAt": "8:30"}
+
+// From stockholm central to nearby Spanga
+{"routeFrom": {"lat": 59.3301, "lon": 18.0582}, "to": {"lat": 59.392128, "lon": 17.903773}, "startingAt": "8:30"}
+
+
+// // Debug mode tests
+// {"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": true}
+
+// // These should process like the typical routeFrom request without crashing
+// {"routeFrom": {"lat": 59.2500, "lon": 17.9000}, "to": {"lat": 59.25, "lon": 18.00}, "startingAt": "08:30", "debug": false}
+// {"routeFrom": {"lat": 59.3301, "lon": 18.0581}, "to": {"lat": 59.3251, "lon": 18.0710}, "startingAt": "08:30", "debug": null}

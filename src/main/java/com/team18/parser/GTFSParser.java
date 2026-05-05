@@ -288,7 +288,7 @@ public class GTFSParser {
                 String serviceId = lineSplit[serviceIdIndex].replace("\"", "").trim();
                 String routeId = lineSplit[routeIdIndex].replace("\"", "").trim();
 
-
+                
                 String headSign = (headSignIndex != -1) ? lineSplit[headSignIndex].replace("\"", "").trim() : "";
 
                 if (id.isEmpty() || serviceId.isEmpty() || routeId.isEmpty()) {
@@ -379,7 +379,7 @@ public class GTFSParser {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
         }
-
+        
         // Sorting into ascending order
         for (Trip trip : trips.values()) {
             trip.stopTimes.sort((st1, st2) -> Integer.compare(st1.stopSequence, st2.stopSequence));

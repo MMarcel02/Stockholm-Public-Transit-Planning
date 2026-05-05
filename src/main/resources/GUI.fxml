@@ -4,6 +4,10 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.team18.gui.GuiController" stylesheets="@styles.css">
 
+    <center>
+        <Pane fx:id="mapContainer" style="-fx-background-color: #aad3df;"/>
+    </center>
+
     <left>
         <VBox id="sidebar" spacing="15" prefWidth="300">
             <Label text="Navigation" styleClass="header-label"/>
@@ -23,9 +27,5 @@
             <Button text="Generate Heatmap" styleClass="secondary-button" maxWidth="Infinity"/>
         </VBox>
     </left>
-
-    <center>
-        <Pane fx:id="mapContainer" style="-fx-background-color: #aad3df;"/>
-    </center>
 
 </BorderPane>

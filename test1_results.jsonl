@@ -1,19 +1,13 @@
 {"ok":{"pong":"sanity check"}}
-sl/agency.txt
-sl/attributions.txt
-sl/booking_rules.txt
-sl/calendar.txt
-sl/calendar_dates.txt
-sl/feed_info.txt
-sl/routes.txt
-sl/shapes.txt
-sl/stops.txt
-sl/stop_times.txt
-sl/transfers.txt
-sl/trips.txt
+Parsing: agency
+Parsing: stops
+Parsing: routes
+Parsing: trips
+Parsing: stop_times
+Parsing: calendar
+Parsing: calendar_dates
 {"ok":"loaded"}
-{"error":"Bad request"}
-{"ok":[{"duration":311,"mode":"walk","startTime":"08:30","to":{"lat":59.4,"lon":18.25}}]}
-{"ok":[{"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
-{"ok":[{"duration":68,"mode":"walk","startTime":"08:30","to":{"lat":59.25,"lon":18.00}}]}
-{"ok":[{"duration":11,"mode":"walk","startTime":"08:30","to":{"lat":59.3251,"lon":18.0710}}]}
+{"ok":[{"duration":0,"mode":"walk","startTime":"08:30","to":{"lat":59.25,"lon":17.9}}]}
+{"ok":[{"duration":23,"mode":"walk","startTime":"08:30","to":{"lat":59.266792,"lon":17.912304}},{"duration":7,"mode":"ride","route":{"headSign":"","longName":"","operator":"AB Storstockholms Lokaltrafik","shortName":"173"},"startTime":"08:53","stop":"Månskärsvägen","to":{"lat":59.279909,"lon":17.943894}},{"duration":1,"mode":"walk","startTime":"09:01","to":{"lat":59.278979,"lon":17.942959}},{"duration":9,"mode":"ride","route":{"headSign":"","longName":"","operator":"AB Storstockholms Lokaltrafik","shortName":"704"},"startTime":"09:02","stop":"Segeltorps centrum","to":{"lat":59.24986,"lon":17.962156}},{"duration":8,"mode":"walk","startTime":"09:12","to":{"lat":59.25,"lon":17.95}}]}
+{"ok":[{"duration":1,"mode":"walk","startTime":"08:30","to":{"lat":59.331143,"lon":18.059394}},{"duration":4,"mode":"ride","route":{"headSign":"","longName":"","operator":"AB Storstockholms Lokaltrafik","shortName":"43"},"startTime":"08:31","stop":"Stockholm City","to":{"lat":59.343217,"lon":18.045721}},{"duration":0,"mode":"walk","startTime":"08:36","to":{"lat":59.343213,"lon":18.04572}},{"duration":2,"mode":"walk","startTime":"08:36","to":{"lat":59.3428,"lon":18.0494}}]}
+{"ok":[{"duration":1,"mode":"walk","startTime":"08:30","to":{"lat":59.331143,"lon":18.059394}},{"duration":10,"mode":"ride","route":{"headSign":"","longName":"","operator":"AB Storstockholms Lokaltrafik","shortName":"43"},"startTime":"08:31","stop":"Stockholm City","to":{"lat":59.361212,"lon":17.970507}},{"duration":1,"mode":"walk","startTime":"08:42","to":{"lat":59.360495,"lon":17.972657}},{"duration":9,"mode":"ride","route":{"headSign":"","longName":"Blå linjen","operator":"AB Storstockholms Lokaltrafik","shortName":"10"},"startTime":"08:43","stop":"Sundbybergs centrum","to":{"lat":59.394127,"lon":17.902574}},{"duration":2,"mode":"walk","startTime":"08:53","to":{"lat":59.392128,"lon":17.903773}}]}

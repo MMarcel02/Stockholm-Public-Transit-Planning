@@ -5,6 +5,7 @@ import com.team18.parser.GTFSParser;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.routing.Router;
 
 // Needs to stay in this folder and with this title as defined in the project manual
 
@@ -30,7 +31,6 @@ import com.leastfixedpoint.json.JSONSyntaxError;
 import com.leastfixedpoint.json.JSONWriter;
 
 public class RoutingEngine {
-    private final double WALKING_SPEED = 83.33; // For walking speed of 5km/h but in metres/minute, since duration is in minutes
     private RaptorNetwork raptorNetwork;
 
     private JSONReader requestReader = new JSONReader(new InputStreamReader(System.in));
@@ -95,23 +95,23 @@ public class RoutingEngine {
                     }
 
                     try {
-                        Map<?,?> fromNode = (Map<?,?>) request.get("routeFrom");
-                        Map<?,?> toNode = (Map<?,?>) request.get("to");
-                        String startTime = (String) request.get("startingAt");
+                        Map<?,?> fromNode = (Map<?,?>) request.get("routeFrom");                        
+                        Map<?,?> toNode = (Map<?,?>) request.get("to");                        
+                        String startTime = (String) request.get("startingAt"); 
                         int startTimeSecondsAfterMidnight = ParsingUtil.parseStopTime(startTime);
 
                         double latFrom = ((Number) fromNode.get("lat")).doubleValue();
                         double lonFrom = ((Number) fromNode.get("lon")).doubleValue();
                         double latTo = ((Number) toNode.get("lat")).doubleValue();
                         double lonTo = ((Number) toNode.get("lon")).doubleValue();
-
-                        RaptorAlgorithm raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
-                        List<RouteStep> journey = raptorAlgorithm.compute(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
+                        
+                        Router raptor = new RaptorAlgorithm(raptorNetwork);
+                        List<RouteStep> journey = raptor.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
                         Object[] routeSteps = new Object[journey.size()];
                         for (int i = 0; i < routeSteps.length; i++) {
                             routeSteps[i] = journey.get(i).toMap();
                         }
-
+                        
                         sendOk(routeSteps);
 
                         // for (RouteStep routeStep : journey) {
@@ -119,30 +119,30 @@ public class RoutingEngine {
                         //     routeStep.put("mode", "walk");
                         //     routeStep.put("to", toNode);
                         //     routeStep.put("startTime", startTime);
-
+    
                         //     boolean isDebug = request.containsKey("debug") && request.get("debug").equals("true");
-
+                            
                         //     if (isDebug) {
                         //         // this is the mode in which we can compare different approaches
                         //         long startHaversine = System.nanoTime();
                         //         double distanceMetersHaversine = GeoCalculator.calculateHaversineDistance(latFrom, lonFrom, latTo, lonTo);
                         //         long endHaversine = System.nanoTime();
                         //         long timeHaversineNs = endHaversine - startHaversine;
-
+        
                         //         long startEqui = System.nanoTime();
                         //         double distanceMetersEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
                         //         long endEqui = System.nanoTime();
                         //         long timeEquiNs = endEqui - startEqui;
-
+        
                         //         int walkMinutesHaversine = (int) Math.round(distanceMetersHaversine / WALKING_SPEED);
-
+                                
                         //         double errorPercentage = Math.abs(distanceMetersHaversine - distanceMetersEqui) / distanceMetersHaversine * 100.0;
-
+        
                         //         double speedMultiplier = 0;
                         //         if (timeEquiNs > 0) {
                         //             speedMultiplier = (double) timeHaversineNs / timeEquiNs;
                         //         }
-
+                                
                         //         routeStep.put("duration", walkMinutesHaversine);
                         //         routeStep.put("DEBUG_error_percent", errorPercentage);
                         //         routeStep.put("DEBUG_speedup", speedMultiplier);

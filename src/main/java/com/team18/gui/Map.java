@@ -13,8 +13,16 @@ import java.net.URL;
 import java.io.InputStream;
 
 public class Map {
-    private Group mapGroup;
-    private Pane drawingLayer;
+	// Coordinates of Stockholm
+	private double LATITUDE = 59.3293;
+	private double LONGITUDE = 18.0686;
+	private int ZOOM = 14;
+
+	private int tileX;
+	private int tileY;
+	
+	private Group mapGroup;
+	private Pane drawingLayer;
 
     private double dragStartX = 0;
     private double dragStartY = 0;
@@ -56,9 +64,9 @@ public class Map {
         return new double[]{lat, lon};
     }
 
-    public Map() {
-        mapGroup = new Group();
-        drawingLayer = new Pane();
+	public Map() {
+		mapGroup = new Group();
+		drawingLayer = new Pane();
 
         // Set map center to Stockholm
         double lat = 59.3293;
@@ -85,7 +93,7 @@ public class Map {
                 int tileX = centerTileX + dx;
                 int tileY = centerTileY + dy;
 
-                String urlString = "https://tile.openstreetmap.org/" + zoom + "/" + tileX + "/" + tileY + ".png";
+				String urlString = "https://tile.openstreetmap.org/" + ZOOM + "/" + tileX + "/" + tileY + ".png";
 
                 try {
                     URL url = new URL(urlString);
@@ -237,6 +245,20 @@ public class Map {
         mapGroup.setTranslateY(y);
     }
 
-    public Group getMapGroup() { return mapGroup; }
-    public Pane getDrawingLayer() { return drawingLayer; }
+	public Group getMapGroup() { return mapGroup; }
+	public Pane getDrawingLayer() { return drawingLayer; }
+
+	public void addPoint(double lat, double lon) {
+		double n = Math.pow(2, ZOOM);
+		double leftLon = (tileX - 2) / n * 360.0 - 180.0;
+		double rightLon = (tileX + 3) / n * 360.0 - 180.0;
+		double topLat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY - 2) / n)))) * 180.0 / Math.PI;
+		double bottomLat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY + 3) / n)))) * 180.0 / Math.PI;
+
+		Circle point = new Circle();
+		point.setCenterX(((lon - leftLon) / (rightLon - leftLon)) * 5 * 256);
+		point.setCenterY((1 - (lat - bottomLat) / (topLat - bottomLat)) * 5 * 256);
+		point.setRadius(5);
+		drawingLayer.getChildren().add(point);
+	}
 }

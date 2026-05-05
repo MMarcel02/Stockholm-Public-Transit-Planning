@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public class ParsingUtil {
 
-    public static int parseStopTime(String timeString) throws IOException{
+        public static int parseStopTime(String timeString) throws IOException{
         if (timeString == null || timeString.isEmpty()) {
             return -1;
         }
@@ -23,5 +23,5 @@ public class ParsingUtil {
             throw new IOException("Time string failed parsing into number");
         }
     }
-
+    
 }

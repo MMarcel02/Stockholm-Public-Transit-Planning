@@ -47,7 +47,7 @@ public class RaptorBuilder {
         // Stage 1: Build RaptorNetwork
         //          Calculate size needed for all primitve arrays
         int totalRaptorRoutes = raptorMap.size();
-
+        
         int totalRouteStops = 0;
         for (List<Stop> stopsInRoute : raptorMap.keySet()) {
             totalRouteStops += stopsInRoute.size();
@@ -60,7 +60,7 @@ public class RaptorBuilder {
                 totalStopTimes += trip.stopTimes.size();
             }
         }
-
+        
         // Need an int ID for raptor, but have String ID in GTFS, so we make new int ids and a lookup table
         Stop[] stopLookup = new Stop[stops.size()];
         Map<String, Integer> stringToIntMap = new HashMap<>();
@@ -83,7 +83,7 @@ public class RaptorBuilder {
         for (int i = 0; i < stops.size(); i++) {
             tempTransfers.add(new ArrayList<>());
         }
-
+        
         int totalTransferCount = 0;
         for (int i = 0; i < stops.size(); i++) {
             Stop initialStop = stopLookup[i];
@@ -107,17 +107,17 @@ public class RaptorBuilder {
         //          routeStopsArr[] all stops for every route
         //          stopTimesArr[] all stopTimes for every trip for every route, each stop time has 2 values [arrivalTime, departureTime]
         //          stopsArr[] all stops, each stop has 2 values [routeOffset, transferOffset]
-        //          stopRoutes[] all routes for each stop
+        //          stopRoutes[] all routes for each stop 
         //          transfersArr[] all transfers within walking distance of each stop, each transfer has 2 values [targetStopId, walkTimeSeconds]
 
         RaptorRoute[] raptorRouteLookup = new RaptorRoute[totalRaptorRoutes];
-        int[] routesArr = new int[totalRaptorRoutes * 4];
-        int[] routeStopsArr = new int[totalRouteStops];
-        int[] stopTimesArr = new int[totalStopTimes * 2];
+        int[] routesArr = new int[totalRaptorRoutes * 4];   
+        int[] routeStopsArr = new int[totalRouteStops];     
+        int[] stopTimesArr = new int[totalStopTimes * 2];   
         int[] stopsArr = new int[(stops.size() * 2 ) + 2];
-        int[] stopRoutes = new int[totalRouteStops];
-        int[] transfersArr = new int[totalTransferCount * 2];
-
+        int[] stopRoutes = new int[totalRouteStops];        
+        int[] transfersArr = new int[totalTransferCount * 2]; 
+        
         int currRouteIndex = 0;
         int currStopsOffset = 0;
         int currStopTimesOffset = 0;
@@ -128,7 +128,7 @@ public class RaptorBuilder {
             Route parentRoute = tripsInRoute.get(0).route;
 
             raptorRouteLookup[currRouteIndex] = new RaptorRoute(currRouteIndex, parentRoute, stopsInRoute, tripsInRoute);
-
+            
             routesArr[currRouteIndex*4] = tripsInRoute.size();
             routesArr[currRouteIndex*4 + 1] = stopsInRoute.size();
             routesArr[currRouteIndex*4 + 2] = currStopsOffset;
@@ -153,25 +153,25 @@ public class RaptorBuilder {
 
         // Stage 3: Flatten dynamic arrays to primitive arrays
 
-        // Flattening our tempStopRoutes
+        // Flattening our tempStopRoutes 
         int currStopRoutesOffset = 0;
 
         for (int stopId = 0; stopId < tempStopRoutes.size(); stopId++) {
             List<Integer> routesThroughStop = tempStopRoutes.get(stopId);
             stopsArr[stopId * 2] = currStopRoutesOffset;
-
+            
             for (int routeId : routesThroughStop) {
                 stopRoutes[currStopRoutesOffset] = routeId;
                 currStopRoutesOffset++;
             }
         }
-
-        // Flattening our tempTransfer
+        
+        // Flattening our tempTransfer 
         int currTransferOffset = 0;
-
+        
         for (int stopId = 0; stopId < tempTransfers.size(); stopId++) {
             stopsArr[stopId * 2 + 1] = currTransferOffset;
-
+            
             List<int[]> transfersForStop = tempTransfers.get(stopId);
 
             for (int[] transfer : transfersForStop) {
@@ -185,16 +185,17 @@ public class RaptorBuilder {
         stopsArr[stops.size() * 2 + 1] = currTransferOffset;
 
         return new RaptorNetwork(
-                stopLookup,
-                raptorRouteLookup,
-                routesArr,
-                routeStopsArr,
-                stopTimesArr,
-                stopsArr,
-                stopRoutes,
-                transfersArr
+            stopLookup, 
+            raptorRouteLookup, 
+            routesArr, 
+            routeStopsArr, 
+            stopTimesArr, 
+            stopsArr, 
+            stopRoutes, 
+            transfersArr
         );
     }
 
 }
 
+    

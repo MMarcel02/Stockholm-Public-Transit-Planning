@@ -15,15 +15,15 @@ public class RaptorNetwork {
     public final int[] transfersArr;
 
     public RaptorNetwork(
-            Stop[] stopLookup,
+            Stop[] stopLookup, 
             RaptorRoute[] raptorRouteLookup,
-            int[] routesArr,
-            int[] routeStopsArr,
-            int[] stopTimesArr,
-            int[] stopsArr,
-            int[] stopRoutes,
+            int[] routesArr, 
+            int[] routeStopsArr, 
+            int[] stopTimesArr, 
+            int[] stopsArr, 
+            int[] stopRoutes, 
             int[] transfersArr) {
-
+        
         this.stopLookup = stopLookup;
         this.raptorRouteLookup = raptorRouteLookup;
         this.routesArr = routesArr;

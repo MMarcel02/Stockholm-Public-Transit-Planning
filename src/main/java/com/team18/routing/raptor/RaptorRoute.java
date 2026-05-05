@@ -9,7 +9,7 @@ import java.util.List;
 // also we're passing over everything needed for our routeInfo so that we can garbage collect the old route, stops, trips objects
 
 public class RaptorRoute {
-
+    
     public final int id;
     public final List<Stop> stops;
     public final List<Trip> trips;
@@ -21,19 +21,19 @@ public class RaptorRoute {
 
     public RaptorRoute(int id, Route parentRoute, List<Stop> patternStops, List<Trip> patternTrips) {
         this.id = id;
-
-        this.stops = patternStops;
+        
+        this.stops = patternStops; 
         this.trips = patternTrips;
-
+        
         this.operator = parentRoute.operator;
         this.shortName = parentRoute.shortName;
         this.longName = parentRoute.longName;
-
+        
         // We try to get the headSign from one of the trip objects (blank for most in Stockholm GTFS)
         if (!patternTrips.isEmpty() && patternTrips.get(0).headSign != null) {
             this.headSign = patternTrips.get(0).headSign;
         } else {
             this.headSign = "";
         }
-    }
+    }   
 }
