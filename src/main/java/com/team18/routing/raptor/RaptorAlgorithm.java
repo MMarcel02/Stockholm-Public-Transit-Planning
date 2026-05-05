@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.team18.model.RouteStep;
-import com.team18.routing.Router;;
+import com.team18.routing.Router;
 import com.team18.model.Stop;
 import com.team18.util.GeoCalculator;
 
