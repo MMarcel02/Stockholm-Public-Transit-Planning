@@ -10,30 +10,33 @@ public class RouteStep {
     public int durationMinutes;
     public int startTimeSecondsAfterMidnight;
 
-    public String stopNameString;
+    public String fromStopName;
+    public String toStopName;
     public String operatorName;
     public String shortName;
     public String longName;
     public String headSign;
 
     // Walking constructor
-    public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight) {
+    public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight, String toStopName) {
         this.walking = true;
         this.latTo = latTo;
         this.lonTo = lonTo;
         this.durationMinutes = durationMinutes;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
+        this.toStopName = toStopName;
     }
 
     // Public transit constructor
     public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight,
-                     String stopNameString, String operatorName, String shortName, String longName, String headSign) {
+                     String fromStopName, String toStopName, String operatorName, String shortName, String longName, String headSign) {
         this.walking = false;
         this.latTo = latTo;
         this.lonTo = lonTo;
         this.durationMinutes = durationMinutes;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
-        this.stopNameString = stopNameString;
+        this.fromStopName = fromStopName;
+        this.toStopName = toStopName;
         this.operatorName = operatorName;
         this.shortName = shortName;
         this.longName = longName;
@@ -55,7 +58,7 @@ public class RouteStep {
         stepMap.put("startTime", formatTime(startTimeSecondsAfterMidnight));
 
         if (!walking) {
-            stepMap.put("stop", stopNameString);
+            stepMap.put("stop", fromStopName);
 
             Map<String, Object> routeInfo = new LinkedHashMap<>();
             routeInfo.put("operator", operatorName);

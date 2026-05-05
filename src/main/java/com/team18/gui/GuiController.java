@@ -123,11 +123,11 @@ public class GuiController {
             stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
 
             // Check the public boolean 'walking' that the backend team created
-            String modeText = step.walking ? "WALK" : (step.operatorName + " " + step.shortName).trim().toUpperCase();
+            String modeText = step.walking ? "WALK" : (step.longName + " " + step.shortName + " " + step.headSign).trim().toUpperCase();
             Label modeLabel = new Label(modeText);
             modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
 
-            String destText = step.walking ? "To destination" : "To " + step.stopNameString;
+            String destText = "To " + step.toStopName;
             Label detailsLabel = new Label(destText + " (" + step.durationMinutes + " mins)");
             detailsLabel.setWrapText(true);
 
