@@ -68,7 +68,7 @@ public class RoutingEngine {
                     } catch (IOException e) {
                         sendError("Fatal: Loading error: " + e.getMessage());
                         System.exit(1);
-                    } 
+                    }
                 }
 
                 if (request.containsKey("routeFrom") && request.containsKey("to") && request.containsKey("startingAt")) {
@@ -102,8 +102,8 @@ public class RoutingEngine {
                         e.printStackTrace();
                         sendError("Invalid route request format: " + e.getMessage());
                     }
-                continue;
-                }    
+                    continue;
+                }
             }
 
             sendError("Bad request");

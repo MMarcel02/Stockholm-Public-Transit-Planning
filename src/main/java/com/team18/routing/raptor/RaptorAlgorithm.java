@@ -14,7 +14,7 @@ import com.team18.model.Stop;
 import com.team18.util.GeoCalculator;
 
 
-public class RaptorAlgorithm implements Router{
+public class RaptorAlgorithm implements Router {
 
     private final int MAX_WALK_TIME_SECONDS = 1800; // 30 minutes (can play around with this)
     private final double WALK_SPEED_MPS = 50.0 / 36.0; // 5km/h in metres/second
