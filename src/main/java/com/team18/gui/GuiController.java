@@ -43,11 +43,13 @@ public class GuiController {
 
         if (map.getMapGroup() != null) {
             mapContainer.getChildren().add(map.getMapGroup());
-            map.enableInteraction(mapContainer);
+            // map.enableInteraction(mapContainer);
         }
         final boolean[] settingStart = {true}; // Toggle to switch between start and end inputs
 
 // Inside initialize(), after map.enableInteraction(mapContainer);
+
+	   /*
         mapContainer.setOnMouseClicked(ev -> {
             // Ignore drags by checking if the mouse shifted significantly, or just rely on simple clicks
             if (ev.isStillSincePress()) {
@@ -70,6 +72,7 @@ public class GuiController {
                 }
             }
         });
+	   */
 
         new Thread(() -> {
             try {
@@ -83,9 +86,11 @@ public class GuiController {
 
                 System.out.println("Network Ready! Drawing stops on map...");
 
+			 /*
                 Platform.runLater(() -> {
                     displayAllStops(parser.stops.values());
                 });
+			 */
 
             } catch (Exception e) {
                 System.err.println("Failed to load GTFS/Raptor data: " + e.getMessage());
@@ -94,6 +99,7 @@ public class GuiController {
         }).start();
     }
 
+    /*
     public void displayAllStops(Collection<Stop> stops) {
         map.getDrawingLayer().getChildren().clear();
 
@@ -110,6 +116,7 @@ public class GuiController {
             map.getDrawingLayer().getChildren().add(dot);
         }
     }
+    */
 
     public void displayRouteInstructions(List<RouteStep> steps) {
         routeStepsContainer.getChildren().clear(); // Clear old results

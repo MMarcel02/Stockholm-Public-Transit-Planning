@@ -1,265 +1,165 @@
 package com.team18.gui;
 
-import javafx.application.Platform;
-import javafx.geometry.Bounds;
-import javafx.scene.Group;
+import com.team18.gui.Tile;
+import com.team18.gui.Landmark;
+import com.team18.parser.GTFSParser;
+
+import java.util.HashMap;
+import java.util.ArrayList;
+
+import java.lang.Math;
+
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.Group;
 import javafx.scene.shape.Circle;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.io.InputStream;
+import java.io.FileNotFoundException;
+import java.nio.file.NoSuchFileException;
+import java.util.zip.ZipException;
+import java.io.IOException;
 
 public class Map {
-	// Coordinates of Stockholm
-	private double LATITUDE = 59.3293;
-	private double LONGITUDE = 18.0686;
-	private int ZOOM = 14;
+	private static final String GTFS_PATH = "data/stockholm/sl.zip";
 
-	private int tileX;
-	private int tileY;
-	
+	// This group contains the tiles that are currently visible.
 	private Group mapGroup;
-	private Pane drawingLayer;
 
-    private double dragStartX = 0;
-    private double dragStartY = 0;
-    private double groupTranslateX = 0;
-    private double groupTranslateY = 0;
+	private double dragStartX = 0;
+	private double dragStartY = 0;
+	private double groupTranslateX = 0;
+	private double groupTranslateY = 0;
 
-    // Zoom settings
-    private double scale = 1.0;
-    private static final double ZOOM_FACTOR = 1.1;
-    private static final double MIN_SCALE = 0.5;
-    private static final double MAX_SCALE = 5.0;
+	private int zoomLevel = 14;
 
-    // Tile settings (each tile is 256px, we load a 5x5 grid)
-    private static final int TILE_SIZE = 256;
-    private static final int TILE_RADIUS = 2;
+	private HashMap<Tile.Coord, Tile> tiles = new HashMap<>();
+	private ArrayList<Tile> activeTiles = new ArrayList<>();
 
-    // Exact pixel position of Stockholm inside our tile grid
-    private double centerLocalX;
-    private double centerLocalY;
-
-    // Map Center Tile Reference (Class fields, NOT local variables!)
-    private int zoom = 14;
-    private int centerTileX;
-    private int centerTileY;
-
-
-    // Convert local JavaFX group pixel coordinates back into Lat/Lon
-    public double[] getLatLonFromLocal(double localX, double localY) {
-        // 1. Reverse the offset calculation used in getLocalCoords
-        double worldX = localX + (centerTileX - TILE_RADIUS) * TILE_SIZE;
-        double worldY = localY + (centerTileY - TILE_RADIUS) * TILE_SIZE;
-
-        // 2. Reverse the Mercator projection calculations
-        double lon = (worldX / TILE_SIZE / (1 << zoom) * 360.0) - 180.0;
-
-        double merchantY = (1.0 - 2.0 * (worldY / TILE_SIZE / (1 << zoom))) * Math.PI;
-        double lat = Math.toDegrees(Math.atan(Math.sinh(merchantY)));
-
-        return new double[]{lat, lon};
-    }
+	private GTFSParser parser;
 
 	public Map() {
+		try {
+			parser = new GTFSParser();
+			parser.loadFromZip(GTFS_PATH);
+		} catch (FileNotFoundException | NoSuchFileException e) {
+			System.err.println("Fatal: File doesn't exist at the path provided: " + GTFS_PATH);
+			System.exit(1);
+		} catch (ZipException e) {
+			System.err.println("Fatal: File exists but isn't a valid zip: " + GTFS_PATH);
+			System.exit(1);
+		} catch (IOException e) {
+			System.err.println("Fatal: Loading error: " + e.getMessage());
+			System.exit(1);
+		} 
+
 		mapGroup = new Group();
-		drawingLayer = new Pane();
 
-        // Set map center to Stockholm
-        double lat = 59.3293;
-        double lon = 18.0686;
+		refreshTiles();
 
-        // NO 'int' here - saving to class field
-        zoom = 14;
+		mapGroup.setOnMousePressed(ev -> {
+			// Save initial coordinates for panning
 
-        // Convert lat/lon into pixel coordinates
-        double worldX = (lon + 180) / 360 * (1 << zoom) * TILE_SIZE;
-        double worldY = (1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom) * TILE_SIZE;
+			dragStartX = ev.getSceneX();
+			dragStartY = ev.getSceneY();
+			groupTranslateX = mapGroup.getTranslateX();
+			groupTranslateY = mapGroup.getTranslateY();
+		});
 
-        // NO 'int' here - saving to class fields so getLocalCoords can use them later!
-        centerTileX = (int) Math.floor(worldX / TILE_SIZE);
-        centerTileY = (int) Math.floor(worldY / TILE_SIZE);
+		mapGroup.setOnMouseDragged(ev -> {
+			// Continuously update map position while panning
 
-        // How far inside the tile the exact point is
-        double pixelOffsetX = worldX - centerTileX * TILE_SIZE;
-        double pixelOffsetY = worldY - centerTileY * TILE_SIZE;
+			mapGroup.setTranslateX(groupTranslateX + (ev.getSceneX() - dragStartX));
+			mapGroup.setTranslateY(groupTranslateY + (ev.getSceneY() - dragStartY));
 
-        // Download map tiles around Stockholm
-        for (int dx = -TILE_RADIUS; dx <= TILE_RADIUS; dx++) {
-            for (int dy = -TILE_RADIUS; dy <= TILE_RADIUS; dy++) {
-                int tileX = centerTileX + dx;
-                int tileY = centerTileY + dy;
+			refreshTiles();
+		});
 
-				String urlString = "https://tile.openstreetmap.org/" + ZOOM + "/" + tileX + "/" + tileY + ".png";
+		mapGroup.setOnScroll(ev -> {
+			int delta = (int) Math.floor(ev.getDeltaY() / ev.getMultiplierY());
+			if (delta == 0) return;
 
-                try {
-                    URL url = new URL(urlString);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			double factor = Math.pow(2, delta);
+			if (factor < 0) factor = 1 / (-factor);
 
-                    // Required so OpenStreetMap doesn't block us
-                    conn.setRequestProperty("User-Agent", "Team18RoutingApp/1.0");
+			// TODO: We need to figure out the size of the visible map and offset by that,
+			// so that zoom is centered in the middle.
+			mapGroup.setTranslateX(mapGroup.getTranslateX() * factor);
+			mapGroup.setTranslateY(mapGroup.getTranslateY() * factor);
 
-                    InputStream in = conn.getInputStream();
-                    Image img = new Image(in);
-                    ImageView view = new ImageView(img);
+			this.zoomLevel += delta;
 
-                    // Place each tile in a grid
-                    view.setX((dx + TILE_RADIUS) * TILE_SIZE);
-                    view.setY((dy + TILE_RADIUS) * TILE_SIZE);
+			refreshTiles();
+		});
+	}
 
-                    mapGroup.getChildren().add(view);
-                    in.close();
+	private void refreshTiles() {
+		int xoffset = (int) Math.floor(mapGroup.getTranslateX() / Tile.RESOLUTION);
+		int yoffset = (int) Math.floor(mapGroup.getTranslateY() / Tile.RESOLUTION);
 
-                } catch (Exception e) {
-                    System.out.println("Could not load tile: " + urlString);
-                }
-            }
-        }
+		// TODO: We need the actual size of the visible window so that these
+		// are more precise/less wasteful/don't break down on windows bigger than this :)
+		double width = 1920;
+		double height = 1080;
 
-        // Save exact center position (not just tile center)
-        centerLocalX = TILE_RADIUS * TILE_SIZE + pixelOffsetX;
-        centerLocalY = TILE_RADIUS * TILE_SIZE + pixelOffsetY;
+		// A list that _exclusively_ contains the new active tiles.
+		ArrayList<Tile> newActives = new ArrayList<>();
+		for (int relX = -1; relX * Tile.RESOLUTION <= width; relX++) {
+			for (int relY = -1; relY * Tile.RESOLUTION <= height; relY++) {
+				int absX = -xoffset + relX;
+				int absY = -yoffset + relY;
 
-        mapGroup.getChildren().add(drawingLayer);
-    }
+				Tile tile = fetchTile(absX, absY);
+				newActives.add(tile);
 
-    // Convert any Lat/Lon into local X/Y coordinates on our drawing layer
-    public double[] getLocalCoords(double lat, double lon) {
-        // 1. Calculate the absolute world pixel position at this zoom level
-        double worldX = (lon + 180) / 360 * (1 << zoom) * TILE_SIZE;
-        double worldY = (1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom) * TILE_SIZE;
+				if (!this.activeTiles.contains(tile)) {
+					this.activeTiles.add(tile);
 
-        // 2. Adjust using the class fields (which hold Stockholm's anchor point)
-        double localX = worldX - (centerTileX - TILE_RADIUS) * TILE_SIZE;
-        double localY = worldY - (centerTileY - TILE_RADIUS) * TILE_SIZE;
+					Group rendered = tile.render();
+					rendered.setTranslateX(absX * Tile.RESOLUTION);
+					rendered.setTranslateY(absY * Tile.RESOLUTION);
+					mapGroup.getChildren().add(rendered);
+				}
+			}
+		}
 
-        return new double[]{localX, localY};
-    }
+		// Cull tiles that are off-screen.
+		ArrayList<Tile> toRemove = new ArrayList<>();
+		for (Tile tile: this.activeTiles) {
+			if (!newActives.contains(tile)) {
+				// This tile is off-screen now.
+				mapGroup.getChildren().removeAll(tile.rendered);
+				toRemove.add(tile);
+			}
+		}
 
-    // Connect map to UI container and enable interaction
-    public void enableInteraction(Pane mapContainer) {
+		for (Tile tile: toRemove) {
+			this.activeTiles.remove(tile);
+		}
+	}
 
-        // Prevent drawing outside the visible map box
-        Rectangle clip = new Rectangle();
-        clip.widthProperty().bind(mapContainer.widthProperty());
-        clip.heightProperty().bind(mapContainer.heightProperty());
-        mapContainer.setClip(clip);
+	private Tile fetchTile(int x, int y) {
+		Tile.Coord origin = Tile.Coord.fromLatLon(59.3293, 18.0686, zoomLevel);
 
-        // Center the map once the UI is ready
-        Platform.runLater(() -> centerMap(mapContainer));
+		int tileX = origin.x + x;
+		int tileY = origin.y + y;
 
-        // Keep map inside bounds when window resizes
-        mapContainer.widthProperty().addListener((obs, oldVal, newVal) -> clampToBounds(mapContainer));
-        mapContainer.heightProperty().addListener((obs, oldVal, newVal) -> clampToBounds(mapContainer));
+		Tile.Coord coord = new Tile.Coord(origin.x + x, origin.y + y, zoomLevel);
 
-        // Dragging (panning)
-        mapContainer.setOnMousePressed(ev -> {
-            dragStartX = ev.getX();
-            dragStartY = ev.getY();
-            groupTranslateX = mapGroup.getTranslateX();
-            groupTranslateY = mapGroup.getTranslateY();
-        });
+		System.out.printf("fetching %d/%d/%d…\n", zoomLevel, tileX, tileY);
+		Tile tile = this.tiles.get(coord);
+		if (tile == null) {
+			tile = new Tile(coord);
+			this.tiles.put(coord, tile);
 
-        mapContainer.setOnMouseDragged(ev -> {
-            mapGroup.setTranslateX(groupTranslateX + (ev.getX() - dragStartX));
-            mapGroup.setTranslateY(groupTranslateY + (ev.getY() - dragStartY));
-            clampToBounds(mapContainer);
-        });
+			for (var stop: parser.stops.values()) {
+				tile.addLandmark(new Landmark(stop.lat, stop.lon));
+			}
 
-        // Zoom using mouse wheel (should zoom towards cursor)
-        mapContainer.setOnScroll(ev -> {
-            double zoomMultiplier = ev.getDeltaY() > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
-            double newScale = scale * zoomMultiplier;
+		}
 
-            if (newScale < MIN_SCALE || newScale > MAX_SCALE) {
-                return;
-            }
-
-            double mouseX = ev.getX();
-            double mouseY = ev.getY();
-
-            // Find map point under cursor BEFORE zoom
-            double localX = (mouseX - mapGroup.getTranslateX()) / scale;
-            double localY = (mouseY - mapGroup.getTranslateY()) / scale;
-
-            // Apply zoom
-            scale = newScale;
-            mapGroup.setScaleX(scale);
-            mapGroup.setScaleY(scale);
-
-            // Keep that point under the cursor
-            mapGroup.setTranslateX(mouseX - localX * scale);
-            mapGroup.setTranslateY(mouseY - localY * scale);
-
-            clampToBounds(mapContainer);
-            ev.consume();
-        });
-    }
-
-    // Center map on Stockholm
-    private void centerMap(Pane mapContainer) {
-        double w = mapContainer.getWidth();
-        double h = mapContainer.getHeight();
-
-        mapGroup.setTranslateX(w / 2 - centerLocalX * scale);
-        mapGroup.setTranslateY(h / 2 - centerLocalY * scale);
-
-        clampToBounds(mapContainer);
-    }
-
-    // Keep map inside visible area
-    private void clampToBounds(Pane mapContainer) {
-        Bounds bounds = mapGroup.getBoundsInLocal();
-
-        double w = mapContainer.getWidth();
-        double h = mapContainer.getHeight();
-
-        double scaledMinX = bounds.getMinX() * scale;
-        double scaledMinY = bounds.getMinY() * scale;
-        double scaledWidth = bounds.getWidth() * scale;
-        double scaledHeight = bounds.getHeight() * scale;
-
-        double minX, maxX, minY, maxY;
-
-        if (scaledWidth <= w) {
-            minX = maxX = (w - scaledWidth) / 2 - scaledMinX;
-        } else {
-            minX = w - scaledMinX - scaledWidth;
-            maxX = -scaledMinX;
-        }
-
-        if (scaledHeight <= h) {
-            minY = maxY = (h - scaledHeight) / 2 - scaledMinY;
-        } else {
-            minY = h - scaledMinY - scaledHeight;
-            maxY = -scaledMinY;
-        }
-
-        double x = Math.max(minX, Math.min(maxX, mapGroup.getTranslateX()));
-        double y = Math.max(minY, Math.min(maxY, mapGroup.getTranslateY()));
-
-        mapGroup.setTranslateX(x);
-        mapGroup.setTranslateY(y);
-    }
+		return tile;
+	}
 
 	public Group getMapGroup() { return mapGroup; }
-	public Pane getDrawingLayer() { return drawingLayer; }
-
-	public void addPoint(double lat, double lon) {
-		double n = Math.pow(2, ZOOM);
-		double leftLon = (tileX - 2) / n * 360.0 - 180.0;
-		double rightLon = (tileX + 3) / n * 360.0 - 180.0;
-		double topLat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY - 2) / n)))) * 180.0 / Math.PI;
-		double bottomLat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * (tileY + 3) / n)))) * 180.0 / Math.PI;
-
-		Circle point = new Circle();
-		point.setCenterX(((lon - leftLon) / (rightLon - leftLon)) * 5 * 256);
-		point.setCenterY((1 - (lat - bottomLat) / (topLat - bottomLat)) * 5 * 256);
-		point.setRadius(5);
-		drawingLayer.getChildren().add(point);
-	}
 }
