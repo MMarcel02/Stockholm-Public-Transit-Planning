@@ -1,9 +1,11 @@
 package com.team18.gui;
+
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.Router;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.util.ParsingUtil;
+import com.team18.gui.FullRoute;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -153,6 +155,7 @@ public class GuiController {
 
 			// Save it to the class variable so your teammate can draw it later
 			currentRoute = raptorAlgorithm.getFastestTrip(startLat, startLon, endLat, endLon, startTimeSeconds);
+			map.setRoute(new FullRoute(startLat, startLon, currentRoute));
 
 			// Display it in your sidebar!
 			displayRouteInstructions(currentRoute);

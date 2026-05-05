@@ -89,6 +89,24 @@ public class Tile {
 			this.topLat = topLat;
 			this.bottomLat = bottomLat;
 		}
+
+		public static class RelPos {
+			public double percentX;
+			public double percentY;
+
+			public RelPos(double percentX, double percentY) {
+				this.percentX = percentX;
+				this.percentY = percentY;
+			}
+		}
+
+		// Calculates 0-1 coordinates on both axes, top-left being the origin.
+		public RelPos interpolate(double lat, double lon) {
+			double percentX = (lon - leftLon) / (rightLon - leftLon);
+			double percentY = 1 - ((lat - bottomLat) / (topLat - bottomLat));
+
+			return new RelPos(percentX, percentY);
+		}
 	}
 
 	Coord coord;
@@ -143,17 +161,17 @@ public class Tile {
 		ImageView view = new ImageView(this.image);
 		group.getChildren().add(view);
 
-		Bounds b = this.coord.calculateBounds();
+		Bounds bounds = this.coord.calculateBounds();
 		Canvas canvas = new Canvas(RESOLUTION, RESOLUTION);
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 
 		for (Landmark mark: this.landmarks) {
-			// Calculates 0-1 coordinates on both axes, top-left being the origin.
-			double percentX = (mark.lon - b.leftLon) / (b.rightLon - b.leftLon);
-			double percentY = 1 - ((mark.lat - b.bottomLat) / (b.topLat - b.bottomLat));
+			int size = (int) Math.pow((double)coord.zoom / 10, 4);
+
+			Bounds.RelPos relPos = bounds.interpolate(mark.lat, mark.lon);
 
 			gc.setFill(Color.BLUE);
-			gc.fillRect(percentX * RESOLUTION, percentY * RESOLUTION, 4, 4);
+			gc.fillRect(relPos.percentX * RESOLUTION, relPos.percentY * RESOLUTION, size, size);
 		}
 
 		group.getChildren().add(canvas);

@@ -2,7 +2,9 @@ package com.team18.gui;
 
 import com.team18.gui.Tile;
 import com.team18.gui.Landmark;
+import com.team18.gui.FullRoute;
 import com.team18.parser.GTFSParser;
+import com.team18.model.RouteStep;
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -14,6 +16,8 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.Group;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.scene.paint.Color;
 
 import java.io.FileNotFoundException;
 import java.nio.file.NoSuchFileException;
@@ -23,6 +27,8 @@ import java.io.IOException;
 public class Map {
 	// This group contains the tiles that are currently visible.
 	private Group mapGroup;
+	private Group tileGroup;
+	private Group routeGroup;
 
 	private double dragStartX = 0;
 	private double dragStartY = 0;
@@ -36,12 +42,20 @@ public class Map {
 
 	private GTFSParser parser;
 
+	private FullRoute route = null;
+
 	public Map(GTFSParser parser) {
 		this.parser = parser;
 
 		mapGroup = new Group();
 
-		refreshTiles();
+		tileGroup = new Group();
+		mapGroup.getChildren().add(tileGroup);
+
+		routeGroup = new Group();
+		mapGroup.getChildren().add(routeGroup);
+
+		refresh();
 
 		mapGroup.setOnMousePressed(ev -> {
 			// Save initial coordinates for panning
@@ -75,8 +89,13 @@ public class Map {
 
 			this.zoomLevel += delta;
 
-			refreshTiles();
+			refresh();
 		});
+	}
+
+	public void setRoute(FullRoute route) {
+		this.route = route;
+		refresh();
 	}
 
 	private void refreshTiles() {
@@ -104,7 +123,7 @@ public class Map {
 					Group rendered = tile.render();
 					rendered.setTranslateX(absX * Tile.RESOLUTION);
 					rendered.setTranslateY(absY * Tile.RESOLUTION);
-					mapGroup.getChildren().add(rendered);
+					tileGroup.getChildren().add(rendered);
 				}
 			}
 		}
@@ -114,7 +133,7 @@ public class Map {
 		for (Tile tile: this.activeTiles) {
 			if (!newActives.contains(tile)) {
 				// This tile is off-screen now.
-				mapGroup.getChildren().removeAll(tile.rendered);
+				tileGroup.getChildren().removeAll(tile.rendered);
 				toRemove.add(tile);
 			}
 		}
@@ -124,8 +143,51 @@ public class Map {
 		}
 	}
 
+	private void refreshRoute() {
+		routeGroup.getChildren().clear();
+		if (route == null) return;
+
+		Tile.Coord origin = getOrigin();
+
+		double lat = route.startLat;
+		double lon = route.startLon;
+		for (RouteStep step: route.steps) {
+			Line line = new Line();
+			line.setFill(Color.ORANGE);
+
+			int size = (int) Math.pow((double)zoomLevel / 10, 4);
+			line.setStrokeWidth(size);
+
+			Tile.Coord startCoord = Tile.Coord.fromLatLon(lat, lon, zoomLevel);
+			Tile.Bounds startBounds = startCoord.calculateBounds();
+			Tile.Bounds.RelPos startPos = startBounds.interpolate(lat, lon);
+			line.setStartX((startCoord.x - origin.x + startPos.percentX) * Tile.RESOLUTION);
+			line.setStartY((startCoord.y - origin.y + startPos.percentY) * Tile.RESOLUTION);
+
+			Tile.Coord endCoord = Tile.Coord.fromLatLon(step.latTo, step.lonTo, zoomLevel);
+			Tile.Bounds endBounds = endCoord.calculateBounds();
+			Tile.Bounds.RelPos endPos = endBounds.interpolate(step.latTo, step.lonTo);
+			line.setEndX((endCoord.x - origin.x + endPos.percentX) * Tile.RESOLUTION);
+			line.setEndY((endCoord.y - origin.y + endPos.percentY) * Tile.RESOLUTION);
+
+			routeGroup.getChildren().add(line);
+
+			lat = step.latTo;
+			lon = step.lonTo;
+		}
+	}
+
+	public void refresh() {
+		refreshTiles();
+		refreshRoute();
+	}
+
+	private Tile.Coord getOrigin() {
+		return Tile.Coord.fromLatLon(59.3293, 18.0686, zoomLevel);
+	}
+
 	private Tile fetchTile(int x, int y) {
-		Tile.Coord origin = Tile.Coord.fromLatLon(59.3293, 18.0686, zoomLevel);
+		Tile.Coord origin = getOrigin();
 
 		int tileX = origin.x + x;
 		int tileY = origin.y + y;
