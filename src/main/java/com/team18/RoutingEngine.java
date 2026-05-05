@@ -5,6 +5,7 @@ import com.team18.parser.GTFSParser;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.routing.Router;
 
 // Needs to stay in this folder and with this title as defined in the project manual
 
@@ -30,7 +31,6 @@ import com.leastfixedpoint.json.JSONSyntaxError;
 import com.leastfixedpoint.json.JSONWriter;
 
 public class RoutingEngine {
-    private final double WALKING_SPEED = 83.33; // For walking speed of 5km/h but in metres/minute, since duration is in minutes
     private RaptorNetwork raptorNetwork;
 
     private JSONReader requestReader = new JSONReader(new InputStreamReader(System.in));
@@ -105,8 +105,8 @@ public class RoutingEngine {
                         double latTo = ((Number) toNode.get("lat")).doubleValue();
                         double lonTo = ((Number) toNode.get("lon")).doubleValue();
                         
-                        RaptorAlgorithm raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
-                        List<RouteStep> journey = raptorAlgorithm.compute(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
+                        Router raptor = new RaptorAlgorithm(raptorNetwork);
+                        List<RouteStep> journey = raptor.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
                         Object[] routeSteps = new Object[journey.size()];
                         for (int i = 0; i < routeSteps.length; i++) {
                             routeSteps[i] = journey.get(i).toMap();
