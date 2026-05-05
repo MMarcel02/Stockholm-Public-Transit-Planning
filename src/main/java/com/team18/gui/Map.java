@@ -40,6 +40,22 @@ public class Map {
     private int centerTileX;
     private int centerTileY;
 
+
+    // Convert local JavaFX group pixel coordinates back into Lat/Lon
+    public double[] getLatLonFromLocal(double localX, double localY) {
+        // 1. Reverse the offset calculation used in getLocalCoords
+        double worldX = localX + (centerTileX - TILE_RADIUS) * TILE_SIZE;
+        double worldY = localY + (centerTileY - TILE_RADIUS) * TILE_SIZE;
+
+        // 2. Reverse the Mercator projection calculations
+        double lon = (worldX / TILE_SIZE / (1 << zoom) * 360.0) - 180.0;
+
+        double merchantY = (1.0 - 2.0 * (worldY / TILE_SIZE / (1 << zoom))) * Math.PI;
+        double lat = Math.toDegrees(Math.atan(Math.sinh(merchantY)));
+
+        return new double[]{lat, lon};
+    }
+
     public Map() {
         mapGroup = new Group();
         drawingLayer = new Pane();

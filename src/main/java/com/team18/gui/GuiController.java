@@ -5,13 +5,20 @@ import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.scene.shape.Circle;
 import javafx.scene.control.Tooltip;
 
 import com.team18.parser.GTFSParser;
 import com.team18.model.Stop;
+import com.team18.model.RouteStep;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+
+import javafx.scene.shape.Polyline;
+import javafx.scene.paint.Color;
 
 public class GuiController {
 
@@ -19,7 +26,7 @@ public class GuiController {
     @FXML private TextField startField;
     @FXML private TextField endField;
     @FXML private TextField timeField;
-    @FXML private Label resultLabel;
+    @FXML private VBox routeStepsContainer;
 
     private Map map;
 
@@ -31,6 +38,31 @@ public class GuiController {
             mapContainer.getChildren().add(map.getMapGroup());
             map.enableInteraction(mapContainer);
         }
+        final boolean[] settingStart = {true}; // Toggle to switch between start and end inputs
+
+// Inside initialize(), after map.enableInteraction(mapContainer);
+        mapContainer.setOnMouseClicked(ev -> {
+            // Ignore drags by checking if the mouse shifted significantly, or just rely on simple clicks
+            if (ev.isStillSincePress()) {
+                double mouseX = ev.getX();
+                double mouseY = ev.getY();
+
+                // Account for the map's current pan (translation) and zoom (scale)
+                double localX = (mouseX - map.getMapGroup().getTranslateX()) / map.getMapGroup().getScaleX();
+                double localY = (mouseY - map.getMapGroup().getTranslateY()) / map.getMapGroup().getScaleY();
+
+                double[] latLon = map.getLatLonFromLocal(localX, localY);
+                String coordString = String.format("%.6f, %.6f", latLon[0], latLon[1]);
+
+                if (settingStart[0]) {
+                    startField.setText(coordString);
+                    settingStart[0] = false; // Next click sets destination
+                } else {
+                    endField.setText(coordString);
+                    settingStart[0] = true;  // Next click resets to start
+                }
+            }
+        });
 
         new Thread(() -> {
             try {
@@ -69,6 +101,24 @@ public class GuiController {
         }
     }
 
+    public void displayRouteInstructions(List<RouteStep> steps) {
+        routeStepsContainer.getChildren().clear(); // Clear old results
+
+        for (RouteStep step : steps) {
+            VBox stepCard = new VBox(5);
+            stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
+
+            Label modeLabel = new Label(step.getMode().toUpperCase()); // e.g., "WALK" or "BUS 4"
+            modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
+
+            Label detailsLabel = new Label("To " + step.getDestinationName() + " (" + step.getDuration() + " mins)");
+            detailsLabel.setWrapText(true);
+
+            stepCard.getChildren().addAll(modeLabel, detailsLabel);
+            routeStepsContainer.getChildren().add(stepCard);
+        }
+    }
+
     @FXML
     public void handlePlanJourney() {
         try {
@@ -85,16 +135,24 @@ public class GuiController {
             double endLat = Double.parseDouble(endParts[0].trim());
             double endLon = Double.parseDouble(endParts[1].trim());
 
-            String result =
-                    "Start: (" + startLat + ", " + startLon + ")\n" +
-                    "End: (" + endLat + ", " + endLon + ")\n" +
-                    "Time: " + time;
+            System.out.println("Routing from: (" + startLat + ", " + startLon + ") to (" + endLat + ", " + endLon + ")");
 
-            resultLabel.setText(result);
-            System.out.println(result);
+            // --- TEMPORARY TEST DATA ---
+            // Since the routing engine isn't hooked up yet, let's feed fake data
+            // into the new UI method we made in Step 3 to test the boxes!
+            List<RouteStep> dummySteps = new ArrayList<>();
+            dummySteps.add(new RouteStep("WALK", "T-Centralen", 4));
+            dummySteps.add(new RouteStep("SUBWAY 14", "Tekniska Högskolan", 8));
+            dummySteps.add(new RouteStep("WALK", "Destination", 2));
+
+            displayRouteInstructions(dummySteps);
 
         } catch (Exception e) {
-            resultLabel.setText("Invalid input. Use: lat,lon");
+            // Handle errors in the new UI container instead of the old label
+            routeStepsContainer.getChildren().clear();
+            Label errorLabel = new Label("Invalid input. Click the map to set coordinates.");
+            errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+            routeStepsContainer.getChildren().add(errorLabel);
         }
     }
 }

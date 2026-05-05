@@ -15,6 +15,7 @@ public class GuiApp extends Application {
 		scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
 		primaryStage.setScene(scene);
 		primaryStage.show();
+		primaryStage.setFullScreen(true);
 	}
 
 	public static void main(String[] args) {
