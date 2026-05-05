@@ -8,13 +8,21 @@ public class Edge {
     public int departureTime;
     public int travelTimeSeconds;
     public double travelWalkTimeSeconds;
+    public String operator;
+    public String headSign;
+    public String longName;
+    public String shortName;
 
-    public Edge(Stop dest, String mode, String tripId, int departureTime, int travelTimeSeconds, double travelWalkTimeSeconds) {
+    public Edge(Stop dest, String mode, String tripId, int departureTime, int travelTimeSeconds, double travelWalkTimeSeconds, String operator, String headSign, String shortName, String longName) {
         this.dest = dest;
         this.mode = mode;
         this.tripId = tripId;
         this.departureTime = departureTime;
         this.travelTimeSeconds = travelTimeSeconds;
         this.travelWalkTimeSeconds = travelWalkTimeSeconds;
+        this.operator = operator;
+        this.headSign = headSign;
+        this.shortName = shortName;
+        this.longName = longName;
     }
 }
