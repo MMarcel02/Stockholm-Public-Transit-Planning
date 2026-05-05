@@ -1,4 +1,8 @@
 package com.team18.gui;
+import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.routing.raptor.RaptorBuilder;
+import com.team18.routing.raptor.RaptorAlgorithm;
+import com.team18.util.ParsingUtil;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -29,6 +33,8 @@ public class GuiController {
     @FXML private VBox routeStepsContainer;
 
     private Map map;
+    private RaptorNetwork raptorNetwork;
+    public List<RouteStep> currentRoute;
 
     @FXML
     public void initialize() {
@@ -68,17 +74,20 @@ public class GuiController {
             try {
                 System.out.println("Loading GTFS data...");
                 GTFSParser parser = new GTFSParser();
-
                 parser.loadFromZip("data/stockholm/sl.zip");
 
-                System.out.println("Data loaded! Drawing stops on map...");
+                System.out.println("Building RAPTOR Network (This might take a second)...");
+                RaptorBuilder builder = new RaptorBuilder();
+                raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
+
+                System.out.println("Network Ready! Drawing stops on map...");
 
                 Platform.runLater(() -> {
                     displayAllStops(parser.stops.values());
                 });
 
             } catch (Exception e) {
-                System.err.println("Failed to load GTFS data: " + e.getMessage());
+                System.err.println("Failed to load GTFS/Raptor data: " + e.getMessage());
                 e.printStackTrace();
             }
         }).start();
@@ -104,14 +113,22 @@ public class GuiController {
     public void displayRouteInstructions(List<RouteStep> steps) {
         routeStepsContainer.getChildren().clear(); // Clear old results
 
+        if (steps == null || steps.isEmpty()) {
+            routeStepsContainer.getChildren().add(new Label("No route found."));
+            return;
+        }
+
         for (RouteStep step : steps) {
             VBox stepCard = new VBox(5);
             stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
 
-            Label modeLabel = new Label(step.getMode().toUpperCase()); // e.g., "WALK" or "BUS 4"
+            // Check the public boolean 'walking' that the backend team created
+            String modeText = step.walking ? "WALK" : (step.operatorName + " " + step.shortName).trim().toUpperCase();
+            Label modeLabel = new Label(modeText);
             modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
 
-            Label detailsLabel = new Label("To " + step.getDestinationName() + " (" + step.getDuration() + " mins)");
+            String destText = step.walking ? "To destination" : "To " + step.stopNameString;
+            Label detailsLabel = new Label(destText + " (" + step.durationMinutes + " mins)");
             detailsLabel.setWrapText(true);
 
             stepCard.getChildren().addAll(modeLabel, detailsLabel);
@@ -121,6 +138,13 @@ public class GuiController {
 
     @FXML
     public void handlePlanJourney() {
+        // Prevent crashing if they click the button before the background thread finishes
+        if (raptorNetwork == null) {
+            routeStepsContainer.getChildren().clear();
+            routeStepsContainer.getChildren().add(new Label("Network still loading... Please wait."));
+            return;
+        }
+
         try {
             String start = startField.getText();
             String end = endField.getText();
@@ -135,24 +159,26 @@ public class GuiController {
             double endLat = Double.parseDouble(endParts[0].trim());
             double endLon = Double.parseDouble(endParts[1].trim());
 
+            // Convert "08:30" into seconds after midnight
+            int startTimeSeconds = ParsingUtil.parseStopTime(time);
+
             System.out.println("Routing from: (" + startLat + ", " + startLon + ") to (" + endLat + ", " + endLon + ")");
 
-            // --- TEMPORARY TEST DATA ---
-            // Since the routing engine isn't hooked up yet, let's feed fake data
-            // into the new UI method we made in Step 3 to test the boxes!
-            List<RouteStep> dummySteps = new ArrayList<>();
-            dummySteps.add(new RouteStep("WALK", "T-Centralen", 4));
-            dummySteps.add(new RouteStep("SUBWAY 14", "Tekniska Högskolan", 8));
-            dummySteps.add(new RouteStep("WALK", "Destination", 2));
+            // --- RUN REAL RAPTOR ALGORITHM ---
+            RaptorAlgorithm raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
 
-            displayRouteInstructions(dummySteps);
+            // Save it to the class variable so your teammate can draw it later
+            currentRoute = raptorAlgorithm.compute(startLat, startLon, endLat, endLon, startTimeSeconds);
+
+            // Display it in your sidebar!
+            displayRouteInstructions(currentRoute);
 
         } catch (Exception e) {
-            // Handle errors in the new UI container instead of the old label
             routeStepsContainer.getChildren().clear();
             Label errorLabel = new Label("Invalid input. Click the map to set coordinates.");
             errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
             routeStepsContainer.getChildren().add(errorLabel);
+            e.printStackTrace();
         }
     }
 }

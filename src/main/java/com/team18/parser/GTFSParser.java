@@ -18,6 +18,7 @@ import com.team18.model.StopTime;
 import com.team18.model.Trip;
 import com.team18.model.Calendar;
 import com.team18.model.CalendarDates;
+import com.team18.util.ParsingUtil;
 
 // Can check what GTFS data is required and formatting guidelines at link below
 //https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
@@ -28,9 +29,9 @@ public class GTFSParser {
     public Map<String, Stop> stops = new HashMap<>();
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
-    public Map<String, List<StopTime>> stopDepartures = new HashMap<>();
     public Map<String, Calendar> calendar = new HashMap<>();
     public Map<String, CalendarDates> calendar_dates = new HashMap<>();
+
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -99,7 +100,7 @@ public class GTFSParser {
                 default:
                     throw new IOException("Unknown file type: " + type);
             }
-        } 
+        }
     }
 
     public void parseStops(BufferedReader reader) throws IOException {
@@ -115,14 +116,14 @@ public class GTFSParser {
             else if(col.equals("stop_lat")) latIndex = i;
             else if(col.equals("stop_lon")) lonIndex = i;
         }
-        
+
         if (idIndex == -1 || nameIndex == -1 || latIndex == -1 || lonIndex == -1) {
             throw new IOException("Missing required columns in stops.txt");
         }
 
         String line;
         while ((line = reader.readLine()) != null) {
-            // AI generated regex to make sure we dont split along , inside the name (if something like that exists)
+            // AI generated regex to make sure we dont split along commas inside the name (if something like that exists)
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
             try {
@@ -184,7 +185,7 @@ public class GTFSParser {
                 if (idIndex != -1) {
                     id = lineSplit[idIndex].replace("\"", "").trim();
                 } else {
-                    id = "default"; 
+                    id = "default";
                 }
                 String name = lineSplit[nameIndex].replace("\"", "").trim();
 
@@ -228,7 +229,7 @@ public class GTFSParser {
 
             try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
-                
+
                 if (id.isEmpty()) {
                     throw new IOException("Missing required data for a particular route (id): " + line);
                 }
@@ -236,7 +237,7 @@ public class GTFSParser {
                 String operator;
                 if (agencies.size() == 1) {
                     // In GTFS data, agency_id column is only needed if more than one agency
-                    operator = agencies.values().iterator().next(); 
+                    operator = agencies.values().iterator().next();
                 } else if (agencyIndex != -1) {
                     String agencyID = lineSplit[agencyIndex].replace("\"", "").trim();
                     operator = agencies.get(agencyID);
@@ -252,9 +253,9 @@ public class GTFSParser {
                 String longName = (longNameIndex != -1) ? lineSplit[longNameIndex].replace("\"", "").trim() : "";
 
                 routes.put(id, new Route(id, operator, shortName, longName));
-                
+
             } catch (IOException e) {
-                throw e; 
+                throw e;
             } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
@@ -265,12 +266,13 @@ public class GTFSParser {
         String firstLine = reader.readLine();
         if (firstLine == null) return;
         String[] colNames = firstLine.split(",");
-        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1;
+        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1, headSignIndex = -1;
         for (int i = 0; i < colNames.length; i++) {
             String col = colNames[i].trim();
             if (col.equals("trip_id")) idIndex = i;
             else if(col.equals("service_id")) serviceIdIndex = i;
             else if(col.equals("route_id")) routeIdIndex = i;
+            else if(col.equals("trip_headsign")) headSignIndex = i;
         }
 
         if (idIndex == -1 || serviceIdIndex == -1 || routeIdIndex == -1) {
@@ -286,6 +288,9 @@ public class GTFSParser {
                 String serviceId = lineSplit[serviceIdIndex].replace("\"", "").trim();
                 String routeId = lineSplit[routeIdIndex].replace("\"", "").trim();
 
+
+                String headSign = (headSignIndex != -1) ? lineSplit[headSignIndex].replace("\"", "").trim() : "";
+
                 if (id.isEmpty() || serviceId.isEmpty() || routeId.isEmpty()) {
                     throw new IOException("Missing required data for a particular trip (trip_id, service_id, route_id): " + line);
                 }
@@ -295,7 +300,7 @@ public class GTFSParser {
                     throw new IOException("RouteID not found in routes: " + routeId);
                 }
 
-                Trip newTrip = new Trip(id, route, serviceId);
+                Trip newTrip = new Trip(id, route, serviceId, headSign);
                 trips.put(id, newTrip);
                 route.trips.add(newTrip);
 
@@ -348,15 +353,15 @@ public class GTFSParser {
                 if (trip == null) throw new IOException("TripID not found in trips: " + tripId);
                 if (stop == null) throw new IOException("StopID not found in trips: " + stopId);
 
-                int arrTime = parseStopTime(arrivalTimeString);
-                int depTime = parseStopTime(departureTimeString);
+                int arrTime = ParsingUtil.parseStopTime(arrivalTimeString);
+                int depTime = ParsingUtil.parseStopTime(departureTimeString);
 
                 if (depTime == -1 && arrTime != -1) {
-                    depTime = arrTime; 
+                    depTime = arrTime;
                 } else if (depTime != -1 && arrTime == -1) {
                     arrTime = depTime;
                 }
-                
+
                 int stopSeq;
                 try {
                     stopSeq = Integer.parseInt(stopSeqString);
@@ -375,30 +380,9 @@ public class GTFSParser {
             }
         }
 
-        //Populate stopDepartures, from that we can see the departures from the stop
-        for(Trip trip : trips.values()){
-            for(StopTime stopTime : trip.stopTimes){
-                if(!stopDepartures.containsKey(stopTime.stop.id)){
-                    stopDepartures.put(stopTime.stop.id, new ArrayList<>());
-                }
-                stopDepartures.get(stopTime.stop.id).add(stopTime);
-            }
-        }
-    }
-
-    public int parseStopTime(String timeString) throws IOException{
-        if (timeString == null || timeString.isEmpty()) {
-            return -1;
-        }
-        try {
-            String[] timeSplit = timeString.split(":");
-            int hours = Integer.parseInt(timeSplit[0]);
-            int minutes = Integer.parseInt(timeSplit[1]);
-            int seconds = Integer.parseInt(timeSplit[2]);
-            int secondsAfterMidnight = hours*3600 + minutes*60 + seconds;
-            return secondsAfterMidnight;
-        } catch (NumberFormatException e) {
-            throw new IOException("Time string failed parsing into number");
+        // Sorting into ascending order
+        for (Trip trip : trips.values()) {
+            trip.stopTimes.sort((st1, st2) -> Integer.compare(st1.stopSequence, st2.stopSequence));
         }
     }
 
@@ -429,7 +413,7 @@ public class GTFSParser {
         while ((line = reader.readLine()) != null) {
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
-             try {
+            try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
                 String monday = lineSplit[day1Index].replace("\"", "").trim();
                 String tuesday = lineSplit[day2Index].replace("\"", "").trim();
@@ -445,7 +429,7 @@ public class GTFSParser {
                 if(id.isEmpty()){
                     throw new IOException("Missing required service id for a particular period: " + line);
                 }
-                
+
                 if(week.length() < 7){
                     throw new IOException("Missing required activity information for a particular period: " + line);
                 }
@@ -456,11 +440,11 @@ public class GTFSParser {
 
                 calendar.put(id, new Calendar(id, week, startDate, endDate));
 
-             } catch (IOException e) {
+            } catch (IOException e) {
                 throw e;
-             } catch (Exception e) {
+            } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
-             }
+            }
         }
     }
     public void parseCalendarDates(BufferedReader reader) throws IOException {
@@ -481,12 +465,12 @@ public class GTFSParser {
         while ((line = reader.readLine()) != null) {
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
-             try {
+            try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
                 String date = lineSplit[dateIndex].replace("\"", "").trim();
                 String exceptionType = lineSplit[exceptionIndex].replace("\"", "").trim();
 
-                
+
                 if(id.isEmpty()){
                     throw new IOException("Missing required service id for a particular date: " + line);
                 }
@@ -498,12 +482,12 @@ public class GTFSParser {
                 }
 
                 calendar_dates.put(id, new CalendarDates(id, date, exceptionType));
-                
-             }catch (IOException e) {
+
+            }catch (IOException e) {
                 throw e;
-             } catch (Exception e) {
+            } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
-             }
+            }
         }
     }
 }
