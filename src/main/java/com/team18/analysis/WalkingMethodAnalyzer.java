@@ -11,7 +11,8 @@ import java.util.regex.Pattern;
 public class WalkingMethodAnalyzer {
     
     private static final int WARMUP_ITERATIONS = 500;
-    private static final String ROUTES_FILE = "stockholm_routes.jsonl";
+    private static final String ROUTES_FILE = "stockholm_urban_routes.jsonl";
+    // private static final String ROUTES_FILE = "stockholm_metro_routes.jsonl";
 
     public static void main(String[] args) {
         
