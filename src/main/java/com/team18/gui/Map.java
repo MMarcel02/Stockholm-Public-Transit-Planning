@@ -21,8 +21,6 @@ import java.util.zip.ZipException;
 import java.io.IOException;
 
 public class Map {
-	private static final String GTFS_PATH = "data/stockholm/sl.zip";
-
 	// This group contains the tiles that are currently visible.
 	private Group mapGroup;
 
@@ -38,20 +36,8 @@ public class Map {
 
 	private GTFSParser parser;
 
-	public Map() {
-		try {
-			parser = new GTFSParser();
-			parser.loadFromZip(GTFS_PATH);
-		} catch (FileNotFoundException | NoSuchFileException e) {
-			System.err.println("Fatal: File doesn't exist at the path provided: " + GTFS_PATH);
-			System.exit(1);
-		} catch (ZipException e) {
-			System.err.println("Fatal: File exists but isn't a valid zip: " + GTFS_PATH);
-			System.exit(1);
-		} catch (IOException e) {
-			System.err.println("Fatal: Loading error: " + e.getMessage());
-			System.exit(1);
-		} 
+	public Map(GTFSParser parser) {
+		this.parser = parser;
 
 		mapGroup = new Group();
 

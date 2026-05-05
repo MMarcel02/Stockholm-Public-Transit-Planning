@@ -27,166 +27,142 @@ import javafx.scene.paint.Color;
 
 public class GuiController {
 
-    @FXML private Pane mapContainer;
-    @FXML private TextField startField;
-    @FXML private TextField endField;
-    @FXML private TextField timeField;
-    @FXML private VBox routeStepsContainer;
+	@FXML private Pane mapContainer;
+	@FXML private TextField startField;
+	@FXML private TextField endField;
+	@FXML private TextField timeField;
+	@FXML private VBox routeStepsContainer;
 
-    private Map map;
-    private RaptorNetwork raptorNetwork;
-    public List<RouteStep> currentRoute;
+	private Map map;
+	private RaptorNetwork raptorNetwork;
+	public List<RouteStep> currentRoute;
 
-    @FXML
-    public void initialize() {
-        map = new Map();
+	@FXML
+	public void initialize() {
+		GTFSParser parser = null;
+		try {
+			System.out.println("Loading GTFS data...");
+			parser = new GTFSParser();
+			parser.loadFromZip("data/stockholm/sl.zip");
 
-        if (map.getMapGroup() != null) {
-            mapContainer.getChildren().add(map.getMapGroup());
-            // map.enableInteraction(mapContainer);
-        }
-        final boolean[] settingStart = {true}; // Toggle to switch between start and end inputs
+			System.out.println("Building RAPTOR Network (This might take a second)...");
+			RaptorBuilder builder = new RaptorBuilder();
+			raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
 
-// Inside initialize(), after map.enableInteraction(mapContainer);
+			System.out.println("Network Ready! Drawing stops on map...");
+		} catch (Exception e) {
+			System.err.println("Failed to load GTFS/Raptor data: " + e.getMessage());
+			e.printStackTrace();
+		}
 
-	   /*
-        mapContainer.setOnMouseClicked(ev -> {
-            // Ignore drags by checking if the mouse shifted significantly, or just rely on simple clicks
-            if (ev.isStillSincePress()) {
-                double mouseX = ev.getX();
-                double mouseY = ev.getY();
+		map = new Map(parser);
 
-                // Account for the map's current pan (translation) and zoom (scale)
-                double localX = (mouseX - map.getMapGroup().getTranslateX()) / map.getMapGroup().getScaleX();
-                double localY = (mouseY - map.getMapGroup().getTranslateY()) / map.getMapGroup().getScaleY();
+		if (map.getMapGroup() != null) {
+			mapContainer.getChildren().add(map.getMapGroup());
+			// map.enableInteraction(mapContainer);
+		}
+		final boolean[] settingStart = {true}; // Toggle to switch between start and end inputs
 
-                double[] latLon = map.getLatLonFromLocal(localX, localY);
-                String coordString = String.format("%.6f, %.6f", latLon[0], latLon[1]);
+		// Inside initialize(), after map.enableInteraction(mapContainer);
 
-                if (settingStart[0]) {
-                    startField.setText(coordString);
-                    settingStart[0] = false; // Next click sets destination
-                } else {
-                    endField.setText(coordString);
-                    settingStart[0] = true;  // Next click resets to start
-                }
-            }
-        });
-	   */
+		/*
+		   mapContainer.setOnMouseClicked(ev -> {
+		// Ignore drags by checking if the mouse shifted significantly, or just rely on simple clicks
+		if (ev.isStillSincePress()) {
+		double mouseX = ev.getX();
+		double mouseY = ev.getY();
 
-        new Thread(() -> {
-            try {
-                System.out.println("Loading GTFS data...");
-                GTFSParser parser = new GTFSParser();
-                parser.loadFromZip("data/stockholm/sl.zip");
+		// Account for the map's current pan (translation) and zoom (scale)
+		double localX = (mouseX - map.getMapGroup().getTranslateX()) / map.getMapGroup().getScaleX();
+		double localY = (mouseY - map.getMapGroup().getTranslateY()) / map.getMapGroup().getScaleY();
 
-                System.out.println("Building RAPTOR Network (This might take a second)...");
-                RaptorBuilder builder = new RaptorBuilder();
-                raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
+		double[] latLon = map.getLatLonFromLocal(localX, localY);
+		String coordString = String.format("%.6f, %.6f", latLon[0], latLon[1]);
 
-                System.out.println("Network Ready! Drawing stops on map...");
+		if (settingStart[0]) {
+		startField.setText(coordString);
+		settingStart[0] = false; // Next click sets destination
+		} else {
+		endField.setText(coordString);
+		settingStart[0] = true;  // Next click resets to start
+		}
+		}
+		});
+		*/
 
-			 /*
-                Platform.runLater(() -> {
-                    displayAllStops(parser.stops.values());
-                });
-			 */
+		new Thread(() -> {
+		}).start();
+	}
 
-            } catch (Exception e) {
-                System.err.println("Failed to load GTFS/Raptor data: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }).start();
-    }
+	public void displayRouteInstructions(List<RouteStep> steps) {
+		routeStepsContainer.getChildren().clear(); // Clear old results
 
-    /*
-    public void displayAllStops(Collection<Stop> stops) {
-        map.getDrawingLayer().getChildren().clear();
+		if (steps == null || steps.isEmpty()) {
+			routeStepsContainer.getChildren().add(new Label("No route found."));
+			return;
+		}
 
-        for (Stop stop : stops) {
-            double[] coords = map.getLocalCoords(stop.lat, stop.lon);
+		for (RouteStep step : steps) {
+			VBox stepCard = new VBox(5);
+			stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
 
-            Circle dot = new Circle(3);
-            dot.setCenterX(coords[0]);
-            dot.setCenterY(coords[1]);
-            dot.getStyleClass().add("stop-marker");
+			// Check the public boolean 'walking' that the backend team created
+			String modeText = step.walking ? "WALK" : (step.longName + " " + step.shortName + " " + step.headSign).trim().toUpperCase();
+			Label modeLabel = new Label(modeText);
+			modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
 
-            Tooltip.install(dot, new Tooltip(stop.name));
+			String destText = "To " + step.toStopName;
+			Label detailsLabel = new Label(destText + " (" + step.durationMinutes + " mins)");
+			detailsLabel.setWrapText(true);
 
-            map.getDrawingLayer().getChildren().add(dot);
-        }
-    }
-    */
+			stepCard.getChildren().addAll(modeLabel, detailsLabel);
+			routeStepsContainer.getChildren().add(stepCard);
+		}
+	}
 
-    public void displayRouteInstructions(List<RouteStep> steps) {
-        routeStepsContainer.getChildren().clear(); // Clear old results
+	@FXML
+	public void handlePlanJourney() {
+		// Prevent crashing if they click the button before the background thread finishes
+		if (raptorNetwork == null) {
+			routeStepsContainer.getChildren().clear();
+			routeStepsContainer.getChildren().add(new Label("Network still loading... Please wait."));
+			return;
+		}
 
-        if (steps == null || steps.isEmpty()) {
-            routeStepsContainer.getChildren().add(new Label("No route found."));
-            return;
-        }
+		try {
+			String start = startField.getText();
+			String end = endField.getText();
+			String time = timeField.getText();
 
-        for (RouteStep step : steps) {
-            VBox stepCard = new VBox(5);
-            stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
+			String[] startParts = start.split(",");
+			String[] endParts = end.split(",");
 
-            // Check the public boolean 'walking' that the backend team created
-            String modeText = step.walking ? "WALK" : (step.longName + " " + step.shortName + " " + step.headSign).trim().toUpperCase();
-            Label modeLabel = new Label(modeText);
-            modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
+			double startLat = Double.parseDouble(startParts[0].trim());
+			double startLon = Double.parseDouble(startParts[1].trim());
 
-            String destText = "To " + step.toStopName;
-            Label detailsLabel = new Label(destText + " (" + step.durationMinutes + " mins)");
-            detailsLabel.setWrapText(true);
+			double endLat = Double.parseDouble(endParts[0].trim());
+			double endLon = Double.parseDouble(endParts[1].trim());
 
-            stepCard.getChildren().addAll(modeLabel, detailsLabel);
-            routeStepsContainer.getChildren().add(stepCard);
-        }
-    }
+			// Convert "08:30" into seconds after midnight
+			int startTimeSeconds = ParsingUtil.parseStopTime(time);
 
-    @FXML
-    public void handlePlanJourney() {
-        // Prevent crashing if they click the button before the background thread finishes
-        if (raptorNetwork == null) {
-            routeStepsContainer.getChildren().clear();
-            routeStepsContainer.getChildren().add(new Label("Network still loading... Please wait."));
-            return;
-        }
+			System.out.println("Routing from: (" + startLat + ", " + startLon + ") to (" + endLat + ", " + endLon + ")");
 
-        try {
-            String start = startField.getText();
-            String end = endField.getText();
-            String time = timeField.getText();
+			// --- RUN REAL RAPTOR ALGORITHM ---
+			Router raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
 
-            String[] startParts = start.split(",");
-            String[] endParts = end.split(",");
+			// Save it to the class variable so your teammate can draw it later
+			currentRoute = raptorAlgorithm.getFastestTrip(startLat, startLon, endLat, endLon, startTimeSeconds);
 
-            double startLat = Double.parseDouble(startParts[0].trim());
-            double startLon = Double.parseDouble(startParts[1].trim());
+			// Display it in your sidebar!
+			displayRouteInstructions(currentRoute);
 
-            double endLat = Double.parseDouble(endParts[0].trim());
-            double endLon = Double.parseDouble(endParts[1].trim());
-
-            // Convert "08:30" into seconds after midnight
-            int startTimeSeconds = ParsingUtil.parseStopTime(time);
-
-            System.out.println("Routing from: (" + startLat + ", " + startLon + ") to (" + endLat + ", " + endLon + ")");
-
-            // --- RUN REAL RAPTOR ALGORITHM ---
-            Router raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
-
-            // Save it to the class variable so your teammate can draw it later
-            currentRoute = raptorAlgorithm.getFastestTrip(startLat, startLon, endLat, endLon, startTimeSeconds);
-
-            // Display it in your sidebar!
-            displayRouteInstructions(currentRoute);
-
-        } catch (Exception e) {
-            routeStepsContainer.getChildren().clear();
-            Label errorLabel = new Label("Invalid input. Click the map to set coordinates.");
-            errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
-            routeStepsContainer.getChildren().add(errorLabel);
-            e.printStackTrace();
-        }
-    }
+		} catch (Exception e) {
+			routeStepsContainer.getChildren().clear();
+			Label errorLabel = new Label("Invalid input. Click the map to set coordinates.");
+			errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+			routeStepsContainer.getChildren().add(errorLabel);
+			e.printStackTrace();
+		}
+	}
 }
