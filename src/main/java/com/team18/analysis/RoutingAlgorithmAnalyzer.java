@@ -78,11 +78,11 @@ public class RoutingAlgorithmAnalyzer {
         long aStarBuildTime = System.currentTimeMillis() - startAStarBuild;
         System.out.printf("A* Build Time: %,d ms%n", aStarBuildTime);
 
-        Router aStarRouter = new AStarRouter(parser);
-        System.out.println("Analyzing all trips with A*...");
-        Report aStarReport = timeRouting(aStarRouter, requests);
-        aStarReport.printReport();
-        raptorReport.printComparison(aStarReport);
+        // Router aStarRouter = new AStarRouter(parser);
+        // System.out.println("Analyzing all trips with A*...");
+        // Report aStarReport = timeRouting(aStarRouter, requests);
+        // aStarReport.printReport();
+        // raptorReport.printComparison(aStarReport);
     }
 
     private static List<RouteRequest> loadRequests(String filename) {
