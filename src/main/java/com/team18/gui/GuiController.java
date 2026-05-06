@@ -61,36 +61,52 @@ public class GuiController {
 
 		if (map.getMapGroup() != null) {
 			mapContainer.getChildren().add(map.getMapGroup());
-			// map.enableInteraction(mapContainer);
 		}
+
 		final boolean[] settingStart = {true}; // Toggle to switch between start and end inputs
 
-		// Inside initialize(), after map.enableInteraction(mapContainer);
+		// Use JavaFX's native mouse clicked event.
+		// isStillSincePress() perfectly prevents panning drags from counting as clicks!
+		map.getMapGroup().setOnMouseClicked(ev -> {
+			if (ev.isStillSincePress()) {
 
-		/*
-		   mapContainer.setOnMouseClicked(ev -> {
-		// Ignore drags by checking if the mouse shifted significantly, or just rely on simple clicks
-		if (ev.isStillSincePress()) {
-		double mouseX = ev.getX();
-		double mouseY = ev.getY();
+				// Because we attach to mapGroup, getX and getY are already local map coordinates!
+				double localX = ev.getX();
+				double localY = ev.getY();
 
-		// Account for the map's current pan (translation) and zoom (scale)
-		double localX = (mouseX - map.getMapGroup().getTranslateX()) / map.getMapGroup().getScaleX();
-		double localY = (mouseY - map.getMapGroup().getTranslateY()) / map.getMapGroup().getScaleY();
+				// Convert pixels to GPS Coordinates
+				double[] latLon = map.getLatLonFromLocal(localX, localY);
+				double lat = latLon[0];
+				double lon = latLon[1];
 
-		double[] latLon = map.getLatLonFromLocal(localX, localY);
-		String coordString = String.format("%.6f, %.6f", latLon[0], latLon[1]);
+				String coordString = String.format("%.6f, %.6f", lat, lon);
 
-		if (settingStart[0]) {
-		startField.setText(coordString);
-		settingStart[0] = false; // Next click sets destination
-		} else {
-		endField.setText(coordString);
-		settingStart[0] = true;  // Next click resets to start
-		}
-		}
+				if (settingStart[0]) {
+					startField.setText(coordString);
+					map.setStartMarker(lat, lon); // Drop green pin
+					settingStart[0] = false;      // Next click sets destination
+				} else {
+					endField.setText(coordString);
+					map.setEndMarker(lat, lon);   // Drop red pin
+					settingStart[0] = true;       // Next click resets to start
+				}
+			}
 		});
-		*/
+		map.setOnStopClicked(landmark -> {
+			// Snap to the exact station coordinates, not the pixel under the mouse
+			String coordString = String.format("%.6f, %.6f", landmark.lat, landmark.lon);
+
+			if (settingStart[0]) {
+				startField.setText(coordString);
+				map.setStartMarker(landmark.lat, landmark.lon);
+				settingStart[0] = false;
+			} else {
+				endField.setText(coordString);
+				map.setEndMarker(landmark.lat, landmark.lon);
+				settingStart[0] = true;
+			}
+		});
+
 
 		new Thread(() -> {
 		}).start();
@@ -105,6 +121,9 @@ public class GuiController {
 		}
 
 		for (RouteStep step : steps) {
+			if (step.walking && step.durationMinutes <= 0 && "destination".equals(step.toStopName)) {
+				continue;
+			}
 			VBox stepCard = new VBox(5);
 			stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
 

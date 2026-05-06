@@ -22,6 +22,7 @@ import javafx.scene.paint.Color;
 
 import java.io.FileNotFoundException;
 import java.nio.file.NoSuchFileException;
+import java.util.LinkedHashMap;
 import java.util.zip.ZipException;
 import java.io.IOException;
 
@@ -30,7 +31,7 @@ public class Map {
 	private Group mapGroup;
 	private Group tileGroup;
 	private Group routeGroup;
-
+	private java.util.function.Consumer<Landmark> onStopClicked;
 	private double dragStartX = 0;
 	private double dragStartY = 0;
 	private double groupTranslateX = 0;
@@ -38,12 +39,25 @@ public class Map {
 
 	private int zoomLevel = 14;
 
-	private HashMap<Tile.Coord, Tile> tiles = new HashMap<>();
+	private LinkedHashMap<Tile.Coord, Tile> tiles = new LinkedHashMap<Tile.Coord, Tile>(100, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(java.util.Map.Entry<Tile.Coord, Tile> eldest) {
+			// Keep a maximum of 100 tiles in RAM.
+			return size() > 100;
+		}
+	};
 	private ArrayList<Tile> activeTiles = new ArrayList<>();
 
 	private GTFSParser parser;
 
 	private FullRoute route = null;
+	private double startMarkerLat = Double.NaN;
+	private double startMarkerLon = Double.NaN;
+	private double endMarkerLat = Double.NaN;
+	private double endMarkerLon = Double.NaN;
+
+	private Circle startMarker = new Circle(8, Color.web("#4CAF50")); // Green for Start
+	private Circle endMarker = new Circle(8, Color.web("#F44336"));   // Red for End
 
 	public Map(GTFSParser parser) {
 		this.parser = parser;
@@ -55,6 +69,15 @@ public class Map {
 
 		routeGroup = new Group();
 		mapGroup.getChildren().add(routeGroup);
+		startMarker.setVisible(false);
+		startMarker.setStroke(Color.WHITE);
+		startMarker.setStrokeWidth(2);
+
+		endMarker.setVisible(false);
+		endMarker.setStroke(Color.WHITE);
+		endMarker.setStrokeWidth(2);
+
+		routeGroup.getChildren().addAll(startMarker, endMarker);
 
 		File cacheDir = new File(Tile.Coord.CACHE_DIR);
 		File[] files = cacheDir.listFiles();
@@ -101,6 +124,44 @@ public class Map {
 			refresh();
 		});
 	}
+	public void setOnStopClicked(java.util.function.Consumer<Landmark> listener) {
+		this.onStopClicked = listener;
+	}
+	public double[] getLatLonFromLocal(double localX, double localY) {
+		Tile.Coord origin = getOrigin();
+		double exactTileX = (localX / Tile.RESOLUTION) + origin.x;
+		double exactTileY = (localY / Tile.RESOLUTION) + origin.y;
+		double n = Math.pow(2, zoomLevel);
+		double lon = (exactTileX / n) * 360.0 - 180.0;
+		double latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * exactTileY / n)));
+		double lat = latRad * 180.0 / Math.PI;
+		return new double[]{lat, lon};
+	}
+
+	public double[] getLocalFromLatLon(double lat, double lon) {
+		Tile.Coord origin = getOrigin();
+		Tile.Coord coord = Tile.Coord.fromLatLon(lat, lon, zoomLevel);
+		Tile.Bounds bounds = coord.calculateBounds();
+		Tile.Bounds.RelPos pos = bounds.interpolate(lat, lon);
+
+		double localX = (coord.x - origin.x + pos.percentX) * Tile.RESOLUTION;
+		double localY = (coord.y - origin.y + pos.percentY) * Tile.RESOLUTION;
+
+		return new double[]{localX, localY};
+	}
+
+	public void setStartMarker(double lat, double lon) {
+		this.startMarkerLat = lat;
+		this.startMarkerLon = lon;
+		refresh();
+	}
+
+	public void setEndMarker(double lat, double lon) {
+		this.endMarkerLat = lat;
+		this.endMarkerLon = lon;
+		refresh();
+	}
+
 
 	public void setRoute(FullRoute route) {
 		this.route = route;
@@ -129,7 +190,7 @@ public class Map {
 				if (!this.activeTiles.contains(tile)) {
 					this.activeTiles.add(tile);
 
-					Group rendered = tile.render();
+					Group rendered = tile.render(this.onStopClicked);
 					rendered.setTranslateX(absX * Tile.RESOLUTION);
 					rendered.setTranslateY(absY * Tile.RESOLUTION);
 					tileGroup.getChildren().add(rendered);
@@ -154,6 +215,20 @@ public class Map {
 
 	private void refreshRoute() {
 		routeGroup.getChildren().clear();
+		routeGroup.getChildren().addAll(startMarker, endMarker);
+		if (!Double.isNaN(startMarkerLat)) {
+			double[] local = getLocalFromLatLon(startMarkerLat, startMarkerLon);
+			startMarker.setCenterX(local[0]);
+			startMarker.setCenterY(local[1]);
+			startMarker.setVisible(true);
+		}
+
+		if (!Double.isNaN(endMarkerLat)) {
+			double[] local = getLocalFromLatLon(endMarkerLat, endMarkerLon);
+			endMarker.setCenterX(local[0]);
+			endMarker.setCenterY(local[1]);
+			endMarker.setVisible(true);
+		}
 		if (route == null) return;
 
 		Tile.Coord origin = getOrigin();

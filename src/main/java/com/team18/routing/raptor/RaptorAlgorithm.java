@@ -374,9 +374,7 @@ public class RaptorAlgorithm implements Router {
         // RouteStep for final walk
         int arrivalAtLastStop = arrivalTimesPerRound[(bestRound * totalStops) + lastStopId];
         int finalWalkDuration = (bestTime - arrivalAtLastStop) / 60;
-        if (finalWalkDuration > 0) {
-            routeSteps.add(new RouteStep(latTo, lonTo, finalWalkDuration, arrivalAtLastStop, "destination"));
-        }
+        routeSteps.add(new RouteStep(latTo, lonTo, finalWalkDuration, arrivalAtLastStop, "destination"));
 
         int currentStopId = lastStopId;
         int currentRound = bestRound;

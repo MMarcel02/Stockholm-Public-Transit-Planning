@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
+import java.util.function.Consumer;
 
 public class Tile {
 	public static final int RESOLUTION = 256;
@@ -193,26 +194,33 @@ public class Tile {
 
 	// Renders the tile and its landmarks into a JavaFX component to be put
 	// on the screen.
-	public Group render() {
+	public Group render(java.util.function.Consumer<Landmark> onClickCallback) {
 		Group group = new Group();
 
 		ImageView view = new ImageView(this.image);
 		group.getChildren().add(view);
 
-		Bounds bounds = this.coord.calculateBounds();
-		Canvas canvas = new Canvas(RESOLUTION, RESOLUTION);
-		GraphicsContext gc = canvas.getGraphicsContext2D();
+		if (this.coord.zoom >= 13) {
+			Bounds bounds = this.coord.calculateBounds();
 
-		for (Landmark mark: this.landmarks) {
-			int size = (int) Math.pow((double)coord.zoom / 10, 4);
+			for (Landmark mark: this.landmarks) {
+				Circle marker = new Circle(4);
+				marker.getStyleClass().add("stop-marker");
 
-			Bounds.RelPos relPos = bounds.interpolate(mark.lat, mark.lon);
+				Bounds.RelPos relPos = bounds.interpolate(mark.lat, mark.lon);
+				marker.setCenterX(relPos.percentX * RESOLUTION);
+				marker.setCenterY(relPos.percentY * RESOLUTION);
 
-			gc.setFill(Color.BLUE);
-			gc.fillRect(relPos.percentX * RESOLUTION, relPos.percentY * RESOLUTION, size, size);
+				if (onClickCallback != null) {
+					marker.setOnMouseClicked(ev -> {
+						ev.consume();
+						onClickCallback.accept(mark);
+					});
+				}
+
+				group.getChildren().add(marker);
+			}
 		}
-
-		group.getChildren().add(canvas);
 
 		this.rendered = group;
 		return group;
