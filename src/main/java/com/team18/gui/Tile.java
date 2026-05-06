@@ -147,7 +147,7 @@ public class Tile {
 
 		try {
 			File cachedFile = new File(filePath);
-			if (!cachedFile.exists()) {
+			if (!cachedFile.exists() && false) {
 				System.out.printf("fetching %d/%d/%d…\n", coord.zoom, coord.x, coord.y);
 
 				// Open a manual connection
