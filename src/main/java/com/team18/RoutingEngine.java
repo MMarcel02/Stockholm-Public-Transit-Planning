@@ -57,10 +57,9 @@ public class RoutingEngine {
                 if (request.containsKey("load")) {
                     String zipFilePath = (String) request.get("load");
                     try {
-                        // GTFSParser parser = new GTFSParser();
                         parser.loadFromZip(zipFilePath);
-                        // RaptorBuilder builder = new RaptorBuilder();
-                        // this.raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
+                        RaptorBuilder builder = new RaptorBuilder();
+                        this.raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
                         sendOk("loaded");
                         continue;
                     } catch (FileNotFoundException | NoSuchFileException e) {
@@ -76,10 +75,10 @@ public class RoutingEngine {
                 }
 
                 if (request.containsKey("routeFrom") && request.containsKey("to") && request.containsKey("startingAt")) {
-                    // if (this.raptorNetwork == null) {
-                    //     sendError("Raptor network not loaded, check that 'load' request was sent earlier.");
-                    //     continue;
-                    // }
+                    if (this.raptorNetwork == null) {
+                        sendError("Raptor network not loaded, check that 'load' request was sent earlier.");
+                        continue;
+                    }
 
                     try {
                         Map<?,?> fromNode = (Map<?,?>) request.get("routeFrom");                        
@@ -92,19 +91,19 @@ public class RoutingEngine {
                         double latTo = ((Number) toNode.get("lat")).doubleValue();
                         double lonTo = ((Number) toNode.get("lon")).doubleValue();
                         
-                        // Router raptor = new RaptorAlgorithm(raptorNetwork);
-                        // List<RouteStep> journey = raptor.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
-                        // Object[] routeSteps = new Object[journey.size()];
-                        // for (int i = 0; i < routeSteps.length; i++) {
-                        //     routeSteps[i] = journey.get(i).toMap();
-                        // }
-                        
-                        Router aStar = new AStarRouter(parser);
-                        List<RouteStep> journey = aStar.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
+                        Router raptor = new RaptorAlgorithm(raptorNetwork);
+                        List<RouteStep> journey = raptor.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
                         Object[] routeSteps = new Object[journey.size()];
                         for (int i = 0; i < routeSteps.length; i++) {
                             routeSteps[i] = journey.get(i).toMap();
                         }
+                        
+                        // Router aStar = new AStarRouter(parser);
+                        // List<RouteStep> journey = aStar.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
+                        // Object[] routeSteps = new Object[journey.size()];
+                        // for (int i = 0; i < routeSteps.length; i++) {
+                        //     routeSteps[i] = journey.get(i).toMap();
+                        // }
 
                         sendOk(routeSteps);
                     } catch (ClassCastException | NullPointerException e) {
