@@ -4,6 +4,7 @@ import com.team18.gui.Landmark;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.lang.Integer;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -16,7 +17,9 @@ import javafx.scene.paint.Color;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.io.InputStream;
-
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
 
 public class Tile {
 	public static final int RESOLUTION = 256;
@@ -24,6 +27,8 @@ public class Tile {
 	// Coordinates that uniquely locate a tile, including its zoom level.
 	// A tile is a square on a mercantor projection of the Earth.
 	public static class Coord {
+		public static final String CACHE_DIR = "data/tilecache/";
+
 		public int x;
 		public int y;
 		public int zoom;
@@ -53,6 +58,21 @@ public class Tile {
 				(this.x + 1) / n * 360.0 - 180.0, // rightLon
 				(Math.atan(Math.sinh(Math.PI * (1 - 2 * (this.y) / n)))) * 180.0 / Math.PI, // topLat
 				(Math.atan(Math.sinh(Math.PI * (1 - 2 * (this.y + 1) / n)))) * 180.0 / Math.PI // bottomLat
+			);
+		}
+
+		public String toFilePath() {
+			return CACHE_DIR + zoom + "-" + x + "-" + y + ".png";
+		}
+
+		public static Coord fromFileName(String name) {
+			String bare = name.substring(0, name.lastIndexOf('.'));
+			String[] parts = bare.split("-");
+
+			return new Coord(
+				Integer.parseInt(parts[1]),
+				Integer.parseInt(parts[2]),
+				Integer.parseInt(parts[0])
 			);
 		}
 
@@ -122,21 +142,39 @@ public class Tile {
 
 		String urlString = "https://tile.openstreetmap.org/"
 			+ coord.zoom + "/" + coord.x + "/" + coord.y + ".png";
+		String filePath = coord.toFilePath();
 
 		try {
-			// Open a manual connection
-			URL url = new URL(urlString);
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			File cachedFile = new File(filePath);
+			if (!cachedFile.exists()) {
+				System.out.printf("fetching %d/%d/%d…\n", coord.zoom, coord.x, coord.y);
 
-			// Set the user agent in a way that will prevent OSM
-			// from blocking the request
-			conn.setRequestProperty("User-Agent", "Team18RoutingApp/1.0 (UniversityProject)");
+				// Open a manual connection
+				URL url = new URL(urlString);
+				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-			// Read the image stream
-			InputStream in = conn.getInputStream();
+				// Set the user agent in a way that will prevent OSM
+				// from blocking the request
+				conn.setRequestProperty("User-Agent", "Team18RoutingApp/1.0 (UniversityProject)");
+
+				// Read the image stream
+				InputStream in = conn.getInputStream();
+
+				FileOutputStream out = new FileOutputStream(filePath);
+
+				byte[] copyBuffer = new byte[1024];
+				int len = in.read(copyBuffer);
+				while (len != -1) {
+					out.write(copyBuffer, 0, len);
+					len = in.read(copyBuffer);
+				}
+
+				out.close();
+				in.close();
+			}
+
+			InputStream in = new FileInputStream(filePath);
 			this.image = new Image(in);
-
-			// Clean up the stream
 			in.close();
 		} catch (Exception e) {
 			System.err.println("Could not load tile: " + urlString);

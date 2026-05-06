@@ -6,6 +6,7 @@ import com.team18.gui.FullRoute;
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.ArrayList;
 
@@ -54,6 +55,14 @@ public class Map {
 
 		routeGroup = new Group();
 		mapGroup.getChildren().add(routeGroup);
+
+		File cacheDir = new File(Tile.Coord.CACHE_DIR);
+		File[] files = cacheDir.listFiles();
+		if (files != null) {
+			for (File file: files) {
+				constructNewTile(Tile.Coord.fromFileName(file.getName()));
+			}
+		}
 
 		refresh();
 
@@ -194,16 +203,21 @@ public class Map {
 
 		Tile.Coord coord = new Tile.Coord(origin.x + x, origin.y + y, zoomLevel);
 
-		System.out.printf("fetching %d/%d/%d…\n", zoomLevel, tileX, tileY);
 		Tile tile = this.tiles.get(coord);
 		if (tile == null) {
-			tile = new Tile(coord);
-			this.tiles.put(coord, tile);
+			tile = constructNewTile(coord);
+		}
 
-			for (var stop: parser.stops.values()) {
-				tile.addLandmark(new Landmark(stop.lat, stop.lon));
-			}
+		return tile;
+	}
 
+	private Tile constructNewTile(Tile.Coord coord) {
+		Tile tile = new Tile(coord);
+
+		this.tiles.put(tile.coord, tile);
+
+		for (var stop: parser.stops.values()) {
+			tile.addLandmark(new Landmark(stop.lat, stop.lon));
 		}
 
 		return tile;
