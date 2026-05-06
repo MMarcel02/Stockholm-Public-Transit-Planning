@@ -28,7 +28,7 @@ mvn -q exec:java < test1.jsonl > test1_results.jsonl
 #### Test Stockholm Random Routes
 To run the specific Stockholm dataset and save the results:
 ```bash
-mvn -q exec:java < stockholm_urban_routes.jsonl > stockholm_urban_routes.jsonl
+mvn -q exec:java < stockholm_urban_routes.jsonl > stockholm_urban_routes_results.jsonl
 ```
 TO DO:
 
