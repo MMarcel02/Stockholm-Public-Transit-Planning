@@ -133,7 +133,15 @@ public class GuiController {
 			modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
 
 			String destText = "To " + step.toStopName;
-			Label detailsLabel = new Label(destText + " (" + (int) Math.round(step.durationMinutes) + " mins)");
+			int duration = (int) Math.round(step.durationMinutes);
+			Label detailsLabel;
+
+			if (duration == 0) {
+				detailsLabel = new Label(destText + " ( <1 min)");
+			} else {
+				detailsLabel = new Label(destText + " (" + duration + " mins)");
+			}
+
 			detailsLabel.setWrapText(true);
 
 			stepCard.getChildren().addAll(modeLabel, detailsLabel);
