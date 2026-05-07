@@ -100,7 +100,7 @@ public class GTFSParser {
                 default:
                     throw new IOException("Unknown file type: " + type);
             }
-        } 
+        }
     }
 
     public void parseStops(BufferedReader reader) throws IOException {
@@ -116,7 +116,7 @@ public class GTFSParser {
             else if(col.equals("stop_lat")) latIndex = i;
             else if(col.equals("stop_lon")) lonIndex = i;
         }
-        
+
         if (idIndex == -1 || nameIndex == -1 || latIndex == -1 || lonIndex == -1) {
             throw new IOException("Missing required columns in stops.txt");
         }
@@ -185,7 +185,7 @@ public class GTFSParser {
                 if (idIndex != -1) {
                     id = lineSplit[idIndex].replace("\"", "").trim();
                 } else {
-                    id = "default"; 
+                    id = "default";
                 }
                 String name = lineSplit[nameIndex].replace("\"", "").trim();
 
@@ -229,7 +229,7 @@ public class GTFSParser {
 
             try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
-                
+
                 if (id.isEmpty()) {
                     throw new IOException("Missing required data for a particular route (id): " + line);
                 }
@@ -237,7 +237,7 @@ public class GTFSParser {
                 String operator;
                 if (agencies.size() == 1) {
                     // In GTFS data, agency_id column is only needed if more than one agency
-                    operator = agencies.values().iterator().next(); 
+                    operator = agencies.values().iterator().next();
                 } else if (agencyIndex != -1) {
                     String agencyID = lineSplit[agencyIndex].replace("\"", "").trim();
                     operator = agencies.get(agencyID);
@@ -253,9 +253,9 @@ public class GTFSParser {
                 String longName = (longNameIndex != -1) ? lineSplit[longNameIndex].replace("\"", "").trim() : "";
 
                 routes.put(id, new Route(id, operator, shortName, longName));
-                
+
             } catch (IOException e) {
-                throw e; 
+                throw e;
             } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
@@ -357,11 +357,11 @@ public class GTFSParser {
                 int depTime = ParsingUtil.parseStopTime(departureTimeString);
 
                 if (depTime == -1 && arrTime != -1) {
-                    depTime = arrTime; 
+                    depTime = arrTime;
                 } else if (depTime != -1 && arrTime == -1) {
                     arrTime = depTime;
                 }
-                
+
                 int stopSeq;
                 try {
                     stopSeq = Integer.parseInt(stopSeqString);
@@ -413,7 +413,7 @@ public class GTFSParser {
         while ((line = reader.readLine()) != null) {
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
-             try {
+            try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
                 String monday = lineSplit[day1Index].replace("\"", "").trim();
                 String tuesday = lineSplit[day2Index].replace("\"", "").trim();
@@ -429,7 +429,7 @@ public class GTFSParser {
                 if(id.isEmpty()){
                     throw new IOException("Missing required service id for a particular period: " + line);
                 }
-                
+
                 if(week.length() < 7){
                     throw new IOException("Missing required activity information for a particular period: " + line);
                 }
@@ -440,11 +440,11 @@ public class GTFSParser {
 
                 calendar.put(id, new Calendar(id, week, startDate, endDate));
 
-             } catch (IOException e) {
+            } catch (IOException e) {
                 throw e;
-             } catch (Exception e) {
+            } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
-             }
+            }
         }
     }
     public void parseCalendarDates(BufferedReader reader) throws IOException {
@@ -465,12 +465,12 @@ public class GTFSParser {
         while ((line = reader.readLine()) != null) {
             String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
-             try {
+            try {
                 String id = lineSplit[idIndex].replace("\"", "").trim();
                 String date = lineSplit[dateIndex].replace("\"", "").trim();
                 String exceptionType = lineSplit[exceptionIndex].replace("\"", "").trim();
 
-                
+
                 if(id.isEmpty()){
                     throw new IOException("Missing required service id for a particular date: " + line);
                 }
@@ -482,12 +482,12 @@ public class GTFSParser {
                 }
 
                 calendar_dates.put(id, new CalendarDates(id, date, exceptionType));
-                
-             }catch (IOException e) {
+
+            }catch (IOException e) {
                 throw e;
-             } catch (Exception e) {
+            } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
-             }
+            }
         }
     }
 }

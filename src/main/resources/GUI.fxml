@@ -13,7 +13,13 @@
             <Label text="Navigation" styleClass="header-label"/>
             <TextField fx:id="startField" promptText="Start Location" styleClass="input-field"/>
             <TextField fx:id="endField" promptText="End Location" styleClass="input-field"/>
+            <TextField fx:id="timeField" promptText="Start Time (HH:MM)" styleClass="input-field"/>
+
             <Button text="Plan Journey" onAction="#handlePlanJourney" styleClass="primary-button" maxWidth="Infinity"/>
+
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
+                <VBox fx:id="routeStepsContainer" spacing="10" style="-fx-padding: 5;"/>
+            </ScrollPane>
 
             <Separator/>
 

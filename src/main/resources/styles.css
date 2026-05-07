@@ -34,3 +34,15 @@
     -fx-border-color: #cccccc;
     -fx-cursor: hand;
 }
+.stop-marker {
+    -fx-fill: #E91E63; /* Bright pink/red */
+    -fx-stroke: white;
+    -fx-stroke-width: 1;
+    -fx-opacity: 0.8;
+}
+
+.stop-marker:hover {
+    -fx-fill: #FFEB3B; /* Yellow on hover */
+    -fx-scale-x: 1.5;
+    -fx-scale-y: 1.5;
+}
