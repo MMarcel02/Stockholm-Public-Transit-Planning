@@ -17,7 +17,6 @@ public class RouteStep {
     public String longName;
     public String headSign;
 
-    // Walking constructor
     public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight, String toStopName) {
         this.walking = true;
         this.latTo = latTo;
@@ -27,7 +26,6 @@ public class RouteStep {
         this.toStopName = toStopName;
     }
 
-    // Public transit constructor
     public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight,
                      String fromStopName, String toStopName, String operatorName, String shortName, String longName, String headSign) {
         this.walking = false;

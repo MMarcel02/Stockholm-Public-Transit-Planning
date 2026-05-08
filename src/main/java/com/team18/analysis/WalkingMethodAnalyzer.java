@@ -42,8 +42,7 @@ public class WalkingMethodAnalyzer {
                     long startEqui = System.nanoTime();
                     double distEqui = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
                     long timeEqui = System.nanoTime() - startEqui;
-
-                    // Only start counting after JVM warmup 
+                    
                     if (lineCount >= WARMUP_ITERATIONS) {
                         double errorPercentage = Math.abs(distHaversine - distEqui) / distHaversine * 100.0;
                         totalErrorPercent += errorPercentage;

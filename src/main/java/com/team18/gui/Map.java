@@ -27,7 +27,6 @@ import java.util.zip.ZipException;
 import java.io.IOException;
 
 public class Map {
-	// This group contains the tiles that are currently visible.
 	private Group mapGroup;
 	private Group tileGroup;
 	private Group routeGroup;
@@ -42,7 +41,6 @@ public class Map {
 	private LinkedHashMap<Tile.Coord, Tile> tiles = new LinkedHashMap<Tile.Coord, Tile>(100, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<Tile.Coord, Tile> eldest) {
-			// Keep a maximum of 100 tiles in RAM.
 			return size() > 100;
 		}
 	};
@@ -90,8 +88,6 @@ public class Map {
 		refresh();
 
 		mapGroup.setOnMousePressed(ev -> {
-			// Save initial coordinates for panning
-
 			dragStartX = ev.getSceneX();
 			dragStartY = ev.getSceneY();
 			groupTranslateX = mapGroup.getTranslateX();
@@ -99,8 +95,6 @@ public class Map {
 		});
 
 		mapGroup.setOnMouseDragged(ev -> {
-			// Continuously update map position while panning
-
 			mapGroup.setTranslateX(groupTranslateX + (ev.getSceneX() - dragStartX));
 			mapGroup.setTranslateY(groupTranslateY + (ev.getSceneY() - dragStartY));
 
@@ -177,7 +171,6 @@ public class Map {
 		double width = 1920;
 		double height = 1080;
 
-		// A list that _exclusively_ contains the new active tiles.
 		ArrayList<Tile> newActives = new ArrayList<>();
 		for (int relX = -1; relX * Tile.RESOLUTION <= width; relX++) {
 			for (int relY = -1; relY * Tile.RESOLUTION <= height; relY++) {
@@ -198,11 +191,9 @@ public class Map {
 			}
 		}
 
-		// Cull tiles that are off-screen.
 		ArrayList<Tile> toRemove = new ArrayList<>();
 		for (Tile tile: this.activeTiles) {
 			if (!newActives.contains(tile)) {
-				// This tile is off-screen now.
 				tileGroup.getChildren().removeAll(tile.rendered);
 				toRemove.add(tile);
 			}

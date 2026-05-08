@@ -2,8 +2,7 @@ package com.team18.gui;
 
 import javafx.scene.shape.Circle;
 
-// A point of interest on the map.
-// Shop, bus station, public building, etc.
+
 public class Landmark {
 	// In the future this will have other things,
 	// such as type and size/importance.

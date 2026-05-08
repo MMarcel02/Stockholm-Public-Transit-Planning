@@ -63,18 +63,16 @@ public class GuiController {
 			mapContainer.getChildren().add(map.getMapGroup());
 		}
 
-		final boolean[] settingStart = {true}; // Toggle to switch between start and end inputs
+		final boolean[] settingStart = {true};
 
-		// Use JavaFX's native mouse clicked event.
-		// isStillSincePress() perfectly prevents panning drags from counting as clicks!
+
 		map.getMapGroup().setOnMouseClicked(ev -> {
 			if (ev.isStillSincePress()) {
 
-				// Because we attach to mapGroup, getX and getY are already local map coordinates!
+
 				double localX = ev.getX();
 				double localY = ev.getY();
 
-				// Convert pixels to GPS Coordinates
 				double[] latLon = map.getLatLonFromLocal(localX, localY);
 				double lat = latLon[0];
 				double lon = latLon[1];
@@ -83,17 +81,16 @@ public class GuiController {
 
 				if (settingStart[0]) {
 					startField.setText(coordString);
-					map.setStartMarker(lat, lon); // Drop green pin
-					settingStart[0] = false;      // Next click sets destination
+					map.setStartMarker(lat, lon); // green pin
+					settingStart[0] = false;
 				} else {
 					endField.setText(coordString);
-					map.setEndMarker(lat, lon);   // Drop red pin
-					settingStart[0] = true;       // Next click resets to start
+					map.setEndMarker(lat, lon);   // red pin
+					settingStart[0] = true;       //
 				}
 			}
 		});
 		map.setOnStopClicked(landmark -> {
-			// Snap to the exact station coordinates, not the pixel under the mouse
 			String coordString = String.format("%.6f, %.6f", landmark.lat, landmark.lon);
 
 			if (settingStart[0]) {
@@ -113,7 +110,7 @@ public class GuiController {
 	}
 
 	public void displayRouteInstructions(List<RouteStep> steps) {
-		routeStepsContainer.getChildren().clear(); // Clear old results
+		routeStepsContainer.getChildren().clear();
 
 		if (steps == null || steps.isEmpty()) {
 			routeStepsContainer.getChildren().add(new Label("No route found."));
@@ -127,7 +124,6 @@ public class GuiController {
 			VBox stepCard = new VBox(5);
 			stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
 
-			// Check the public boolean 'walking' that the backend team created
 			String modeText = step.walking ? "WALK" : (step.longName + " " + step.shortName + " " + step.headSign).trim().toUpperCase();
 			Label modeLabel = new Label(modeText);
 			modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
@@ -143,7 +139,6 @@ public class GuiController {
 
 	@FXML
 	public void handlePlanJourney() {
-		// Prevent crashing if they click the button before the background thread finishes
 		if (raptorNetwork == null) {
 			routeStepsContainer.getChildren().clear();
 			routeStepsContainer.getChildren().add(new Label("Network still loading... Please wait."));
@@ -164,19 +159,15 @@ public class GuiController {
 			double endLat = Double.parseDouble(endParts[0].trim());
 			double endLon = Double.parseDouble(endParts[1].trim());
 
-			// Convert "08:30" into seconds after midnight
 			int startTimeSeconds = ParsingUtil.parseStopTime(time);
 
 			System.out.println("Routing from: (" + startLat + ", " + startLon + ") to (" + endLat + ", " + endLon + ")");
 
-			// --- RUN REAL RAPTOR ALGORITHM ---
 			Router raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
 
-			// Save it to the class variable so your teammate can draw it later
 			currentRoute = raptorAlgorithm.getFastestTrip(startLat, startLon, endLat, endLon, startTimeSeconds);
 			map.setRoute(new FullRoute(startLat, startLon, currentRoute));
 
-			// Display it in your sidebar!
 			displayRouteInstructions(currentRoute);
 
 		} catch (Exception e) {

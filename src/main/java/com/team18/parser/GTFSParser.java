@@ -20,8 +20,6 @@ import com.team18.model.Calendar;
 import com.team18.model.CalendarDates;
 import com.team18.util.ParsingUtil;
 
-// Can check what GTFS data is required and formatting guidelines at link below
-//https://resources.transitapp.com/article/458-guidelines-for-producing-gtfs-static-data-for-transit#agencytxt-DwlWP
 
 public class GTFSParser {
 
@@ -171,7 +169,6 @@ public class GTFSParser {
             else if(col.equals("agency_name")) nameIndex = i;
         }
 
-        // agency_id is optional if only one agency according to GTFS
         if (nameIndex == -1) {
             throw new IOException("Missing required column agency_name in agency.txt");
         }
@@ -379,8 +376,7 @@ public class GTFSParser {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
         }
-        
-        // Sorting into ascending order
+
         for (Trip trip : trips.values()) {
             trip.stopTimes.sort((st1, st2) -> Integer.compare(st1.stopSequence, st2.stopSequence));
         }

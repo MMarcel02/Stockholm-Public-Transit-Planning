@@ -40,8 +40,6 @@ public class Tile {
 			this.zoom = zoom;
 		}
 
-		// Given any latitude and longitude, this function determines
-		// which tile they fall into.
 		public static Coord fromLatLon(double lat, double lon, int zoom) {
 			int x = (int) Math.floor((lon + 180) / 360 * (1 << zoom));
 			int y = (int) Math.floor((1 - Math.log(Math.tan(Math.toRadians(lat)) + 1 / Math.cos(Math.toRadians(lat))) / Math.PI) / 2 * (1 << zoom));
@@ -49,8 +47,6 @@ public class Tile {
 			return new Coord(x, y, zoom);
 		}
 
-		// Gives the four limits (one on each side) of the square tile,
-		// in longitude and latitude.
 		public Bounds calculateBounds() {
 			double n = Math.pow(2, this.zoom);
 
@@ -136,7 +132,6 @@ public class Tile {
 
 	Group rendered;
 
-	// Produces the unrendered tile, including its image.
 	// This tile can be cached, then rendered into the GUI whenever it is needed.
 	public Tile(Coord coord) {
 		this.coord = coord;
@@ -149,16 +144,11 @@ public class Tile {
 			File cachedFile = new File(filePath);
 			if (!cachedFile.exists()) {
 				System.out.printf("fetching %d/%d/%d…\n", coord.zoom, coord.x, coord.y);
-
-				// Open a manual connection
 				URL url = new URL(urlString);
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
-				// Set the user agent in a way that will prevent OSM
-				// from blocking the request
 				conn.setRequestProperty("User-Agent", "Team18RoutingApp/1.0 (UniversityProject)");
 
-				// Read the image stream
 				InputStream in = conn.getInputStream();
 
 				FileOutputStream out = new FileOutputStream(filePath);
@@ -185,15 +175,12 @@ public class Tile {
 	public void addLandmark(Landmark landmark) {
 		Bounds bounds = this.coord.calculateBounds();
 
-		// This landmark falls outside the bounds of the tile.
 		if (landmark.lon < bounds.leftLon || landmark.lon > bounds.rightLon) return;
 		if (landmark.lat > bounds.topLat || landmark.lat < bounds.bottomLat) return;
 
 		this.landmarks.add(landmark);
 	}
 
-	// Renders the tile and its landmarks into a JavaFX component to be put
-	// on the screen.
 	public Group render(java.util.function.Consumer<Landmark> onClickCallback) {
 		Group group = new Group();
 
