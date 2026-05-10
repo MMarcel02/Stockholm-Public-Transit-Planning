@@ -6,6 +6,8 @@ import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.routing.Router;
+import com.team18.routing.AStar.AStarRouter;
+import com.team18.routing.AStar.TransitGraph;
 import com.team18.util.ParsingUtil;
 
 import java.io.EOFException;
@@ -33,6 +35,8 @@ public class RoutingEngine {
 
     public void run() throws IOException {
         System.err.println("Starting");
+        GTFSParser parser = new GTFSParser();
+
         while (true) {
             Object json;
             try {
@@ -53,7 +57,6 @@ public class RoutingEngine {
                 if (request.containsKey("load")) {
                     String zipFilePath = (String) request.get("load");
                     try {
-                        GTFSParser parser = new GTFSParser();
                         parser.loadFromZip(zipFilePath);
                         RaptorBuilder builder = new RaptorBuilder();
                         this.raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
@@ -95,9 +98,16 @@ public class RoutingEngine {
                             routeSteps[i] = journey.get(i).toMap();
                         }
                         
+                        // Router aStar = new AStarRouter(parser);
+                        // List<RouteStep> journey = aStar.getFastestTrip(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight);
+                        // Object[] routeSteps = new Object[journey.size()];
+                        // for (int i = 0; i < routeSteps.length; i++) {
+                        //     routeSteps[i] = journey.get(i).toMap();
+                        // }
+
                         sendOk(routeSteps);
                     } catch (ClassCastException | NullPointerException e) {
-                        sendError("Coordinates must be formatted as numbers");
+                        sendError("Coordinates must be formatted as numbers" + e.getMessage());
                     } catch (Exception e) {
                         e.printStackTrace();
                         sendError("Invalid route request format: " + e.getMessage());

@@ -38,7 +38,7 @@ public class Map {
 
 	private int zoomLevel = 14;
 
-	private LinkedHashMap<Tile.Coord, Tile> tiles = new LinkedHashMap<Tile.Coord, Tile>(100, 0.75f, true) {
+	private LinkedHashMap<Tile.Coord, Tile> tiles = new LinkedHashMap<Tile.Coord, Tile>(1000, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<Tile.Coord, Tile> eldest) {
 			return size() > 100;
@@ -92,6 +92,26 @@ public class Map {
 			dragStartY = ev.getSceneY();
 			groupTranslateX = mapGroup.getTranslateX();
 			groupTranslateY = mapGroup.getTranslateY();
+
+			int delta = 0;
+			if (ev.isMiddleButtonDown()) {
+				delta = 1;
+			} else if (ev.isSecondaryButtonDown()) {
+				delta = -1;
+			}
+			if (delta == 0) return;
+
+			double factor = Math.pow(2, delta);
+			if (factor < 0) factor = 1 / (-factor);
+
+			// TODO: We need to figure out the size of the visible map and offset by that,
+			// so that zoom is centered in the middle.
+			mapGroup.setTranslateX(mapGroup.getTranslateX() * factor);
+			mapGroup.setTranslateY(mapGroup.getTranslateY() * factor);
+
+			this.zoomLevel += delta;
+
+			refresh();
 		});
 
 		mapGroup.setOnMouseDragged(ev -> {

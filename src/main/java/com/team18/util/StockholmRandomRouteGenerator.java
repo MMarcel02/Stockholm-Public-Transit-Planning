@@ -7,38 +7,69 @@ import java.util.Locale;
 
 public class StockholmRandomRouteGenerator {
 
-    // Generates random routes around stocholm area so we can measure the accuracy and speedup of equirectangular vs haversine methods
-    // Rough box for stockholm area
-    private static final double MIN_LAT = 59.1800;
-    private static final double MAX_LAT = 59.5500;
-    private static final double MIN_LON = 17.6000;
-    private static final double MAX_LON = 19.0000;
-    
     private static final Random random = new Random();
 
+    // A configuration class to hold the details for each specific area
+    private static class AreaConfig {
+        String areaName;
+        String filename;
+        int numRoutes;
+        double minLat, maxLat, minLon, maxLon;
+
+        public AreaConfig(String areaName, String filename, int numRoutes, 
+                          double minLat, double maxLat, double minLon, double maxLon) {
+            this.areaName = areaName;
+            this.filename = filename;
+            this.numRoutes = numRoutes;
+            this.minLat = minLat;
+            this.maxLat = maxLat;
+            this.minLon = minLon;
+            this.maxLon = maxLon;
+        }
+    }
+
     public static void main(String[] args) {
-        int numRoutes = 10500;
-        String filename = "stockholm_routes.jsonl";
         String loadString = "{\"load\": \"data/stockholm/sl.zip\"}\n";
 
-        try (FileWriter writer = new FileWriter(filename)) {
+        AreaConfig metroArea = new AreaConfig(
+            "Stockholm Metro Area", 
+            "stockholm_metro_routes.jsonl", 
+            10500, 
+            58.7000, 60.2500, // MIN_LAT, MAX_LAT
+            17.2000, 19.3000  // MIN_LON, MAX_LON
+        );
+
+        AreaConfig urbanArea = new AreaConfig(
+            "Stockholm Urban Area", 
+            "stockholm_urban_routes.jsonl", 
+            10500, 
+    59.2000, 59.4500, // MIN_LAT, MAX_LAT
+            17.8000, 18.2000  // MIN_LON, MAX_LON
+        );
+
+        generateRoutesForArea(metroArea, loadString);
+        generateRoutesForArea(urbanArea, loadString);
+    }
+
+    private static void generateRoutesForArea(AreaConfig area, String loadString) {
+        try (FileWriter writer = new FileWriter(area.filename)) {
             writer.write(loadString);
-            for (int i = 0; i < numRoutes; i++) {
-                double fromLat = getRandomCoordinate(MIN_LAT, MAX_LAT);
-                double fromLon = getRandomCoordinate(MIN_LON, MAX_LON);
-                double toLat = getRandomCoordinate(MIN_LAT, MAX_LAT);
-                double toLon = getRandomCoordinate(MIN_LON, MAX_LON);
+            for (int i = 0; i < area.numRoutes; i++) {
+                double fromLat = getRandomCoordinate(area.minLat, area.maxLat);
+                double fromLon = getRandomCoordinate(area.minLon, area.maxLon);
+                double toLat = getRandomCoordinate(area.minLat, area.maxLat);
+                double toLon = getRandomCoordinate(area.minLon, area.maxLon);
                 String time = generateRandomTime();
 
                 String jsonLine = String.format(Locale.US,
-                        "{\"routeFrom\": {\"lat\": %.4f, \"lon\": %.4f}, \"to\": {\"lat\": %.4f, \"lon\": %.4f}, \"startingAt\": \"%s\", \"debug\": \"%s\"}\n",
-                        fromLat, fromLon, toLat, toLon, time, true);
-
+                        "{\"routeFrom\": {\"lat\": %.4f, \"lon\": %.4f}, \"to\": {\"lat\": %.4f, \"lon\": %.4f}, \"startingAt\": \"%s\"}\n",
+                        fromLat, fromLon, toLat, toLon, time);
+                
                 writer.write(jsonLine);
             }
-            System.out.println("Successfully generated " + numRoutes + " routes in '" + filename + "'.");
+            System.out.println("Successfully generated " + area.numRoutes + " routes for " + area.areaName + " in '" + area.filename);
         } catch (IOException e) {
-            System.err.println("An error occurred while writing the file:");
+            System.err.println("An error occurred while writing the file for " + area.areaName);
             e.printStackTrace();
         }
     }
@@ -48,8 +79,8 @@ public class StockholmRandomRouteGenerator {
     }
 
     private static String generateRandomTime() {
-        int hour = random.nextInt(17) + 6; // Random hour from 6 to 22
-        int minute = random.nextInt(60);   // Random minute from 0 to 59
+        int hour = random.nextInt(17) + 6; 
+        int minute = random.nextInt(60);   
         return String.format(Locale.US, "%02d:%02d", hour, minute);
     }
 }

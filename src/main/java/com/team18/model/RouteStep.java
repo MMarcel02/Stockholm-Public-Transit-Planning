@@ -7,7 +7,7 @@ public class RouteStep {
     public boolean walking;
     public double latTo;
     public double lonTo;
-    public int durationMinutes;
+    public double durationMinutes;
     public int startTimeSecondsAfterMidnight;
 
     public String fromStopName;
@@ -17,7 +17,8 @@ public class RouteStep {
     public String longName;
     public String headSign;
 
-    public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight, String toStopName) {
+    // Walking constructor
+    public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight, String toStopName) {
         this.walking = true;
         this.latTo = latTo;
         this.lonTo = lonTo;
@@ -26,7 +27,8 @@ public class RouteStep {
         this.toStopName = toStopName;
     }
 
-    public RouteStep(double latTo, double lonTo, int durationMinutes, int startTimeSecondsAfterMidnight,
+    // Public transit constructor
+    public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight,
                      String fromStopName, String toStopName, String operatorName, String shortName, String longName, String headSign) {
         this.walking = false;
         this.latTo = latTo;

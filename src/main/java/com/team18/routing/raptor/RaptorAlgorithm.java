@@ -119,7 +119,7 @@ public class RaptorAlgorithm implements Router {
         int bestTimeAtDestination = Integer.MAX_VALUE;
         double directDist = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
         if (directDist <= MAX_WALK_DISTANCE) {
-            bestTimeAtDestination = startTimeSecondsAfterMidnight + (int)(directDist / WALK_SPEED_MPS);
+            bestTimeAtDestination = startTimeSecondsAfterMidnight + (int) Math.round(directDist / WALK_SPEED_MPS);
             destinationBestArrivalTimePerRound[0] = bestTimeAtDestination;
             destinationPriorStopPerRound[0] = -2;
         }
@@ -294,7 +294,7 @@ public class RaptorAlgorithm implements Router {
             }
 
             // Stage 4: Check if walking from here to our destination is faster than our best time already
-            for (int stopId : markedStops) {
+            for (int stopId : stopsReachedByTransit) {
                 if (walkTimeToDestination[stopId] != Integer.MAX_VALUE) {
                     int arrivalAtDestination = arrivalTimesPerRound[(round * totalStops) + stopId] + walkTimeToDestination[stopId];
                     if (arrivalAtDestination < bestTimeAtDestination) {
@@ -366,14 +366,14 @@ public class RaptorAlgorithm implements Router {
 
         // This is the walking case (walking from source to destination is the fastest journey)
         if (lastStopId == -2) {
-            int durationMinutes = (bestTime - startTimeSecondsAfterMidnight) / 60;
+            double durationMinutes = (bestTime - startTimeSecondsAfterMidnight) / 60.0;
             routeSteps.add(new RouteStep(latTo, lonTo, durationMinutes, startTimeSecondsAfterMidnight, "destination"));
             return routeSteps;
         }
 
         // RouteStep for final walk
         int arrivalAtLastStop = arrivalTimesPerRound[(bestRound * totalStops) + lastStopId];
-        int finalWalkDuration = (bestTime - arrivalAtLastStop) / 60;
+        double finalWalkDuration = (bestTime - arrivalAtLastStop) / 60.0;
         routeSteps.add(new RouteStep(latTo, lonTo, finalWalkDuration, arrivalAtLastStop, "destination"));
 
         int currentStopId = lastStopId;
@@ -397,13 +397,13 @@ public class RaptorAlgorithm implements Router {
             if (routeTakenId == -1) {
                 int startTime = arrivalTimesPerRound[(currentRound * totalStops) + parentStopId];
                 int endTime = arrivalTimesPerRound[parentIndex];
-                int durationMinutes = (endTime - startTime) / 60;
+                double durationMinutes = (endTime - startTime) / 60.0;
 
                 step = new RouteStep(targetStop.lat, targetStop.lon, durationMinutes, startTime, targetStop.name);
             } else {
                 int startTime = arrivalTimesPerRound[((currentRound - 1) * totalStops) + parentStopId];
                 int endTime = arrivalTimesPerRound[parentIndex];
-                int durationMinutes = (endTime - startTime) / 60;
+                double durationMinutes = (endTime - startTime) / 60.0;
 
                 RaptorRoute routeInfo = raptorRouteLookup[routeTakenId];
 
@@ -423,7 +423,7 @@ public class RaptorAlgorithm implements Router {
 
         // Make routeStep for initial walk
         if (currentStopId >= 0) {
-            int initialWalkDuration = (arrivalTimesPerRound[currentStopId] - startTimeSecondsAfterMidnight) / 60;
+            double initialWalkDuration = (arrivalTimesPerRound[currentStopId] - startTimeSecondsAfterMidnight) / 60.0;
             Stop firstStop = stopLookup[currentStopId];
             routeSteps.add(0, new RouteStep(firstStop.lat, firstStop.lon, initialWalkDuration, startTimeSecondsAfterMidnight, firstStop.name));
         }
