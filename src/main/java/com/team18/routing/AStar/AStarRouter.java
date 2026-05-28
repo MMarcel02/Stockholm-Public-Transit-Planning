@@ -58,7 +58,7 @@ public class AStarRouter implements Router {
 
             RouteNode q = openList.get(qIndex); //q is our current stop
             
-            List<Edge> successorList = graph.adjacency.get(q.stop.id); //use the id of q to get its adjacent stops from the graph
+            List<Edge> successorList = graph.getAdjacency().get(q.stop.id); //use the id of q to get its adjacent stops from the graph
 
             double gOld = openList.get(qIndex).g; //gOld is the travel time up to the current stop
             for(int i = 0; i < successorList.size(); ++i){
