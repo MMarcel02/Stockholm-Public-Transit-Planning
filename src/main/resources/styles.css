@@ -46,3 +46,16 @@
     -fx-scale-x: 1.5;
     -fx-scale-y: 1.5;
 }
+
+/* Route rendering */
+.route-line {
+    -fx-opacity: 0.9;
+}
+
+.route-line-walk {
+    -fx-stroke: #2E7D32; /* green */
+}
+
+.route-line-transit {
+    -fx-stroke: #C62828; /* red */
+}

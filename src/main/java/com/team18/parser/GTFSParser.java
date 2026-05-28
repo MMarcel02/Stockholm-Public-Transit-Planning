@@ -18,6 +18,7 @@ import com.team18.model.StopTime;
 import com.team18.model.Trip;
 import com.team18.model.Calendar;
 import com.team18.model.CalendarDates;
+import com.team18.model.ShapePoint;
 import com.team18.util.ParsingUtil;
 
 
@@ -29,6 +30,7 @@ public class GTFSParser {
     public Map<String, Trip> trips = new HashMap<>();
     public Map<String, Calendar> calendar = new HashMap<>();
     public Map<String, CalendarDates> calendar_dates = new HashMap<>();
+    public Map<String, List<ShapePoint>> shapes = new HashMap<>();
 
 
     public void loadFromZip(String zipFilePath) throws IOException {
@@ -46,6 +48,7 @@ public class GTFSParser {
                 if (entry.getName().endsWith("stop_times.txt")) entryMap.put("stop_times", entry);
                 if (entry.getName().endsWith("calendar.txt")) entryMap.put("calendar", entry);
                 if (entry.getName().endsWith("calendar_dates.txt")) entryMap.put("calendar_dates", entry);
+                if (entry.getName().endsWith("shapes.txt")) entryMap.put("shapes", entry);
 
             }
 
@@ -63,6 +66,9 @@ public class GTFSParser {
             parseEntry(zipFile, entryMap.get("stop_times"), "stop_times");
             parseEntry(zipFile, entryMap.get("calendar"), "calendar");
             parseEntry(zipFile, entryMap.get("calendar_dates"), "calendar_dates");
+            if (entryMap.containsKey("shapes")) {
+                parseEntry(zipFile, entryMap.get("shapes"), "shapes");
+            }
 
         }
     }
@@ -94,6 +100,9 @@ public class GTFSParser {
                     break;
                 case "calendar_dates":
                     parseCalendarDates(reader);
+                    break;
+                case "shapes":
+                    parseShapes(reader);
                     break;
                 default:
                     throw new IOException("Unknown file type: " + type);
@@ -263,13 +272,14 @@ public class GTFSParser {
         String firstLine = reader.readLine();
         if (firstLine == null) return;
         String[] colNames = firstLine.split(",");
-        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1, headSignIndex = -1;
+        int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1, headSignIndex = -1, shapeIdIndex = -1;
         for (int i = 0; i < colNames.length; i++) {
             String col = colNames[i].trim();
             if (col.equals("trip_id")) idIndex = i;
             else if(col.equals("service_id")) serviceIdIndex = i;
             else if(col.equals("route_id")) routeIdIndex = i;
             else if(col.equals("trip_headsign")) headSignIndex = i;
+            else if(col.equals("shape_id")) shapeIdIndex = i;
         }
 
         if (idIndex == -1 || serviceIdIndex == -1 || routeIdIndex == -1) {
@@ -287,6 +297,7 @@ public class GTFSParser {
 
                 
                 String headSign = (headSignIndex != -1) ? lineSplit[headSignIndex].replace("\"", "").trim() : "";
+                String shapeId = (shapeIdIndex != -1) ? lineSplit[shapeIdIndex].replace("\"", "").trim() : "";
 
                 if (id.isEmpty() || serviceId.isEmpty() || routeId.isEmpty()) {
                     throw new IOException("Missing required data for a particular trip (trip_id, service_id, route_id): " + line);
@@ -297,7 +308,7 @@ public class GTFSParser {
                     throw new IOException("RouteID not found in routes: " + routeId);
                 }
 
-                Trip newTrip = new Trip(id, route, serviceId, headSign);
+                Trip newTrip = new Trip(id, route, serviceId, headSign, shapeId.isEmpty() ? null : shapeId);
                 trips.put(id, newTrip);
                 route.trips.add(newTrip);
 
@@ -306,6 +317,64 @@ public class GTFSParser {
             } catch (Exception e) {
                 throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
             }
+        }
+    }
+
+    public void parseShapes(BufferedReader reader) throws IOException {
+        String firstLine = reader.readLine();
+        if (firstLine == null) return;
+        String[] colNames = firstLine.split(",");
+
+        int shapeIdIndex = -1, latIndex = -1, lonIndex = -1, seqIndex = -1, distIndex = -1;
+        for (int i = 0; i < colNames.length; i++) {
+            String col = colNames[i].trim();
+            if (col.equals("shape_id")) shapeIdIndex = i;
+            else if (col.equals("shape_pt_lat")) latIndex = i;
+            else if (col.equals("shape_pt_lon")) lonIndex = i;
+            else if (col.equals("shape_pt_sequence")) seqIndex = i;
+            else if (col.equals("shape_dist_traveled")) distIndex = i;
+        }
+
+        if (shapeIdIndex == -1 || latIndex == -1 || lonIndex == -1 || seqIndex == -1) {
+            throw new IOException("Missing required columns in shapes.txt");
+        }
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+            try {
+                String shapeId = lineSplit[shapeIdIndex].replace("\"", "").trim();
+                String latStr = lineSplit[latIndex].replace("\"", "").trim();
+                String lonStr = lineSplit[lonIndex].replace("\"", "").trim();
+                String seqStr = lineSplit[seqIndex].replace("\"", "").trim();
+                String distStr = (distIndex != -1) ? lineSplit[distIndex].replace("\"", "").trim() : "";
+
+                if (shapeId.isEmpty() || latStr.isEmpty() || lonStr.isEmpty() || seqStr.isEmpty()) {
+                    continue; // ignore malformed/blank rows
+                }
+
+                double lat = Double.parseDouble(latStr);
+                double lon = Double.parseDouble(lonStr);
+                int seq = Integer.parseInt(seqStr);
+                Double dist = null;
+                if (!distStr.isEmpty()) {
+                    try {
+                        dist = Double.parseDouble(distStr);
+                    } catch (NumberFormatException ignored) {
+                        dist = null;
+                    }
+                }
+
+                shapes.putIfAbsent(shapeId, new ArrayList<>());
+                shapes.get(shapeId).add(new ShapePoint(lat, lon, seq, dist));
+            } catch (Exception e) {
+                throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+            }
+        }
+
+        // Ensure points are in traversal order.
+        for (List<ShapePoint> pts : shapes.values()) {
+            pts.sort((a, b) -> Integer.compare(a.sequence, b.sequence));
         }
     }
 

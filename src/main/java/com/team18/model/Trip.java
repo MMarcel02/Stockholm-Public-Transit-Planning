@@ -8,13 +8,15 @@ public class Trip {
     public final Route route;
     public final String serviceId;
     public final String headSign;
+    public final String shapeId;
 
     public List<StopTime> stopTimes = new ArrayList<>();
 
-    public Trip(String tripId, Route route, String serviceId, String headSign) {
+    public Trip(String tripId, Route route, String serviceId, String headSign, String shapeId) {
         this.tripId = tripId;
         this.route = route;
         this.serviceId = serviceId;
         this.headSign = headSign;
+        this.shapeId = shapeId;
     }
 }

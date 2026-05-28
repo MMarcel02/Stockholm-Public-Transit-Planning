@@ -410,7 +410,7 @@ public class RaptorAlgorithm implements Router {
                 step = new RouteStep(
                         targetStop.lat, targetStop.lon, durationMinutes, startTime,
                         parentStop.name, targetStop.name, routeInfo.operator, routeInfo.shortName,
-                        routeInfo.longName, routeInfo.headSign
+                        routeInfo.longName, routeInfo.headSign, routeInfo.shapeId
                 );
             }
             routeSteps.add(0, step);

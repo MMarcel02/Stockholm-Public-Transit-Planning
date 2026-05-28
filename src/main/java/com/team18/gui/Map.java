@@ -5,10 +5,13 @@ import com.team18.gui.Landmark;
 import com.team18.gui.FullRoute;
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
+import com.team18.model.ShapePoint;
+import com.team18.util.GeoCalculator;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.List;
 
 import java.lang.Math;
 
@@ -19,6 +22,8 @@ import javafx.scene.Group;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.Polyline;
 
 import java.io.FileNotFoundException;
 import java.nio.file.NoSuchFileException;
@@ -37,6 +42,7 @@ public class Map {
 	private double groupTranslateY = 0;
 
 	private int zoomLevel = 14;
+	private final int maxZoom = 16;
 
 	private LinkedHashMap<Tile.Coord, Tile> tiles = new LinkedHashMap<Tile.Coord, Tile>(1000, 0.75f, true) {
 		@Override
@@ -110,6 +116,7 @@ public class Map {
 			mapGroup.setTranslateY(mapGroup.getTranslateY() * factor);
 
 			this.zoomLevel += delta;
+			if (this.zoomLevel > maxZoom) this.zoomLevel = maxZoom;
 
 			refresh();
 		});
@@ -242,34 +249,100 @@ public class Map {
 		}
 		if (route == null) return;
 
-		Tile.Coord origin = getOrigin();
-
 		double lat = route.startLat;
 		double lon = route.startLon;
 		for (RouteStep step: route.steps) {
-			Line line = new Line();
-			line.setFill(Color.ORANGE);
-
 			int size = (int) Math.pow((double)zoomLevel / 10, 4);
-			line.setStrokeWidth(size);
-
-			Tile.Coord startCoord = Tile.Coord.fromLatLon(lat, lon, zoomLevel);
-			Tile.Bounds startBounds = startCoord.calculateBounds();
-			Tile.Bounds.RelPos startPos = startBounds.interpolate(lat, lon);
-			line.setStartX((startCoord.x - origin.x + startPos.percentX) * Tile.RESOLUTION);
-			line.setStartY((startCoord.y - origin.y + startPos.percentY) * Tile.RESOLUTION);
-
-			Tile.Coord endCoord = Tile.Coord.fromLatLon(step.latTo, step.lonTo, zoomLevel);
-			Tile.Bounds endBounds = endCoord.calculateBounds();
-			Tile.Bounds.RelPos endPos = endBounds.interpolate(step.latTo, step.lonTo);
-			line.setEndX((endCoord.x - origin.x + endPos.percentX) * Tile.RESOLUTION);
-			line.setEndY((endCoord.y - origin.y + endPos.percentY) * Tile.RESOLUTION);
-
-			routeGroup.getChildren().add(line);
+			if (!step.walking && step.shapeId != null && parser.shapes != null) {
+				Polyline poly = buildShapeSegmentPolyline(step.shapeId, lat, lon, step.latTo, step.lonTo);
+				if (poly != null) {
+					poly.getStyleClass().add("route-line");
+					poly.getStyleClass().add("route-line-transit");
+					poly.setStrokeLineCap(StrokeLineCap.ROUND);
+					poly.setStrokeWidth(size);
+					routeGroup.getChildren().add(poly);
+				} else {
+					routeGroup.getChildren().add(buildStraightLine(lat, lon, step.latTo, step.lonTo, size, false));
+				}
+			} else {
+				routeGroup.getChildren().add(buildStraightLine(lat, lon, step.latTo, step.lonTo, size, step.walking));
+			}
 
 			lat = step.latTo;
 			lon = step.lonTo;
 		}
+	}
+
+	private Line buildStraightLine(double startLat, double startLon, double endLat, double endLon, int strokeWidth, boolean walking) {
+		Line line = new Line();
+		line.getStyleClass().add("route-line");
+		line.getStyleClass().add(walking ? "route-line-walk" : "route-line-transit");
+		line.setStrokeLineCap(StrokeLineCap.ROUND);
+		line.setStrokeWidth(strokeWidth);
+
+		double[] startLocal = getLocalFromLatLon(startLat, startLon);
+		double[] endLocal = getLocalFromLatLon(endLat, endLon);
+		line.setStartX(startLocal[0]);
+		line.setStartY(startLocal[1]);
+		line.setEndX(endLocal[0]);
+		line.setEndY(endLocal[1]);
+
+		return line;
+	}
+
+	// Builds a Polyline segment for a transit leg using GTFS shapes.txt.
+	// We approximate the segment by taking the points between the nearest shape points to start and end.
+	private Polyline buildShapeSegmentPolyline(String shapeId, double startLat, double startLon, double endLat, double endLon) {
+		List<ShapePoint> pts = parser.shapes.get(shapeId);
+		if (pts == null || pts.size() < 2) return null;
+
+		int startIdx = findNearestShapePointIndex(pts, startLat, startLon);
+		int endIdx = findNearestShapePointIndex(pts, endLat, endLon);
+		if (startIdx < 0 || endIdx < 0) return null;
+
+		Polyline poly = new Polyline();
+
+		// Anchor the polyline to the exact stop coordinates so we don't end up slightly "off-stop".
+		double[] startLocal = getLocalFromLatLon(startLat, startLon);
+		poly.getPoints().addAll(startLocal[0], startLocal[1]);
+
+		if (startIdx <= endIdx) {
+			for (int i = startIdx; i <= endIdx; i++) {
+				ShapePoint p = pts.get(i);
+				double[] local = getLocalFromLatLon(p.lat, p.lon);
+				poly.getPoints().addAll(local[0], local[1]);
+			}
+		} else {
+			for (int i = startIdx; i >= endIdx; i--) {
+				ShapePoint p = pts.get(i);
+				double[] local = getLocalFromLatLon(p.lat, p.lon);
+				poly.getPoints().addAll(local[0], local[1]);
+			}
+		}
+
+		double[] endLocal = getLocalFromLatLon(endLat, endLon);
+		poly.getPoints().addAll(endLocal[0], endLocal[1]);
+
+		// Need at least 2 points (4 doubles) for a polyline.
+		if (poly.getPoints().size() < 4) return null;
+
+		return poly;
+	}
+
+	private int findNearestShapePointIndex(List<ShapePoint> pts, double lat, double lon) {
+		int bestIdx = -1;
+		double bestDist = Double.POSITIVE_INFINITY;
+
+		for (int i = 0; i < pts.size(); i++) {
+			ShapePoint p = pts.get(i);
+			double d = GeoCalculator.calculateEquirectangularDistance(lat, lon, p.lat, p.lon);
+			if (d < bestDist) {
+				bestDist = d;
+				bestIdx = i;
+			}
+		}
+
+		return bestIdx;
 	}
 
 	public void refresh() {

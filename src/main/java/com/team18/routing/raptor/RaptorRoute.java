@@ -18,6 +18,7 @@ public class RaptorRoute {
     public final String shortName;
     public final String longName;
     public final String headSign;
+    public final String shapeId;
 
     public RaptorRoute(int id, Route parentRoute, List<Stop> patternStops, List<Trip> patternTrips) {
         this.id = id;
@@ -28,6 +29,14 @@ public class RaptorRoute {
         this.operator = parentRoute.operator;
         this.shortName = parentRoute.shortName;
         this.longName = parentRoute.longName;
+
+        // Best-effort: for a "stop pattern" the shape is usually stable, but GTFS doesn't guarantee it.
+        // We pick the first trip's shape_id (can be null/blank).
+        if (!patternTrips.isEmpty()) {
+            this.shapeId = patternTrips.get(0).shapeId;
+        } else {
+            this.shapeId = null;
+        }
         
         // We try to get the headSign from one of the trip objects (blank for most in Stockholm GTFS)
         if (!patternTrips.isEmpty() && patternTrips.get(0).headSign != null) {
