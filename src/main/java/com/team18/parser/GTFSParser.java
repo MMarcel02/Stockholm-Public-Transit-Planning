@@ -137,7 +137,6 @@ public class GTFSParser {
 				}
 
 				stops.put(id, new Stop(id, name, lat, lon));
-
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {

@@ -87,6 +87,7 @@ public class CSVParser {
 	public Row nextRow() {
 		try {
 			String row = reader.readLine();
+			if (row == null) return null;
 			return new Row(this.colNames, row);
 		} catch (IOException ex) {
 			System.err.println("IO Exception in CSV parser");
