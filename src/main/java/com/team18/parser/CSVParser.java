@@ -93,5 +93,14 @@ public class CSVParser {
 			return null;
 		}
 	}
+
+	public boolean hasCols(String... cols) {
+		for (String col: cols) {
+			int index = Arrays.asList(this.colNames).indexOf(col);
+			if (index < 0) return false;
+		}
+
+		return true;
+	}
 }
 
