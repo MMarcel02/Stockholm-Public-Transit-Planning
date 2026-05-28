@@ -21,6 +21,7 @@ public class TransitGraph {
         System.err.println("Building the graph... ");
 
         buildTransitEdges(parser);
+        buildWalkingEdges(parser);
     }
 
     public void buildTransitEdges(GTFSParser parser){
