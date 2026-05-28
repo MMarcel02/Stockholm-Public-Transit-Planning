@@ -119,7 +119,7 @@ public class GTFSParser {
 				String lonString = row.getCol("stop_lon");
 
 				if (id.isEmpty() || name.isEmpty() || latString.isEmpty() || lonString.isEmpty()) {
-					throw new IOException("Missing required data for a particular stop (id, name or coordinates): " + line);
+					throw new IOException("Missing required data for a particular stop (id, name or coordinates): " + row.values);
 				}
 
 				double lat;
@@ -129,7 +129,7 @@ public class GTFSParser {
 					lat = Double.parseDouble(latString);
 					lon = Double.parseDouble(lonString);
 				} catch (NumberFormatException e) {
-					throw new IOException("Invalid coordinate format for stop: " + line);
+					throw new IOException("Invalid coordinate format for stop: " + row.values);
 				}
 
 				if(lat < -90 || lat > 90 || lon < -180 || lon > 180) {
@@ -137,147 +137,87 @@ public class GTFSParser {
 				}
 
 				stops.put(id, new Stop(id, name, lat, lon));
-
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 	}
 
 	public void parseAgencies(CSVParser csvp) throws IOException {
-		String firstLine = reader.readLine();
-		if (firstLine == null) return;
-		String[] colNames = firstLine.split(",");
-		int idIndex = -1, nameIndex = -1;
-		for (int i = 0; i < colNames.length; i++) {
-			String col = colNames[i].trim();
-			if (col.equals("agency_id")) idIndex = i;
-			else if(col.equals("agency_name")) nameIndex = i;
+		if (!csvp.hasCols("agency_id", "agency_name")) {
+			throw new IOException("Missing required columns in stops.txt");
 		}
 
-		if (nameIndex == -1) {
-			throw new IOException("Missing required column agency_name in agency.txt");
-		}
-
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+		Row row;
+		while ((row = csvp.nextRow()) != null) {
 
 			try {
-				String id;
-				if (idIndex != -1) {
-					id = lineSplit[idIndex].replace("\"", "").trim();
-				} else {
-					id = "default";
-				}
-				String name = lineSplit[nameIndex].replace("\"", "").trim();
+				String id = row.getCol("agency_id");
+				String name = row.getCol("agency_name");
 
 				if (id.isEmpty() || name.isEmpty()) {
-					throw new IOException("Missing required data for a particular agency (id or name): " + line);
+					throw new IOException("Missing required data for a particular agency (id or name): " + row.values);
 				}
 
 				agencies.put(id, name);
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 	}
 
 	public void parseRoutes(CSVParser csvp) throws IOException {
-		String firstLine = reader.readLine();
-		if (firstLine == null) return;
-		String[] colNames = firstLine.split(",");
-		int idIndex = -1, agencyIndex = -1, shortNameIndex = -1, longNameIndex = -1;
-		for (int i = 0; i < colNames.length; i++) {
-			String col = colNames[i].trim();
-			if (col.equals("route_id")) idIndex = i;
-			else if(col.equals("agency_id")) agencyIndex = i;
-			else if(col.equals("route_short_name")) shortNameIndex = i;
-			else if(col.equals("route_long_name")) longNameIndex = i;
+		if (!csvp.hasCols("route_id", "agency_id", "route_short_name", "route_long_name")) {
+			throw new IOException("Missing required columns in stops.txt");
 		}
 
-		if (idIndex == -1) {
-			throw new IOException("Missing required column route_id in routes.txt");
-		}
+		Row row;
+		while ((row = csvp.nextRow()) != null) {
 
-		if (shortNameIndex == -1 && longNameIndex == -1) {
-			throw new IOException("Missing both columns: route_short_name and route_long_name. Min. of 1 required");
-		}
-
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
 			try {
-				String id = lineSplit[idIndex].replace("\"", "").trim();
+				String id = row.getCol("route_id");
 
-				if (id.isEmpty()) {
-					throw new IOException("Missing required data for a particular route (id): " + line);
-				}
-
-				String operator;
-				if (agencies.size() == 1) {
-					// In GTFS data, agency_id column is only needed if more than one agency
-					operator = agencies.values().iterator().next();
-				} else if (agencyIndex != -1) {
-					String agencyID = lineSplit[agencyIndex].replace("\"", "").trim();
-					operator = agencies.get(agencyID);
-					if (operator == null) {
-						throw new IOException("Agency ID '" + agencyID + "' found in routes but not defined in agency.txt");
-					}
-				} else {
-					throw new IOException("Multiple agencies exist in agency.txt but there is no column in routes.txt for agency_id");
+				String agencyID = row.getCol("agency_id");
+				String operator = agencies.get(agencyID);
+				if (operator == null) {
+					throw new IOException("Agency ID '" + agencyID + "' found in routes but not defined in agency.txt");
 				}
 
 				// Conditional check in case one column is missing (only one is guaranteed in GTFS datasets)
-				String shortName = (shortNameIndex != -1) ? lineSplit[shortNameIndex].replace("\"", "").trim() : "";
-				String longName = (longNameIndex != -1) ? lineSplit[longNameIndex].replace("\"", "").trim() : "";
+				String shortName = row.getCol("route_short_name");
+				String longName = row.getCol("route_long_name");
 
 				routes.put(id, new Route(id, operator, shortName, longName));
 
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 	}
 
 	public void parseTrips(CSVParser csvp) throws IOException {
-		String firstLine = reader.readLine();
-		if (firstLine == null) return;
-		String[] colNames = firstLine.split(",");
-		int idIndex = -1, serviceIdIndex = -1, routeIdIndex = -1, headSignIndex = -1;
-		for (int i = 0; i < colNames.length; i++) {
-			String col = colNames[i].trim();
-			if (col.equals("trip_id")) idIndex = i;
-			else if(col.equals("service_id")) serviceIdIndex = i;
-			else if(col.equals("route_id")) routeIdIndex = i;
-			else if(col.equals("trip_headsign")) headSignIndex = i;
+		if (!csvp.hasCols("trip_id", "service_id", "route_id", "trip_headsign")) {
+			throw new IOException("Missing required columns in stops.txt");
 		}
 
-		if (idIndex == -1 || serviceIdIndex == -1 || routeIdIndex == -1) {
-			throw new IOException("Missing required columns in trips.txt");
-		}
-
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+		Row row;
+		while ((row = csvp.nextRow()) != null) {
 
 			try {
-				String id = lineSplit[idIndex].replace("\"", "").trim();
-				String serviceId = lineSplit[serviceIdIndex].replace("\"", "").trim();
-				String routeId = lineSplit[routeIdIndex].replace("\"", "").trim();
-
-
-				String headSign = (headSignIndex != -1) ? lineSplit[headSignIndex].replace("\"", "").trim() : "";
+				String id = row.getCol("trip_id");
+				String serviceId = row.getCol("service_id");
+				String routeId = row.getCol("route_id");
+				String headSign = row.getCol("trip_headsign");
 
 				if (id.isEmpty() || serviceId.isEmpty() || routeId.isEmpty()) {
-					throw new IOException("Missing required data for a particular trip (trip_id, service_id, route_id): " + line);
+					throw new IOException("Missing required data for a particular trip (trip_id, service_id, route_id): " + row.values);
 				}
 
 				Route route = routes.get(routeId);
@@ -292,7 +232,7 @@ public class GTFSParser {
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 	}
@@ -300,36 +240,24 @@ public class GTFSParser {
 	// TODO: implement an Interpolator since arrival_time and departure_time are not guaranteed for all GTFS data
 	// TODO: implement different way of getting stopId if the GTFS data uses geojson and locations
 	public void parseStopTimes(CSVParser csvp) throws IOException {
-		String firstLine = reader.readLine();
-		if (firstLine == null) return;
-		String[] colNames = firstLine.split(",");
-		int tripIdIndex = -1, arrTimeIndex = -1, depTimeIndex = -1, stopIdIndex = -1, stopSeqIndex = -1;
-		for (int i = 0; i < colNames.length; i++) {
-			String col = colNames[i].trim();
-			if (col.equals("trip_id")) tripIdIndex = i;
-			else if(col.equals("arrival_time")) arrTimeIndex = i;
-			else if(col.equals("departure_time")) depTimeIndex = i;
-			else if(col.equals("stop_id")) stopIdIndex = i;
-			else if(col.equals("stop_sequence")) stopSeqIndex = i;
+		if (!csvp.hasCols("trip_id", "arrival_time", "departure_time", "stop_id", "stop_sequence")) {
+			throw new IOException("Missing required columns in stops.txt");
 		}
 
-		if (tripIdIndex == -1 || arrTimeIndex == -1 || depTimeIndex == -1 ||stopIdIndex == -1 || stopSeqIndex == -1) {
-			throw new IOException("Missing required columns in stop_times.txt");
-		}
+		Row row;
+		while ((row = csvp.nextRow()) != null) {
 
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+	
 
 			try {
-				String tripId = lineSplit[tripIdIndex].replace("\"", "").trim();
-				String stopId = lineSplit[stopIdIndex].replace("\"", "").trim();
-				String stopSeqString = lineSplit[stopSeqIndex].replace("\"", "").trim();
-				String arrivalTimeString = lineSplit[arrTimeIndex].replace("\"", "").trim();
-				String departureTimeString = lineSplit[depTimeIndex].replace("\"", "").trim();
+				String tripId = row.getCol("trip_id");
+				String stopId = row.getCol("stop_id");
+				String stopSeqString = row.getCol("stop_sequence");
+				String arrivalTimeString = row.getCol("arrival_time");
+				String departureTimeString = row.getCol("departure_time");
 
 				if (tripId.isEmpty() || stopId.isEmpty() || stopSeqString.isEmpty() || (arrivalTimeString.isEmpty() && departureTimeString.isEmpty())) {
-					throw new IOException("Missing required data for a particular trip: " + line);
+					throw new IOException("Missing required data for a particular trip: " + row.values);
 				}
 
 				Trip trip = trips.get(tripId);
@@ -361,7 +289,7 @@ public class GTFSParser {
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 
@@ -371,55 +299,37 @@ public class GTFSParser {
 	}
 
 	public void parseCalendar(CSVParser csvp) throws IOException {
-		String firstLine = reader.readLine();
-		if (firstLine == null) return;
-		String[] colNames = firstLine.split(",");
-		int idIndex = -1, day1Index = -1, day2Index = -1, day3Index = -1, day4Index = -1, day5Index = -1, day6Index = -1, day7Index = -1, startDateIndex = -1, endDateIndex = -1;
-		for (int i = 0; i < colNames.length; i++) {
-			String col = colNames[i].trim();
-			if (col.equals("service_id")) idIndex = i;
-			else if(col.equals("monday")) day1Index = i;
-			else if(col.equals("tuesday")) day2Index = i;
-			else if(col.equals("wednesday")) day3Index = i;
-			else if(col.equals("thursday")) day4Index = i;
-			else if(col.equals("friday")) day5Index = i;
-			else if(col.equals("saturday")) day6Index = i;
-			else if(col.equals("sunday")) day7Index = i;
-			else if(col.equals("start_date")) startDateIndex = i;
-			else if(col.equals("end_date")) endDateIndex = i;
+		if (!csvp.hasCols("service_id", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "start_date", "end_date")) {
+			throw new IOException("Missing required columns in stops.txt");
 		}
 
-		if (idIndex == -1 || day1Index == -1 || day2Index == -1 || day3Index == -1 || day4Index == -1 || day5Index == -1 || day6Index == -1 || day7Index == -1 || startDateIndex == -1 || endDateIndex == -1){
-			throw new IOException("Missing required columns in calendar.txt");
-		}
+		Row row;
+		while ((row = csvp.nextRow()) != null) {
 
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
 
 			try {
-				String id = lineSplit[idIndex].replace("\"", "").trim();
-				String monday = lineSplit[day1Index].replace("\"", "").trim();
-				String tuesday = lineSplit[day2Index].replace("\"", "").trim();
-				String wednesday = lineSplit[day3Index].replace("\"", "").trim();
-				String thursday = lineSplit[day4Index].replace("\"", "").trim();
-				String friday = lineSplit[day5Index].replace("\"", "").trim();
-				String saturday = lineSplit[day6Index].replace("\"", "").trim();
-				String sunday = lineSplit[day7Index].replace("\"", "").trim();
+				String id = row.getCol("service_id");
+				String monday = row.getCol("monday");
+				String tuesday = row.getCol("tuesday");
+				String wednesday = row.getCol("wednesday");
+				String thursday = row.getCol("thursday");
+				String friday = row.getCol("friday");
+				String saturday = row.getCol("saturday");
+				String sunday = row.getCol("sunday");
 				String week = monday.concat(tuesday).concat(wednesday).concat(thursday).concat(friday).concat(saturday).concat(sunday);
-				String startDate = lineSplit[startDateIndex].replace("\"", "").trim();
-				String endDate = lineSplit[endDateIndex].replace("\"", "").trim();
+				String startDate = row.getCol("start_date");
+				String endDate = row.getCol("end_date");
 
 				if(id.isEmpty()){
-					throw new IOException("Missing required service id for a particular period: " + line);
+					throw new IOException("Missing required service id for a particular period: " + row.values);
 				}
 
 				if(week.length() < 7){
-					throw new IOException("Missing required activity information for a particular period: " + line);
+					throw new IOException("Missing required activity information for a particular period: " + row.values);
 				}
 
 				if(startDate.isEmpty() || endDate.isEmpty()){
-					throw new IOException("Incomplete period for a particular service: " + line);
+					throw new IOException("Incomplete period for a particular service: " + row.values);
 				}
 
 				calendar.put(id, new Calendar(id, week, startDate, endDate));
@@ -427,42 +337,32 @@ public class GTFSParser {
 			} catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 	}
 	public void parseCalendarDates(CSVParser csvp) throws IOException {
-		String firstLine = reader.readLine();
-		if (firstLine == null) return;
-		String[] colNames = firstLine.split(",");
-		int idIndex = -1, dateIndex = -1, exceptionIndex = -1;
-		for(int i = 0; i < colNames.length; i++){
-			String col = colNames[i].trim();
-			if (col.equals("service_id")) idIndex = i;
-			else if(col.equals("date")) dateIndex = i;
-			else if(col.equals("exception_type")) exceptionIndex = i;
+		if (!csvp.hasCols("service_id", "date", "exception_type")) {
+			throw new IOException("Missing required columns in stops.txt");
 		}
-		if(idIndex == -1 || dateIndex == -1 || exceptionIndex == -1){
-			throw new IOException("Missing required columns in calendar_dates.txt");
-		}
-		String line;
-		while ((line = reader.readLine()) != null) {
-			String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+
+		Row row;
+		while ((row = csvp.nextRow()) != null) {
 
 			try {
-				String id = lineSplit[idIndex].replace("\"", "").trim();
-				String date = lineSplit[dateIndex].replace("\"", "").trim();
-				String exceptionType = lineSplit[exceptionIndex].replace("\"", "").trim();
+				String id = row.getCol("service_id");
+				String date = row.getCol("date");
+				String exceptionType = row.getCol("exception_type");
 
 
 				if(id.isEmpty()){
-					throw new IOException("Missing required service id for a particular date: " + line);
+					throw new IOException("Missing required service id for a particular date: " + row.values);
 				}
 				if(date.isEmpty()){
-					throw new IOException("Missing date for a particular service: " + line);
+					throw new IOException("Missing date for a particular service: " + row.values);
 				}
 				if(exceptionType.isEmpty()){
-					throw new IOException("Missing exception type for a particular service/date: " + line);
+					throw new IOException("Missing exception type for a particular service/date: " + row.values);
 				}
 
 				calendar_dates.put(id, new CalendarDates(id, date, exceptionType));
@@ -470,7 +370,7 @@ public class GTFSParser {
 			}catch (IOException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new IOException("Error parsing line: " + line + " | " + e.getMessage(), e);
+				throw new IOException("Error parsing line: " + row.values + " | " + e.getMessage(), e);
 			}
 		}
 	}
