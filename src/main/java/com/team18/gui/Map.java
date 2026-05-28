@@ -1,41 +1,30 @@
 package com.team18.gui;
 
-import com.team18.gui.Tile;
-import com.team18.gui.Landmark;
-import com.team18.gui.FullRoute;
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
 import com.team18.model.ShapePoint;
 import com.team18.util.GeoCalculator;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 
-import java.lang.Math;
-
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.Pane;
 import javafx.scene.Group;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.Polyline;
 
-import java.io.FileNotFoundException;
-import java.nio.file.NoSuchFileException;
 import java.util.LinkedHashMap;
-import java.util.zip.ZipException;
-import java.io.IOException;
 
 public class Map {
 	private Group mapGroup;
 	private Group tileGroup;
+	private Canvas stopCanvas;
 	private Group routeGroup;
-	private java.util.function.Consumer<Landmark> onStopClicked;
 	private double dragStartX = 0;
 	private double dragStartY = 0;
 	private double groupTranslateX = 0;
@@ -53,6 +42,7 @@ public class Map {
 	private ArrayList<Tile> activeTiles = new ArrayList<>();
 
 	private GTFSParser parser;
+	private ArrayList<Landmark> stopLandmarks = new ArrayList<>();
 
 	private FullRoute route = null;
 	private double startMarkerLat = Double.NaN;
@@ -71,6 +61,10 @@ public class Map {
 		tileGroup = new Group();
 		mapGroup.getChildren().add(tileGroup);
 
+		stopCanvas = new Canvas();
+		stopCanvas.setMouseTransparent(true);
+		mapGroup.getChildren().add(stopCanvas);
+
 		routeGroup = new Group();
 		mapGroup.getChildren().add(routeGroup);
 		startMarker.setVisible(false);
@@ -82,6 +76,10 @@ public class Map {
 		endMarker.setStrokeWidth(2);
 
 		routeGroup.getChildren().addAll(startMarker, endMarker);
+
+		for (var stop: parser.stops.values()) {
+			stopLandmarks.add(new Landmark(stop.lat, stop.lon, stop.id, stop.name));
+		}
 
 		File cacheDir = new File(Tile.Coord.CACHE_DIR);
 		File[] files = cacheDir.listFiles();
@@ -126,6 +124,7 @@ public class Map {
 			mapGroup.setTranslateY(groupTranslateY + (ev.getSceneY() - dragStartY));
 
 			refreshTiles();
+			refreshStops();
 		});
 
 		mapGroup.setOnScroll(ev -> {
@@ -145,8 +144,25 @@ public class Map {
 			refresh();
 		});
 	}
-	public void setOnStopClicked(java.util.function.Consumer<Landmark> listener) {
-		this.onStopClicked = listener;
+	public Landmark findStopNearLocal(double localX, double localY, double radiusPixels) {
+		if (zoomLevel < 13) return null;
+
+		double bestDistanceSquared = radiusPixels * radiusPixels;
+		Landmark best = null;
+
+		for (Landmark landmark : stopLandmarks) {
+			double[] local = getLocalFromLatLon(landmark.lat, landmark.lon);
+			double dx = local[0] - localX;
+			double dy = local[1] - localY;
+			double distanceSquared = (dx * dx) + (dy * dy);
+
+			if (distanceSquared <= bestDistanceSquared) {
+				bestDistanceSquared = distanceSquared;
+				best = landmark;
+			}
+		}
+
+		return best;
 	}
 	public double[] getLatLonFromLocal(double localX, double localY) {
 		Tile.Coord origin = getOrigin();
@@ -195,8 +211,8 @@ public class Map {
 
 		// TODO: We need the actual size of the visible window so that these
 		// are more precise/less wasteful/don't break down on windows bigger than this :)
-		double width = 1920;
-		double height = 1080;
+		double width = getViewportWidth();
+		double height = getViewportHeight();
 
 		ArrayList<Tile> newActives = new ArrayList<>();
 		for (int relX = -1; relX * Tile.RESOLUTION <= width; relX++) {
@@ -210,7 +226,7 @@ public class Map {
 				if (!this.activeTiles.contains(tile)) {
 					this.activeTiles.add(tile);
 
-					Group rendered = tile.render(this.onStopClicked);
+					Group rendered = tile.render();
 					rendered.setTranslateX(absX * Tile.RESOLUTION);
 					rendered.setTranslateY(absY * Tile.RESOLUTION);
 					tileGroup.getChildren().add(rendered);
@@ -228,6 +244,43 @@ public class Map {
 
 		for (Tile tile: toRemove) {
 			this.activeTiles.remove(tile);
+		}
+	}
+
+	private void refreshStops() {
+		double width = getViewportWidth() + (Tile.RESOLUTION * 2);
+		double height = getViewportHeight() + (Tile.RESOLUTION * 2);
+		double minX = -mapGroup.getTranslateX() - Tile.RESOLUTION;
+		double minY = -mapGroup.getTranslateY() - Tile.RESOLUTION;
+		double maxX = minX + width;
+		double maxY = minY + height;
+
+		stopCanvas.setTranslateX(minX);
+		stopCanvas.setTranslateY(minY);
+		stopCanvas.setWidth(width);
+		stopCanvas.setHeight(height);
+
+		GraphicsContext gc = stopCanvas.getGraphicsContext2D();
+		gc.clearRect(0, 0, width, height);
+
+		if (zoomLevel < 13) return;
+
+		double radius = zoomLevel >= 15 ? 4.5 : 3.5;
+		gc.setFill(Color.web("#E91E63", 0.80));
+		gc.setStroke(Color.WHITE);
+		gc.setLineWidth(1.0);
+
+		for (Landmark landmark : stopLandmarks) {
+			double[] local = getLocalFromLatLon(landmark.lat, landmark.lon);
+			if (local[0] < minX || local[0] > maxX || local[1] < minY || local[1] > maxY) {
+				continue;
+			}
+
+			double canvasX = local[0] - minX;
+			double canvasY = local[1] - minY;
+			double diameter = radius * 2;
+			gc.fillOval(canvasX - radius, canvasY - radius, diameter, diameter);
+			gc.strokeOval(canvasX - radius, canvasY - radius, diameter, diameter);
 		}
 	}
 
@@ -347,7 +400,22 @@ public class Map {
 
 	public void refresh() {
 		refreshTiles();
+		refreshStops();
 		refreshRoute();
+	}
+
+	private double getViewportWidth() {
+		if (mapGroup.getScene() != null) {
+			return mapGroup.getScene().getWidth();
+		}
+		return 1920;
+	}
+
+	private double getViewportHeight() {
+		if (mapGroup.getScene() != null) {
+			return mapGroup.getScene().getHeight();
+		}
+		return 1080;
 	}
 
 	private Tile.Coord getOrigin() {
@@ -374,10 +442,6 @@ public class Map {
 		Tile tile = new Tile(coord);
 
 		this.tiles.put(tile.coord, tile);
-
-		for (var stop: parser.stops.values()) {
-			tile.addLandmark(new Landmark(stop.lat, stop.lon));
-		}
 
 		return tile;
 	}

@@ -8,10 +8,19 @@ public class Landmark {
 	// such as type and size/importance.
 	public double lat;
 	public double lon;
+	public String id;
+	public String name;
 
 	public Landmark(double lat, double lon) {
 		this.lat = lat;
 		this.lon = lon;
+	}
+
+	public Landmark(double lat, double lon, String id, String name) {
+		this.lat = lat;
+		this.lon = lon;
+		this.id = id;
+		this.name = name;
 	}
 
 	public Circle render() {

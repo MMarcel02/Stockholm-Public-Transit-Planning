@@ -1,18 +1,10 @@
 package com.team18.gui;
 
-import com.team18.gui.Landmark;
-
-import java.util.ArrayList;
 import java.util.Objects;
-import java.lang.Integer;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.shape.Circle;
 import javafx.scene.Group;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -20,7 +12,6 @@ import java.io.InputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
-import java.util.function.Consumer;
 
 public class Tile {
 	public static final int RESOLUTION = 256;
@@ -128,7 +119,6 @@ public class Tile {
 
 	Coord coord;
 	Image image;
-	ArrayList<Landmark> landmarks = new ArrayList<>();
 
 	Group rendered;
 
@@ -172,42 +162,11 @@ public class Tile {
 		}
 	}
 
-	public void addLandmark(Landmark landmark) {
-		Bounds bounds = this.coord.calculateBounds();
-
-		if (landmark.lon < bounds.leftLon || landmark.lon > bounds.rightLon) return;
-		if (landmark.lat > bounds.topLat || landmark.lat < bounds.bottomLat) return;
-
-		this.landmarks.add(landmark);
-	}
-
-	public Group render(java.util.function.Consumer<Landmark> onClickCallback) {
+	public Group render() {
 		Group group = new Group();
 
 		ImageView view = new ImageView(this.image);
 		group.getChildren().add(view);
-
-		if (this.coord.zoom >= 13) {
-			Bounds bounds = this.coord.calculateBounds();
-
-			for (Landmark mark: this.landmarks) {
-				Circle marker = new Circle(4);
-				marker.getStyleClass().add("stop-marker");
-
-				Bounds.RelPos relPos = bounds.interpolate(mark.lat, mark.lon);
-				marker.setCenterX(relPos.percentX * RESOLUTION);
-				marker.setCenterY(relPos.percentY * RESOLUTION);
-
-				if (onClickCallback != null) {
-					marker.setOnMouseClicked(ev -> {
-						ev.consume();
-						onClickCallback.accept(mark);
-					});
-				}
-
-				group.getChildren().add(marker);
-			}
-		}
 
 		this.rendered = group;
 		return group;
