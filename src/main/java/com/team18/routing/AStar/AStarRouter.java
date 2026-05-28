@@ -78,22 +78,17 @@ public class AStarRouter implements Router {
                 }
             }
 
-            // TODO: Line below looks a bit nutty, needs shortening.
-            RouteStep routeStep = new RouteStep(
-                    openList.get(qIndex).stop.lat,
-                    openList.get(qIndex).stop.lon,
-                    openList.get(qIndex).edgeFromParent.travelTimeSeconds,
-                    openList.get(qIndex).edgeFromParent.departureTime,
-                    openList.get(qIndex).stop.name,
-                    openList.get(qIndex).edgeFromParent.dest.name,
-                    openList.get(qIndex).edgeFromParent.trip.route.operator,
-                    openList.get(qIndex).edgeFromParent.trip.route.shortName,
-                    openList.get(qIndex).edgeFromParent.trip.route.longName,
-                    openList.get(qIndex).edgeFromParent.trip.headSign,
-                    openList.get(qIndex).edgeFromParent.trip.shapeId
-            );
-            
-            closedList.add(routeStep);
+            if(openList.get(qIndex).parent == null){
+
+                RouteStep routeStep = new RouteStep(openList.get(qIndex).stop.lat, openList.get(qIndex).stop.lon, 0, startTimeSec, openList.get(qIndex).stop.name);
+                closedList.add(routeStep);
+
+            } else {
+
+                RouteStep routeStep = new RouteStep(openList.get(qIndex).stop.lat, openList.get(qIndex).stop.lon, openList.get(qIndex).edgeFromParent.travelTimeSeconds, openList.get(qIndex).edgeFromParent.departureTime, openList.get(qIndex).stop.name, openList.get(qIndex).edgeFromParent.dest.name, openList.get(qIndex).edgeFromParent.trip.route.operator, openList.get(qIndex).edgeFromParent.trip.route.shortName, openList.get(qIndex).edgeFromParent.trip.route.longName, openList.get(qIndex).edgeFromParent.trip.headSign, openList.get(qIndex).edgeFromParent.trip.shapeId);
+                closedList.add(routeStep);
+
+            }
             
             openList.remove(qIndex);
             //the closed list will be our final route
