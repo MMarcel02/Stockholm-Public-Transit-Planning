@@ -29,7 +29,7 @@ public class StockholmRandomRouteGenerator {
     }
 
     public static void main(String[] args) {
-        String loadString = "{\"load\": \"data/stockholm/sl.zip\"}\n";
+        String loadString = "{\"load\": \"data/stockholm/sl_center.zip\"}\n";
 
         AreaConfig metroArea = new AreaConfig(
             "Stockholm Metro Area", 
@@ -39,12 +39,13 @@ public class StockholmRandomRouteGenerator {
             17.2000, 19.3000  // MIN_LON, MAX_LON
         );
 
+        // Visualise here https://bboxfinder.com/#59.192826,17.786891,59.475075,18.356737
         AreaConfig urbanArea = new AreaConfig(
             "Stockholm Urban Area", 
             "stockholm_urban_routes.jsonl", 
             10500, 
-    59.2000, 59.4500, // MIN_LAT, MAX_LAT
-            17.8000, 18.2000  // MIN_LON, MAX_LON
+            59.192826, 59.475075, // MIN_LAT, MAX_LAT
+            17.786891, 18.356737  // MIN_LON, MAX_LON
         );
 
         generateRoutesForArea(metroArea, loadString);

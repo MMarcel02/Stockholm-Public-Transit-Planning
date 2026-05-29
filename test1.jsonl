@@ -2,7 +2,7 @@
 {"ping": "sanity check"}
 
 //Typical load request
-{"load": "data/stockholm/sl.zip"}
+{"load": "data/stockholm/sl_center.zip"}
 // Can use to test  loading exceptions (note: these will terminate the routing engine)
 // {"load": "data/stockholm/stops.txt"}
 // {"load": "data/stockholm/fake.zip"}

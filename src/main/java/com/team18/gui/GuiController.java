@@ -60,12 +60,12 @@ public class GuiController {
 		try {
 			System.out.println("Loading GTFS data...");
 			parser = new GTFSParser();
-			parser.loadFromZip("data/stockholm/sl.zip");
+			parser.loadFromZip("data/stockholm/sl_center.zip");
 			stops = new ArrayList<>(parser.stops.values());
 			stops.sort(Comparator.comparing(stop -> stop.name.toLowerCase()));
 			buildStopArrivalIndex(parser);
 
-			System.out.println("Building RAPTOR Network (This might take a second)...");
+			System.out.println("Building RAPTOR Network...");
 			RaptorBuilder builder = new RaptorBuilder();
 			raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
 

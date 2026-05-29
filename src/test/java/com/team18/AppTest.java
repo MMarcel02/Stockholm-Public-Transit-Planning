@@ -16,7 +16,7 @@ public class AppTest
 //    void engineShouldReturnLoadedOnLoad() {
 //     RoutingEngine engine = new RoutingEngine();
 //     engine.run();
-//     String input = "{\"load\": \"data/stockholm/sl.zip\"}";
+//     String input = "{\"load\": \"data/stockholm/sl_center.zip\"}";
 
 //    }
 }
