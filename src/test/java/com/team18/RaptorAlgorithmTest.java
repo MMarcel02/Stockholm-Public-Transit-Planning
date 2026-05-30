@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
+import com.team18.model.RouteStepType;
 import com.team18.util.ParsingUtil;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorBuilder;
@@ -41,7 +42,7 @@ public class RaptorAlgorithmTest {
             assertEquals(1, steps.size());
             RouteStep step = steps.get(0);
             assertEquals(0, step.durationMinutes, "Duration should be exactly 0 minutes");
-            assertTrue(step.walking, "Step should be a walking step");
+            assertTrue(step.routeStepType == RouteStepType.DIRECT_WALK, "Step should be a direct walking step");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -71,7 +72,7 @@ public class RaptorAlgorithmTest {
             
             // Disable boarding station forcing new algorithm to take different route
             RouteStep firstStepOriginal = stepsOriginal.get(0);
-            stopToDisable = firstStepOriginal.toStopId;
+            stopToDisable = firstStepOriginal.toStop.id;
             raptorNetwork.toggleStop(stopToDisable);
 
             List<RouteStep> stepsAltered = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
@@ -81,7 +82,7 @@ public class RaptorAlgorithmTest {
             RouteStep firstStepAltered = stepsAltered.get(0);
 
             // Check that it actually took a different route
-            assertNotEquals(firstStepOriginal.toStopId, firstStepAltered.toStopId);
+            assertNotEquals(stopToDisable, firstStepAltered.toStop.id);
 
             // Check that new route is worse than original 
             RouteStep lastStepOriginal = stepsOriginal.getLast();

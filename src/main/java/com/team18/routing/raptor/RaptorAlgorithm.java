@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.List;
 import java.util.Map;
 
-import com.team18.model.Trip;
 import com.team18.model.RouteStep;
 import com.team18.routing.Router;
 import com.team18.model.Stop;
@@ -397,37 +396,37 @@ public class RaptorAlgorithm implements Router {
         int currentRound = bestRound;
 
         while (currentStopId != -2 && currentRound > 0) {
-            int parentIndex = (currentRound * totalStops) + currentStopId;
-            int parentStopId = priorStopPerRound[parentIndex];
-            int routeTakenId = routeTakenPerRound[parentIndex];
+            int fromStopIndex = (currentRound * totalStops) + currentStopId;
+            int fromStopId = priorStopPerRound[fromStopIndex];
+            int routeTakenId = routeTakenPerRound[fromStopIndex];
 
-            if (parentStopId == -2) {
+            if (fromStopId == -2) {
                 break;
             }
 
-            Stop parentStop = stopLookup[parentStopId];
-            Stop targetStop = stopLookup[currentStopId];
+            Stop fromStop = stopLookup[fromStopId];
+            Stop toStop = stopLookup[currentStopId];
 
             RouteStep step;
 
             // If we walked make walking RouteStep
             if (routeTakenId == -1) {
-                int startTime = arrivalTimesPerRound[(currentRound * totalStops) + parentStopId];
-                int endTime = arrivalTimesPerRound[parentIndex];
+                int startTime = arrivalTimesPerRound[(currentRound * totalStops) + fromStopId];
+                int endTime = arrivalTimesPerRound[fromStopIndex];
                 double durationMinutes = (endTime - startTime) / 60.0;
 
-                step = new RouteStep(parentStop, targetStop, durationMinutes, startTime);
+                step = new RouteStep(fromStop, toStop, durationMinutes, startTime);
             } else {
-                int startTime = arrivalTimesPerRound[((currentRound - 1) * totalStops) + parentStopId];
-                int endTime = arrivalTimesPerRound[parentIndex];
+                int startTime = arrivalTimesPerRound[((currentRound - 1) * totalStops) + fromStopId];
+                int endTime = arrivalTimesPerRound[fromStopIndex];
                 double durationMinutes = (endTime - startTime) / 60.0;
 
                 RaptorRoute raptorRoute = raptorRouteLookup[routeTakenId];
 
-                step = new RouteStep(parentStop, targetStop, durationMinutes, startTime, raptorRoute);
+                step = new RouteStep(fromStop, toStop, durationMinutes, startTime, raptorRoute);
             }
             routeSteps.add(0, step);
-            currentStopId = parentStopId;
+            currentStopId = fromStopId;
 
             if (routeTakenId != -1) {
                 currentRound--;

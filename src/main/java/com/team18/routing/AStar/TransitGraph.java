@@ -37,7 +37,7 @@ public class TransitGraph {
 
                 if (travelTime < 0) continue;
 
-                Edge edge = new Edge(next.stop, "transit",  trip.tripId, current.departureTime, travelTime, walkingTime, trip);
+                Edge edge = new Edge(next.stop, "transit",  trip.id, current.departureTime, travelTime, walkingTime, trip);
 
                 List<Edge> edges = new ArrayList<Edge>();
                 edges.add(edge);
