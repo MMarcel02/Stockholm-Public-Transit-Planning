@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.List;
 import java.util.Map;
 
+import com.team18.model.Trip;
 import com.team18.model.RouteStep;
 import com.team18.routing.Router;
 import com.team18.model.Stop;
@@ -22,11 +23,11 @@ public class RaptorAlgorithm implements Router {
 
     private final int MAX_ROUNDS = 8;
 
-    private final HashMap<String, Integer> stopStringToIntMap;
     private final Stop[] stopLookup;
     private final RaptorRoute[] raptorRouteLookup;
 
     private final int[] routesArr;
+    private final boolean[]  routesEnabledArr;
     private final int[] routeStopsArr;
     private final int[] stopTimesArr;
     private final int[] stopsArr;
@@ -35,10 +36,10 @@ public class RaptorAlgorithm implements Router {
     private final int[] transfersArr;
 
     public RaptorAlgorithm(RaptorNetwork raptorNetwork) {
-        this.stopStringToIntMap = raptorNetwork.stopStringToIntMap;
         this.stopLookup = raptorNetwork.stopLookup;
         this.raptorRouteLookup = raptorNetwork.raptorRouteLookup;
         this.routesArr = raptorNetwork.routesArr;
+        this.routesEnabledArr = raptorNetwork.routesEnabledArr;
         this.routeStopsArr = raptorNetwork.routeStopsArr;
         this.stopTimesArr = raptorNetwork.stopTimesArr;
         this.stopsArr = raptorNetwork.stopsArr;
@@ -158,6 +159,9 @@ public class RaptorAlgorithm implements Router {
                 int endIndexOfStopRoutes = stopsArr[(markedStopId + 1)*2];
                 for (int i = startIndexOfStopRoutes; i < endIndexOfStopRoutes; i ++) {
                     int routeId = stopRoutes[i];
+
+                    if (!routesEnabledArr[routeId]) continue;
+
                     if (routesToProcess.containsKey(routeId)) {
                         int existingStopId = routesToProcess.get(routeId);
                         if (isStopEarlierInRoute(routeId, markedStopId, existingStopId)) {
@@ -379,14 +383,15 @@ public class RaptorAlgorithm implements Router {
         // This is the walking case (walking from source to destination is the fastest journey)
         if (lastStopId == -2) {
             double durationMinutes = (bestTime - startTimeSecondsAfterMidnight) / 60.0;
-            routeSteps.add(new RouteStep(latTo, lonTo, durationMinutes, startTimeSecondsAfterMidnight, "destination", null));
+            routeSteps.add(new RouteStep(latFrom, lonFrom, latTo, lonTo, durationMinutes, startTimeSecondsAfterMidnight));
             return routeSteps;
         }
 
         // RouteStep for final walk
         int arrivalAtLastStop = arrivalTimesPerRound[(bestRound * totalStops) + lastStopId];
         double finalWalkDuration = (bestTime - arrivalAtLastStop) / 60.0;
-        routeSteps.add(new RouteStep(latTo, lonTo, finalWalkDuration, arrivalAtLastStop, "destination", null));
+        Stop finalStop = stopLookup[lastStopId];
+        routeSteps.add(new RouteStep(finalStop, latTo, lonTo, finalWalkDuration, arrivalAtLastStop));
 
         int currentStopId = lastStopId;
         int currentRound = bestRound;
@@ -411,19 +416,15 @@ public class RaptorAlgorithm implements Router {
                 int endTime = arrivalTimesPerRound[parentIndex];
                 double durationMinutes = (endTime - startTime) / 60.0;
 
-                step = new RouteStep(targetStop.lat, targetStop.lon, durationMinutes, startTime, targetStop.name, targetStop.id);
+                step = new RouteStep(parentStop, targetStop, durationMinutes, startTime);
             } else {
                 int startTime = arrivalTimesPerRound[((currentRound - 1) * totalStops) + parentStopId];
                 int endTime = arrivalTimesPerRound[parentIndex];
                 double durationMinutes = (endTime - startTime) / 60.0;
 
-                RaptorRoute routeInfo = raptorRouteLookup[routeTakenId];
+                RaptorRoute raptorRoute = raptorRouteLookup[routeTakenId];
 
-                step = new RouteStep(
-                        targetStop.lat, targetStop.lon, durationMinutes, startTime,
-                        parentStop.name, targetStop.name, parentStop.id, targetStop.id, routeInfo.operator, routeInfo.shortName,
-                        routeInfo.longName, routeInfo.headSign, routeInfo.shapeId
-                );
+                step = new RouteStep(parentStop, targetStop, durationMinutes, startTime, raptorRoute);
             }
             routeSteps.add(0, step);
             currentStopId = parentStopId;
@@ -437,7 +438,7 @@ public class RaptorAlgorithm implements Router {
         if (currentStopId >= 0) {
             double initialWalkDuration = (arrivalTimesPerRound[currentStopId] - startTimeSecondsAfterMidnight) / 60.0;
             Stop firstStop = stopLookup[currentStopId];
-            routeSteps.add(0, new RouteStep(firstStop.lat, firstStop.lon, initialWalkDuration, startTimeSecondsAfterMidnight, firstStop.name, firstStop.id));
+            routeSteps.add(0, new RouteStep(latFrom, lonFrom, firstStop, initialWalkDuration, startTimeSecondsAfterMidnight));
         }
 
         return routeSteps;

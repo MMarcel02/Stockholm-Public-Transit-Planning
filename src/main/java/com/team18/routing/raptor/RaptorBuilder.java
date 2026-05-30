@@ -26,6 +26,7 @@ public class RaptorBuilder {
         //         Sort all trips in each RaptorRoute by earliest departure time
         Map<List<Stop>, List<Trip>> raptorMap = new HashMap<>();
 
+
         for (Trip trip : trips.values()) {
             List<Stop> stopsInRoute = new ArrayList<>();
 
@@ -64,12 +65,12 @@ public class RaptorBuilder {
         
         // Need an int ID for raptor, but have String ID in GTFS, so we make new int ids and a lookup table
         Stop[] stopLookup = new Stop[stops.size()];
-        HashMap<String, Integer> stringToIntMap = new HashMap<>();
+        HashMap<String, Integer> stopStringToIntMap = new HashMap<>();
 
         int currentStopId = 0;
         for (Stop stop : stops.values()) {
             stopLookup[currentStopId] = stop;
-            stringToIntMap.put(stop.id, currentStopId);
+            stopStringToIntMap.put(stop.id, currentStopId);
             currentStopId++;
         }
 
@@ -129,14 +130,14 @@ public class RaptorBuilder {
             Route parentRoute = tripsInRoute.get(0).route;
 
             raptorRouteLookup[currRouteIndex] = new RaptorRoute(currRouteIndex, parentRoute, stopsInRoute, tripsInRoute);
-            
+
             routesArr[currRouteIndex*4] = tripsInRoute.size();
             routesArr[currRouteIndex*4 + 1] = stopsInRoute.size();
             routesArr[currRouteIndex*4 + 2] = currStopsOffset;
             routesArr[currRouteIndex*4 + 3] = currStopTimesOffset;
 
             for (Stop stop : stopsInRoute) {
-                int internalStopId = stringToIntMap.get(stop.id);
+                int internalStopId = stopStringToIntMap.get(stop.id);
                 routeStopsArr[currStopsOffset] = internalStopId;
                 currStopsOffset++;
                 tempStopRoutes.get(internalStopId).add(currRouteIndex);
@@ -185,14 +186,20 @@ public class RaptorBuilder {
         stopsArr[stops.size() * 2] = currStopRoutesOffset;
         stopsArr[stops.size() * 2 + 1] = currTransferOffset;
 
+        // Stage 4: Setting up dynamic arrays to see which stops / routes are active
+
         boolean[] stopsEnabledArr = new boolean[stops.size()];
         Arrays.fill(stopsEnabledArr, true);
 
+        boolean[] routesEnabledArr = new boolean[totalRaptorRoutes];
+        Arrays.fill(routesEnabledArr, true);
+
         return new RaptorNetwork(
-            stringToIntMap,
+            stopStringToIntMap,
             stopLookup, 
             raptorRouteLookup, 
             routesArr, 
+            routesEnabledArr,
             routeStopsArr, 
             stopTimesArr, 
             stopsArr, 

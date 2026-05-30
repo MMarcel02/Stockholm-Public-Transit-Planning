@@ -84,7 +84,7 @@ public class RoutingEngine {
                         Map<?,?> fromNode = (Map<?,?>) request.get("routeFrom");                        
                         Map<?,?> toNode = (Map<?,?>) request.get("to");                        
                         String startTime = (String) request.get("startingAt"); 
-                        int startTimeSecondsAfterMidnight = ParsingUtil.parseStopTime(startTime);
+                        int startTimeSecondsAfterMidnight = ParsingUtil.timeStringToSecondsAfterMidnight(startTime);
 
                         double latFrom = ((Number) fromNode.get("lat")).doubleValue();
                         double lonFrom = ((Number) fromNode.get("lon")).doubleValue();

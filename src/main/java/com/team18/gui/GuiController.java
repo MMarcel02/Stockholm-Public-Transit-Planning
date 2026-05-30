@@ -357,7 +357,7 @@ public class GuiController {
 			if (timeText == null || timeText.isBlank()) {
 				return 0;
 			}
-			return ParsingUtil.parseStopTime(timeText);
+			return ParsingUtil.timeStringToSecondsAfterMidnight(timeText);
 		} catch (Exception e) {
 			return 0;
 		}
@@ -436,7 +436,7 @@ public class GuiController {
 			ResolvedLocation startLocation = resolveLocation(start, selectedStartStop);
 			ResolvedLocation endLocation = resolveLocation(end, selectedEndStop);
 
-			int startTimeSeconds = ParsingUtil.parseStopTime(time);
+			int startTimeSeconds = ParsingUtil.timeStringToSecondsAfterMidnight(time);
 
 			System.out.println("Routing from: (" + startLocation.lat + ", " + startLocation.lon + ") to (" + endLocation.lat + ", " + endLocation.lon + ")");
 

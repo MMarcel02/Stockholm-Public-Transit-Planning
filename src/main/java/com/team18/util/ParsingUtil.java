@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public class ParsingUtil {
 
-        public static int parseStopTime(String timeString) throws IOException{
+    public static int timeStringToSecondsAfterMidnight(String timeString) throws IOException{
         if (timeString == null || timeString.isEmpty()) {
             return -1;
         }
@@ -22,6 +22,12 @@ public class ParsingUtil {
         } catch (NumberFormatException e) {
             throw new IOException("Time string failed parsing into number");
         }
+    }
+
+    public static String secondsAfterMidnightToTimeString(int secondsAfterMidnight) {
+        int hours = (secondsAfterMidnight / 3600) % 24;
+        int minutes = (secondsAfterMidnight % 3600) / 60;
+        return String.format("%02d:%02d", hours, minutes);
     }
     
 }

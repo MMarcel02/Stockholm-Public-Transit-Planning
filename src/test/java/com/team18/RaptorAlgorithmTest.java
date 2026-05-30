@@ -36,7 +36,7 @@ public class RaptorAlgorithmTest {
     void shouldBe0MinWalkWhenStartAndEndAreIdentical() {
         try {
             RaptorAlgorithm raptor = new RaptorAlgorithm(raptorNetwork);
-            List<RouteStep> steps = raptor.getFastestTrip(59.2500, 17.9000, 59.2500, 17.9000, ParsingUtil.parseStopTime("08:30"));
+            List<RouteStep> steps = raptor.getFastestTrip(59.2500, 17.9000, 59.2500, 17.9000, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
     
             assertEquals(1, steps.size());
             RouteStep step = steps.get(0);
@@ -51,7 +51,7 @@ public class RaptorAlgorithmTest {
     void shouldFindTransitRouteFromCentralToSpanga() {
         try {
             RaptorAlgorithm raptor = new RaptorAlgorithm(raptorNetwork);
-            List<RouteStep> steps = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.parseStopTime("08:30"));
+            List<RouteStep> steps = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
 
             assertTrue(steps.size() > 1);
         } catch (Exception e) {
@@ -65,7 +65,7 @@ public class RaptorAlgorithmTest {
         RaptorAlgorithm raptor = new RaptorAlgorithm(raptorNetwork);
 
         try {
-            List<RouteStep> stepsOriginal = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.parseStopTime("08:30"));
+            List<RouteStep> stepsOriginal = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
             
             assertTrue(stepsOriginal.size() > 1);
             
@@ -74,7 +74,7 @@ public class RaptorAlgorithmTest {
             stopToDisable = firstStepOriginal.toStopId;
             raptorNetwork.toggleStop(stopToDisable);
 
-            List<RouteStep> stepsAltered = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.parseStopTime("08:30"));
+            List<RouteStep> stepsAltered = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
 
             assertTrue(stepsAltered.size() > 1);
 

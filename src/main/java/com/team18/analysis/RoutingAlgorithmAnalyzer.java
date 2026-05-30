@@ -100,7 +100,7 @@ public class RoutingAlgorithmAnalyzer {
                     double lonFrom = Double.parseDouble(matcher.group(2));
                     double latTo = Double.parseDouble(matcher.group(3));
                     double lonTo = Double.parseDouble(matcher.group(4));
-                    int startTime = ParsingUtil.parseStopTime(matcher.group(5));
+                    int startTime = ParsingUtil.timeStringToSecondsAfterMidnight(matcher.group(5));
 
                     requests.add(new RouteRequest(latFrom, lonFrom, latTo, lonTo, startTime));
                 }

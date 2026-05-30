@@ -320,8 +320,8 @@ public class GTFSParser {
                 if (trip == null) throw new IOException("TripID not found in trips: " + tripId);
                 if (stop == null) throw new IOException("StopID not found in trips: " + stopId);
 
-                int arrTime = ParsingUtil.parseStopTime(arrivalTimeString);
-                int depTime = ParsingUtil.parseStopTime(departureTimeString);
+                int arrTime = ParsingUtil.timeStringToSecondsAfterMidnight(arrivalTimeString);
+                int depTime = ParsingUtil.timeStringToSecondsAfterMidnight(departureTimeString);
 
                 if (depTime == -1 && arrTime != -1) {
                     depTime = arrTime;

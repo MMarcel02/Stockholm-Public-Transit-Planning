@@ -12,6 +12,7 @@ public class RaptorNetwork {
     public final RaptorRoute[] raptorRouteLookup;
 
     public final int[] routesArr;
+    public final boolean[] routesEnabledArr;
     public final int[] routeStopsArr;
     public final int[] stopTimesArr;
     public final int[] stopsArr;
@@ -24,6 +25,7 @@ public class RaptorNetwork {
             Stop[] stopLookup, 
             RaptorRoute[] raptorRouteLookup,
             int[] routesArr, 
+            boolean[] routesEnabledArr,
             int[] routeStopsArr, 
             int[] stopTimesArr, 
             int[] stopsArr, 
@@ -35,12 +37,26 @@ public class RaptorNetwork {
         this.stopLookup = stopLookup;
         this.raptorRouteLookup = raptorRouteLookup;
         this.routesArr = routesArr;
+        this.routesEnabledArr = routesEnabledArr;
         this.routeStopsArr = routeStopsArr;
         this.stopTimesArr = stopTimesArr;
         this.stopsArr = stopsArr;
         this.stopsEnabledArr = stopsEnabledArr;
         this.stopRoutes = stopRoutes;
         this.transfersArr = transfersArr;
+    }
+
+
+    public void toggleRoute(int routeId) {
+        routesEnabledArr[routeId] = !routesEnabledArr[routeId];
+    }
+
+    public void disableAllRoutes() {
+        Arrays.fill(routesEnabledArr, false);
+    }
+
+    public void enableAllRoutes() {
+        Arrays.fill(routesEnabledArr, true);
     }
 
     public void toggleStop(String stopIdToToggle) {

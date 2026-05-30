@@ -1,90 +1,160 @@
 package com.team18.model;
 
+import com.team18.util.ParsingUtil;
+import com.team18.routing.raptor.RaptorRoute;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class RouteStep {
-    public boolean walking;
-    public double latTo;
-    public double lonTo;
-    public double durationMinutes;
-    public int startTimeSecondsAfterMidnight;
-    // For transit steps, points to a GTFS shapes.txt polyline id (optional; dataset dependent).
-    public String shapeId;
-    public String fromStopId;
-    public String toStopId;
+    public final RouteStepType routeStepType;
+    public final double durationMinutes;
+    public final int startTimeSecondsAfterMidnight;
+    
+    public final Stop fromStop;
+    public final Stop toStop;
+    
+    public final double latTo;
+    public final double lonTo;
 
-    public String fromStopName;
-    public String toStopName;
-    public String operatorName;
-    public String shortName;
-    public String longName;
-    public String headSign;
+    public final double latFrom;
+    public final double lonFrom;
+    
+    public final Route route;
+    public final RaptorRoute raptorRoute;
+    public final String shapeId; 
+    public final String headSign; 
 
-    // Walking constructor
-    public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight, String toStopName, String toStopId) {
-        this.walking = true;
-        this.latTo = latTo;
-        this.lonTo = lonTo;
+    // Walking constructor from Starting coordinates -> Initial Stop
+    public RouteStep(double latFrom, double lonFrom, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight) {
+        this.routeStepType = RouteStepType.WALK_TO_STOP;
         this.durationMinutes = durationMinutes;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
-        this.toStopName = toStopName;
-        this.toStopId = toStopId;
+        
+        this.fromStop = null;
+        this.toStop = toStop;
+
+        this.latFrom = latFrom;
+        this.lonFrom = lonFrom;
+
+        this.latTo = toStop.lat;
+        this.lonTo = toStop.lon;
+        
+        this.route = null;
+        this.raptorRoute = null;
         this.shapeId = null;
+        this.headSign = null;
     }
 
-    // Public transit constructor
-    public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight,
-                    String fromStopName, String toStopName, String fromStopId, String toStopId,
-                    String operatorName, String shortName, String longName, String headSign, String shapeId) {
-        this.walking = false;
-        this.latTo = latTo;
-        this.lonTo = lonTo;
+    // Walking constructor from Stop to Stop 
+    public RouteStep(Stop fromStop, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight) {
+        this.routeStepType = RouteStepType.TRANSFER;
         this.durationMinutes = durationMinutes;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
-        this.fromStopName = fromStopName;
-        this.toStopName = toStopName;
-        this.fromStopId = fromStopId;
-        this.toStopId = toStopId;
-        this.operatorName = operatorName;
-        this.shortName = shortName;
-        this.longName = longName;
-        this.headSign = headSign;
-        this.shapeId = shapeId;
+        
+        this.fromStop = fromStop;
+        this.toStop = toStop;
+        
+        this.latFrom = fromStop.lat;
+        this.lonFrom = fromStop.lon;
+        
+        this.latTo = toStop.lat;
+        this.lonTo = toStop.lon;
+        
+        this.route = null;
+        this.raptorRoute = null;
+        this.shapeId = null;
+        this.headSign = null;
+    }
+
+    // Walking constructor from Final Stop -> Destination coordinates
+    public RouteStep(Stop fromStop, double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight) {
+        this.routeStepType = RouteStepType.WALK_TO_DEST;
+        this.durationMinutes = durationMinutes;
+        this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
+        
+        this.fromStop = fromStop;
+        this.toStop = null;
+        
+        this.latFrom = fromStop.lat;
+        this.lonFrom = fromStop.lon;
+        
+        this.latTo = latTo;
+        this.lonTo = lonTo;
+        
+        this.route = null;
+        this.raptorRoute = null;
+        this.shapeId = null;
+        this.headSign = null;
+    }
+
+    // Walking constructor from Starting coordinates -> Destination coordinates (no transfer case)
+    public RouteStep(double latFrom, double lonFrom, double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight) {
+        this.routeStepType = RouteStepType.DIRECT_WALK;
+        this.durationMinutes = durationMinutes;
+        this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
+        
+        this.fromStop = null;
+        this.toStop = null;
+
+        this.latFrom = latFrom;
+        this.lonFrom = lonFrom;
+        
+        this.latTo = latTo;
+        this.lonTo = lonTo;
+        
+        this.route = null;
+        this.raptorRoute = null;
+        this.shapeId = null;
+        this.headSign = null;
+    }
+
+    // Public transit constructor RAPTOR
+    public RouteStep(Stop fromStop, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight, RaptorRoute raptorRoute) {
+        this.routeStepType = RouteStepType.TRANSIT;
+        this.durationMinutes = durationMinutes;
+        this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
+        
+        this.fromStop = fromStop;
+        this.toStop = toStop;
+
+        this.latFrom = fromStop.lat;
+        this.lonFrom = fromStop.lon;
+
+        this.latTo = toStop.lat;
+        this.lonTo = toStop.lon;
+        
+        this.route = raptorRoute.parentRoute;
+        this.raptorRoute = raptorRoute;
+        this.shapeId = raptorRoute.shapeId;
+        this.headSign = raptorRoute.headSign;
     }
 
     // Convert to JSON format in project manual
     public Map<String, Object> toMap() {
         Map<String, Object> stepMap = new LinkedHashMap<>();
 
-        stepMap.put("mode", walking ? "walk" : "ride");
+        stepMap.put("mode", routeStepType == RouteStepType.TRANSIT ? "ride" : "walk");
 
         Map<String, Object> point = new LinkedHashMap<>();
-        point.put("lat", latTo);
-        point.put("lon", lonTo);
+        point.put("lat", this.latTo);
+        point.put("lon", this.lonTo);
         stepMap.put("to", point);
 
         stepMap.put("duration", durationMinutes);
-        stepMap.put("startTime", formatTime(startTimeSecondsAfterMidnight));
+        stepMap.put("startTime", ParsingUtil.secondsAfterMidnightToTimeString(startTimeSecondsAfterMidnight));
 
-        if (!walking) {
-            stepMap.put("stop", fromStopName);
+        if (routeStepType == RouteStepType.TRANSIT) {
+            stepMap.put("stop", fromStop.name);
 
             Map<String, Object> routeInfo = new LinkedHashMap<>();
-            routeInfo.put("operator", operatorName);
-            routeInfo.put("shortName", shortName);
-            routeInfo.put("longName", longName);
+            routeInfo.put("operator", route.operator); 
+            routeInfo.put("shortName", route.shortName);
+            routeInfo.put("longName", route.longName);
             routeInfo.put("headSign", headSign);
 
             stepMap.put("route", routeInfo);
         }
 
         return stepMap;
-    }
-
-    private String formatTime(int secondsAfterMidnight) {
-        int hours = (secondsAfterMidnight / 3600) % 24;
-        int minutes = (secondsAfterMidnight % 3600) / 60;
-        return String.format("%02d:%02d", hours, minutes);
     }
 }
