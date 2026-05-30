@@ -72,7 +72,7 @@ public class RaptorAlgorithmTest {
             // Disable boarding station forcing new algorithm to take different route
             RouteStep firstStepOriginal = stepsOriginal.get(0);
             stopToDisable = firstStepOriginal.toStopId;
-            raptor.toggleStop(stopToDisable);
+            raptorNetwork.toggleStop(stopToDisable);
 
             List<RouteStep> stepsAltered = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.parseStopTime("08:30"));
 
@@ -95,7 +95,7 @@ public class RaptorAlgorithmTest {
             e.printStackTrace();
         } finally {
             if (stopToDisable != null) {
-                raptor.toggleStop(stopToDisable);
+                raptorNetwork.toggleStop(stopToDisable);
             }
         }
     }

@@ -2,6 +2,7 @@ package com.team18.routing.raptor;
 
 import com.team18.model.Stop;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class RaptorNetwork {
@@ -40,5 +41,18 @@ public class RaptorNetwork {
         this.stopsEnabledArr = stopsEnabledArr;
         this.stopRoutes = stopRoutes;
         this.transfersArr = transfersArr;
+    }
+
+    public void toggleStop(String stopIdToToggle) {
+        int stopId = stopStringToIntMap.get(stopIdToToggle);
+        stopsEnabledArr[stopId] = !stopsEnabledArr[stopId];
+    }
+
+    public void disableAllStops() {
+        Arrays.fill(stopsEnabledArr, false);
+    }
+
+    public void enableAllStops() {
+        Arrays.fill(stopsEnabledArr, true);
     }
 }

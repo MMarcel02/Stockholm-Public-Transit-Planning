@@ -442,11 +442,4 @@ public class RaptorAlgorithm implements Router {
 
         return routeSteps;
     }
-
-    public void toggleStop(String stopIdToToggle) {
-        
-        int stopId = stopStringToIntMap.get(stopIdToToggle);
-        stopsEnabledArr[stopId] = !stopsEnabledArr[stopId];
-    }
-
 }

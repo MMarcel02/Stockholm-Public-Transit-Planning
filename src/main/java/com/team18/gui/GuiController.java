@@ -246,6 +246,16 @@ public class GuiController {
 		disableButton.setPrefWidth(STOP_HOVER_CARD_WIDTH - 28);
 		disableButton.setMinWidth(STOP_HOVER_CARD_WIDTH - 28);
 		disableButton.setMinHeight(34);
+		disableButton.setOnAction(ev -> {
+			raptorNetwork.toggleStop(landmark.id);
+			
+			// TODO: Make a diff button for this obvs, just in here for testing
+			// Would be cool to have it as a button on the actual GUI, then you can click to disable / enable all stops
+			// And then pick and choose which to add / remove
+			// raptorNetwork.disableAllStops();
+			// raptorNetwork.enableAllStops();
+		});
+
 
 		HBox actionRow = new HBox(8);
 		actionRow.setPrefWidth(STOP_HOVER_CARD_WIDTH - 28);
