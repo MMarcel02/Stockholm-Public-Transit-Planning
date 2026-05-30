@@ -2,6 +2,7 @@ package com.team18.gui;
 
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
+import com.team18.model.RouteStepType;
 import com.team18.model.ShapePoint;
 import com.team18.util.GeoCalculator;
 
@@ -140,6 +141,7 @@ public class Map {
 			mapGroup.setTranslateY(mapGroup.getTranslateY() * factor);
 
 			this.zoomLevel += delta;
+			if (this.zoomLevel > maxZoom) this.zoomLevel = maxZoom;
 
 			refresh();
 		});
@@ -306,7 +308,7 @@ public class Map {
 		double lon = route.startLon;
 		for (RouteStep step: route.steps) {
 			int size = (int) Math.pow((double)zoomLevel / 10, 4);
-			if (!step.walking && step.shapeId != null && parser.shapes != null) {
+			if (step.routeStepType == RouteStepType.TRANSIT && step.shapeId != null && parser.shapes != null) {
 				Polyline poly = buildShapeSegmentPolyline(step.shapeId, lat, lon, step.latTo, step.lonTo);
 				if (poly != null) {
 					poly.getStyleClass().add("route-line");
@@ -318,7 +320,7 @@ public class Map {
 					routeGroup.getChildren().add(buildStraightLine(lat, lon, step.latTo, step.lonTo, size, false));
 				}
 			} else {
-				routeGroup.getChildren().add(buildStraightLine(lat, lon, step.latTo, step.lonTo, size, step.walking));
+				routeGroup.getChildren().add(buildStraightLine(lat, lon, step.latTo, step.lonTo, size, true));
 			}
 
 			lat = step.latTo;

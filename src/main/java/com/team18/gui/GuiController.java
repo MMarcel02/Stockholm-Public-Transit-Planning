@@ -23,6 +23,7 @@ import javafx.geometry.Point2D;
 import com.team18.parser.GTFSParser;
 import com.team18.model.Stop;
 import com.team18.model.RouteStep;
+import com.team18.model.RouteStepType;
 import com.team18.model.StopTime;
 import com.team18.model.Trip;
 
@@ -393,17 +394,21 @@ public class GuiController {
 		routeStepsContainer.getChildren().add(buildRouteSummary(steps, startLat, startLon));
 
 		for (RouteStep step : steps) {
-			if (step.walking && step.durationMinutes <= 0 && "destination".equals(step.toStopName)) {
-				continue;
-			}
+			
 			VBox stepCard = new VBox(5);
 			stepCard.setStyle("-fx-background-color: #f4f4f4; -fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;");
 
-			String modeText = step.walking ? "WALK" : (step.longName + " " + step.shortName + " " + step.headSign).trim().toUpperCase();
+			String modeText = step.routeStepType == RouteStepType.TRANSIT ? (step.route.longName + " " + step.route.shortName + " " + step.headSign).trim().toUpperCase() : "WALK";
 			Label modeLabel = new Label(modeText);
 			modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
 
-			String destText = "To " + step.toStopName;
+			String destText;
+			if (step.routeStepType == RouteStepType.DIRECT_WALK || step.routeStepType == RouteStepType.WALK_TO_DEST) {
+				destText = "To destination";
+			} else {
+				destText = "To " + step.toStop.name;
+			}
+
 			int duration = (int) Math.round(step.durationMinutes);
 			Label detailsLabel;
 
