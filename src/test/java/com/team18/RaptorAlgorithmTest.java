@@ -101,6 +101,47 @@ public class RaptorAlgorithmTest {
         }
     }
 
+    @Test
+    void disablingARouteShouldResultInADifferentJourney() {
+        int raptorRouteToDisable = -1;
+        RaptorAlgorithm raptor = new RaptorAlgorithm(raptorNetwork);
+
+        try {
+            List<RouteStep> stepsOriginal = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
+            
+            assertTrue(stepsOriginal.size() > 1);
+            
+            // Disable boarding station forcing new algorithm to take different route
+            RouteStep firstStepOriginal = stepsOriginal.get(0);
+            raptorRouteToDisable = firstStepOriginal.raptorRoute.id;
+            raptorNetwork.toggleRoute(raptorRouteToDisable);
+
+            List<RouteStep> stepsAltered = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
+
+            assertTrue(stepsAltered.size() > 1);
+
+            RouteStep firstStepAltered = stepsAltered.get(0);
+
+            // Check that it actually took a different route
+            assertNotEquals(raptorRouteToDisable, firstStepAltered.raptorRoute.id);
+
+            // Check that new route is worse than original 
+            RouteStep lastStepOriginal = stepsOriginal.getLast();
+            double arrivalTimeOriginal = lastStepOriginal.startTimeSecondsAfterMidnight + lastStepOriginal.durationMinutes*60;
+
+            RouteStep lastStepAltered = stepsAltered.getLast();
+            double arrivalTimeAltered = lastStepAltered.startTimeSecondsAfterMidnight + lastStepAltered.durationMinutes*60;
+
+            assertTrue(arrivalTimeOriginal < arrivalTimeAltered, "Disabling a route should make a slower journey");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (raptorRouteToDisable != -1) {
+                raptorNetwork.toggleRoute(raptorRouteToDisable);
+            }
+        }
+    }
+
 
 
 }
