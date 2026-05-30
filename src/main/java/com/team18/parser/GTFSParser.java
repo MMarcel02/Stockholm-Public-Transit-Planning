@@ -76,7 +76,7 @@ public class GTFSParser {
     }
 
     public void parseEntry(ZipFile zipFile, ZipEntry zipEntry, String type) throws IOException {
-        System.out.println("Parsing: " + type);
+        System.err.println("Parsing: " + type);
         try (InputStream inputStream = zipFile.getInputStream(zipEntry)) {
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader reader = new BufferedReader(inputStreamReader);

@@ -6,4 +6,5 @@ import com.team18.model.RouteStep;
 public interface Router {
 
     List<RouteStep> getFastestTrip(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight);
+    void toggleStop(String stopIdToToggle);
 }

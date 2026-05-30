@@ -1,6 +1,7 @@
 package com.team18.routing.raptor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -63,7 +64,7 @@ public class RaptorBuilder {
         
         // Need an int ID for raptor, but have String ID in GTFS, so we make new int ids and a lookup table
         Stop[] stopLookup = new Stop[stops.size()];
-        Map<String, Integer> stringToIntMap = new HashMap<>();
+        HashMap<String, Integer> stringToIntMap = new HashMap<>();
 
         int currentStopId = 0;
         for (Stop stop : stops.values()) {
@@ -184,13 +185,18 @@ public class RaptorBuilder {
         stopsArr[stops.size() * 2] = currStopRoutesOffset;
         stopsArr[stops.size() * 2 + 1] = currTransferOffset;
 
+        boolean[] stopsEnabledArr = new boolean[stops.size()];
+        Arrays.fill(stopsEnabledArr, true);
+
         return new RaptorNetwork(
+            stringToIntMap,
             stopLookup, 
             raptorRouteLookup, 
             routesArr, 
             routeStopsArr, 
             stopTimesArr, 
             stopsArr, 
+            stopsEnabledArr,
             stopRoutes, 
             transfersArr
         );

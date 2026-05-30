@@ -11,6 +11,8 @@ public class RouteStep {
     public int startTimeSecondsAfterMidnight;
     // For transit steps, points to a GTFS shapes.txt polyline id (optional; dataset dependent).
     public String shapeId;
+    public String fromStopId;
+    public String toStopId;
 
     public String fromStopName;
     public String toStopName;
@@ -20,20 +22,21 @@ public class RouteStep {
     public String headSign;
 
     // Walking constructor
-    public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight, String toStopName) {
+    public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight, String toStopName, String toStopId) {
         this.walking = true;
         this.latTo = latTo;
         this.lonTo = lonTo;
         this.durationMinutes = durationMinutes;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         this.toStopName = toStopName;
+        this.toStopId = toStopId;
         this.shapeId = null;
     }
 
     // Public transit constructor
     public RouteStep(double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight,
-                     String fromStopName, String toStopName, String operatorName, String shortName, String longName, String headSign,
-                     String shapeId) {
+                    String fromStopName, String toStopName, String fromStopId, String toStopId,
+                    String operatorName, String shortName, String longName, String headSign, String shapeId) {
         this.walking = false;
         this.latTo = latTo;
         this.lonTo = lonTo;
@@ -41,6 +44,8 @@ public class RouteStep {
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         this.fromStopName = fromStopName;
         this.toStopName = toStopName;
+        this.fromStopId = fromStopId;
+        this.toStopId = toStopId;
         this.operatorName = operatorName;
         this.shortName = shortName;
         this.longName = longName;
