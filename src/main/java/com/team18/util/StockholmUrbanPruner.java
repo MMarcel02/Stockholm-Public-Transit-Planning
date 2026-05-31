@@ -15,19 +15,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 
 
-public class StockholmCenterPruner {
+public class StockholmUrbanPruner {
 
     // Reference used for zip stuff: https://www.baeldung.com/java-compress-and-uncompress
     
-    // Remove unnecessary data in sl dataset that falls outside of this region 
-    // Large bounding box for greater stockholm urban area 
-    // Actual trips will need to be routed inside a smaller bounding box to avoid edge cases
-    // Visualise here: https://bboxfinder.com/#59.087151,17.655062,59.525958,18.583373
-    private static final double MIN_LAT = 59.087151;
-    private static final double MAX_LAT = 59.525958;
-    private static final double MIN_LON = 17.655062;
-    private static final double MAX_LON = 18.583373;
-
     private static HashSet<String> stopIds = new HashSet<>();
     private static HashSet<String> tripIds = new HashSet<>();
     private static HashSet<String> routeIds = new HashSet<>();
@@ -100,7 +91,7 @@ public class StockholmCenterPruner {
             String id = lineSplit[0];
             double lat = Double.parseDouble(lineSplit[2]);
             double lon = Double.parseDouble(lineSplit[3]);
-            if (lat > MIN_LAT && lat < MAX_LAT && lon > MIN_LON && lon < MAX_LON) {
+            if (lat > StockholmUrbanArea.OUTER_MIN_LAT && lat < StockholmUrbanArea.OUTER_MAX_LAT && lon > StockholmUrbanArea.OUTER_MIN_LON && lon < StockholmUrbanArea.OUTER_MAX_LON) {
                 stopIds.add(id);
                 bw.write(String.format("%s%n", line));
             }

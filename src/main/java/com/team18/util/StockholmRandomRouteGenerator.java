@@ -31,21 +31,22 @@ public class StockholmRandomRouteGenerator {
     public static void main(String[] args) {
         String loadString = "{\"load\": \"data/stockholm/sl_center.zip\"}\n";
 
+        // Can use this to see impact of edge cases of StockholmUrbanPruner
         AreaConfig metroArea = new AreaConfig(
-            "Stockholm Metro Area", 
-            "stockholm_metro_routes.jsonl", 
+            "Stockholm Outer Bounding Box Area", 
+            "stockholm_outer_urban_routes.jsonl", 
             10500, 
-            58.7000, 60.2500, // MIN_LAT, MAX_LAT
-            17.2000, 19.3000  // MIN_LON, MAX_LON
+            StockholmUrbanArea.OUTER_MIN_LAT, StockholmUrbanArea.OUTER_MAX_LAT,
+            StockholmUrbanArea.OUTER_MIN_LON, StockholmUrbanArea.OUTER_MAX_LON
         );
 
-        // Visualise here https://bboxfinder.com/#59.192826,17.786891,59.475075,18.356737
+        // The actual area we care about 99% of the time, use this for heatmap
         AreaConfig urbanArea = new AreaConfig(
             "Stockholm Urban Area", 
-            "stockholm_urban_routes.jsonl", 
+            "stockholm_inner_urban_routes.jsonl", 
             10500, 
-            59.192826, 59.475075, // MIN_LAT, MAX_LAT
-            17.786891, 18.356737  // MIN_LON, MAX_LON
+            StockholmUrbanArea.INNER_MIN_LAT, StockholmUrbanArea.INNER_MAX_LAT,
+            StockholmUrbanArea.INNER_MIN_LON, StockholmUrbanArea.INNER_MAX_LON
         );
 
         generateRoutesForArea(metroArea, loadString);

@@ -5,6 +5,7 @@ import com.team18.model.RouteStep;
 import com.team18.model.RouteStepType;
 import com.team18.model.ShapePoint;
 import com.team18.util.GeoCalculator;
+import com.team18.util.StockholmUrbanArea;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ public class Map {
 	private Group mapGroup;
 	private Group tileGroup;
 	private Canvas stopCanvas;
+	private Canvas boundingBoxCanvas;
 	private Group routeGroup;
 	private double dragStartX = 0;
 	private double dragStartY = 0;
@@ -61,6 +63,10 @@ public class Map {
 
 		tileGroup = new Group();
 		mapGroup.getChildren().add(tileGroup);
+
+		boundingBoxCanvas = new Canvas();
+		boundingBoxCanvas.setMouseTransparent(true);
+		mapGroup.getChildren().add(boundingBoxCanvas);
 
 		stopCanvas = new Canvas();
 		stopCanvas.setMouseTransparent(true);
@@ -124,8 +130,7 @@ public class Map {
 			mapGroup.setTranslateX(groupTranslateX + (ev.getSceneX() - dragStartX));
 			mapGroup.setTranslateY(groupTranslateY + (ev.getSceneY() - dragStartY));
 
-			refreshTiles();
-			refreshStops();
+			refresh();
 		});
 
 		mapGroup.setOnScroll(ev -> {
@@ -328,6 +333,57 @@ public class Map {
 		}
 	}
 
+	private void refreshBoundingBox() {
+		double width = getViewportWidth() + (Tile.RESOLUTION * 2);
+		double height = getViewportHeight() + (Tile.RESOLUTION * 2);
+		double minX = -mapGroup.getTranslateX() - Tile.RESOLUTION;
+		double minY = -mapGroup.getTranslateY() - Tile.RESOLUTION;
+
+		boundingBoxCanvas.setTranslateY(minY);
+		boundingBoxCanvas.setTranslateX(minX);
+		boundingBoxCanvas.setHeight(height);
+		boundingBoxCanvas.setWidth(width);
+
+		GraphicsContext gc = boundingBoxCanvas.getGraphicsContext2D();
+		gc.clearRect(0, 0, width, height);
+
+
+		double[] outerTopLeft = getLocalFromLatLon(
+			StockholmUrbanArea.OUTER_MAX_LAT, 
+			StockholmUrbanArea.OUTER_MIN_LON
+		);
+		
+		double[] outerBottomRight = getLocalFromLatLon(
+			StockholmUrbanArea.OUTER_MIN_LAT, 
+			StockholmUrbanArea.OUTER_MAX_LON
+		);
+
+		double[] innerTopLeft = getLocalFromLatLon(
+			StockholmUrbanArea.INNER_MAX_LAT, 
+			StockholmUrbanArea.INNER_MIN_LON
+		);
+		
+		double[] innerBottomRight = getLocalFromLatLon(
+			StockholmUrbanArea.INNER_MIN_LAT, 
+			StockholmUrbanArea.INNER_MAX_LON
+		);
+
+		double outRectY = outerTopLeft[1] - minY;
+		double outRectX = outerTopLeft[0] - minX;
+		double outRectWidth = outerBottomRight[0] - outerTopLeft[0];
+		double outRectHeight = outerBottomRight[1] - outerTopLeft[1];
+		gc.strokeRect(outRectX, outRectY, outRectWidth, outRectHeight);
+
+		double inRectX = innerTopLeft[0] - minX;
+		double inRectY = innerTopLeft[1] - minY;
+		double inRectWidth = innerBottomRight[0] - innerTopLeft[0];
+		double inRectHeight = innerBottomRight[1] - innerTopLeft[1];
+		gc.strokeRect(inRectX, inRectY, inRectWidth, inRectHeight);
+
+	}
+
+	
+
 	private Line buildStraightLine(double startLat, double startLon, double endLat, double endLon, int strokeWidth, boolean walking) {
 		Line line = new Line();
 		line.getStyleClass().add("route-line");
@@ -402,6 +458,7 @@ public class Map {
 
 	public void refresh() {
 		refreshTiles();
+		refreshBoundingBox();
 		refreshStops();
 		refreshRoute();
 	}

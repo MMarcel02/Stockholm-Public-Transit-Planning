@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
 
 public class RoutingAlgorithmAnalyzer {
 
-    private static final String ROUTES_FILE = "stockholm_urban_routes.jsonl";
-    // private static final String ROUTES_FILE = "stockholm_metro_routes.jsonl";
-    private static final String GTFS_ZIP = "data/stockholm/sl.zip";
+    private static final String ROUTES_FILE = "stockholm_inner_urban_routes.jsonl";
+    // private static final String ROUTES_FILE = "stockholm_outer_urban_routes.jsonl";
+    private static final String GTFS_ZIP = "data/stockholm/sl_center.zip";
     private static final int WARMUP_ITERATIONS = 500;
 
     private static class RouteRequest {
