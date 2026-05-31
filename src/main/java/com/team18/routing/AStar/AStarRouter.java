@@ -3,6 +3,10 @@ package com.team18.routing.AStar;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 import com.team18.model.Edge;
 import com.team18.model.RouteNode;
@@ -16,6 +20,10 @@ public class AStarRouter implements Router {
     private final GTFSParser parser;
     private final TransitGraph graph;
 
+    private final double WALK_SPEED_MPS = 50.0 / 36.0;
+
+    private final double MAX_VEHICLE_SPEED_MPS = 50.0;
+
     public AStarRouter(GTFSParser parser) {
         this.parser = parser;
         this.graph = new TransitGraph();
@@ -23,116 +31,152 @@ public class AStarRouter implements Router {
     }
 
     @Override
-    public List<RouteStep> getFastestTrip(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight){
-        List<RouteNode> openList = new ArrayList<RouteNode>();
-        List<RouteStep> closedList = new ArrayList<RouteStep>();
-
+    public List<RouteStep> getFastestTrip(double latFrom, double lonFrom, double latTo, double lonTo, int startTimeSecondsAfterMidnight) {
         Stop src = findNearestStop(latFrom, lonFrom);
         Stop dest = findNearestStop(latTo, lonTo);
 
-        if(src == null || dest == null){
+        if (src == null || dest == null) {
             System.err.println("Source or destination is null! Returning an empty list... ");
             return Collections.emptyList();
         }
 
-        aStarRouteCalculator(openList, closedList, src, dest, startTimeSecondsAfterMidnight);
+        int directWalkSeconds = (int) Math.round(
+                GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo) / WALK_SPEED_MPS);
+        int directWalkArrival = startTimeSecondsAfterMidnight + directWalkSeconds;
 
-        return closedList;
+        RouteNode goal = runAStar(src, dest, latFrom, lonFrom, startTimeSecondsAfterMidnight);
+
+        if (goal == null) {
+            //walk directly
+            return directWalk(latFrom, lonFrom, latTo, lonTo, directWalkSeconds, startTimeSecondsAfterMidnight);
+        }
+
+        int finalWalkSeconds = (int) Math.round(
+                GeoCalculator.calculateEquirectangularDistance(dest.lat, dest.lon, latTo, lonTo) / WALK_SPEED_MPS);
+        int transitArrival = goal.arrivalTime + finalWalkSeconds;
+
+        if (directWalkArrival <= transitArrival) {
+            return directWalk(latFrom, lonFrom, latTo, lonTo, directWalkSeconds, startTimeSecondsAfterMidnight);
+        }
+
+        return reconstructPath(goal, latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight, finalWalkSeconds);
     }
 
-    public void aStarRouteCalculator(List<RouteNode> openList, List<RouteStep> closedList, Stop src, Stop dest, int startTimeSec){
-        
-        //Init the openList
-        RouteNode node = new RouteNode(src, 0, heuristic(src, dest), startTimeSec, null, null);
-        openList.add(node);
+    private RouteNode runAStar(Stop src, Stop dest, double originLat, double originLon, int startTimeSec) {
+        PriorityQueue<RouteNode> open = new PriorityQueue<>(Comparator.comparingDouble(node -> node.f));
 
-        while(!openList.isEmpty()){
-            double fCompare = openList.get(0).f;
-            int qIndex = 0;
-            for(int i = 1; i < openList.size(); ++i){
-                if(fCompare > openList.get(i).f){
-                    fCompare = openList.get(i).f;
-                    qIndex = i;
+        Map<String, Integer> bestArrival = new HashMap<>();
+
+        int initialWalkSeconds = (int) Math.round(
+                GeoCalculator.calculateEquirectangularDistance(originLat, originLon, src.lat, src.lon) / WALK_SPEED_MPS);
+        int srcArrival = startTimeSec + initialWalkSeconds;
+
+        open.add(new RouteNode(src, initialWalkSeconds, heuristic(src, dest), srcArrival, null, null));
+        bestArrival.put(src.id, srcArrival);
+
+        while (!open.isEmpty()) {
+            RouteNode current = open.poll();
+
+            Integer settled = bestArrival.get(current.stop.id);
+            if (settled != null && current.arrivalTime > settled) continue;
+
+            if (current.stop.id.equals(dest.id)) return current;
+
+            List<Edge> edges = graph.getAdjacency().get(current.stop.id);
+            if (edges == null) continue; //a stop with no outgoing edges
+
+            for (Edge edge : edges) {
+                int neighbourArrival;
+
+                if (edge.mode.equals("transit")) {
+                    if (current.arrivalTime > edge.departureTime) continue;
+                    neighbourArrival = edge.departureTime + edge.travelTimeSeconds;
+                } else {
+                    neighbourArrival = current.arrivalTime + edge.travelTimeSeconds;
                 }
+
+                Integer known = bestArrival.get(edge.dest.id);
+                if (known != null && neighbourArrival >= known) continue;
+
+                bestArrival.put(edge.dest.id, neighbourArrival);
+
+                double g = neighbourArrival - startTimeSec;
+                double h = heuristic(edge.dest, dest);
+                open.add(new RouteNode(edge.dest, g, h, neighbourArrival, current, edge));
             }
+        }
 
-            RouteNode q = openList.get(qIndex); //q is our current stop
-            
-            List<Edge> successorList = graph.adjacency.get(q.stop.id); //use the id of q to get its adjacent stops from the graph
+        return null;
+    }
 
-            double gOld = openList.get(qIndex).g; //gOld is the travel time up to the current stop
-            for(int i = 0; i < successorList.size(); ++i){
-                double gCurrent = gOld + successorList.get(i).travelTimeSeconds; //gCurrent is the travel time up to the current successor
+    private List<RouteStep> reconstructPath(RouteNode goal, double originLat, double originLon,
+                                            double latTo, double lonTo,
+                                            int startTimeSec, int finalWalkSeconds) {
+        List<RouteNode> nodes = new ArrayList<>();
+        for (RouteNode node = goal; node != null; node = node.parent) {
+            nodes.add(node);
+        }
+        Collections.reverse(nodes);
 
-                if(successorList.get(i).dest.lat == dest.lat && successorList.get(i).dest.lon == dest.lon){
-                    break;
-                }
-                else{
-                    double hCurrent = GeoCalculator.calculateHaversineDistance(successorList.get(i).dest.lat, successorList.get(i).dest.lon, dest.lat, dest.lon);
-                    double fCurrent = gCurrent + hCurrent;
-                    
-                    if(!checkOpenList(openList, successorList, i, fCurrent) || !checkClosedList(closedList, successorList, i)){
-                        RouteNode newNode = new RouteNode(successorList.get(i).dest, gCurrent, hCurrent, 0, openList.get(qIndex), successorList.get(i));
-                        openList.add(newNode);
-                    }
-                }
-            }
+        List<RouteStep> steps = new ArrayList<>();
+        Stop srcStop = nodes.get(0).stop;
 
-            if(openList.get(qIndex).parent == null){
+        // Walk from origin coordinates to the first stop
+        int initialWalkSeconds = nodes.get(0).arrivalTime - startTimeSec;
+        steps.add(new RouteStep(originLat, originLon, srcStop, toMinutes(initialWalkSeconds), startTimeSec));
 
-                RouteStep routeStep = new RouteStep(openList.get(qIndex).stop.lat, openList.get(qIndex).stop.lon, 0, startTimeSec, openList.get(qIndex).stop.name);
-                closedList.add(routeStep);
+        for (int i = 1; i < nodes.size(); i++) {
+            RouteNode from = nodes.get(i - 1);
+            RouteNode to = nodes.get(i);
+            Edge edge = to.edgeFromParent;
 
+            int legStart = from.arrivalTime;
+            int legDuration = to.arrivalTime - from.arrivalTime;
+
+            if (edge.mode.equals("transit")) {
+                steps.add(new RouteStep(
+                        from.stop, to.stop,
+                        toMinutes(legDuration), legStart,
+                        edge.trip.route, edge.trip.shapeId, edge.trip.headSign));
             } else {
-
-                RouteStep routeStep = new RouteStep(openList.get(qIndex).stop.lat, openList.get(qIndex).stop.lon, openList.get(qIndex).edgeFromParent.travelTimeSeconds, openList.get(qIndex).edgeFromParent.departureTime, openList.get(qIndex).stop.name, openList.get(qIndex).edgeFromParent.dest.name, openList.get(qIndex).edgeFromParent.trip.route.operator, openList.get(qIndex).edgeFromParent.trip.route.shortName, openList.get(qIndex).edgeFromParent.trip.route.longName, openList.get(qIndex).edgeFromParent.trip.headSign, openList.get(qIndex).edgeFromParent.trip.shapeId);
-                closedList.add(routeStep);
-
-            }
-            
-            openList.remove(qIndex);
-            //the closed list will be our final route
-        }
-    }
-
-    public static double heuristic(Stop from, Stop to) {
-        return (double)GeoCalculator.calculateHaversineDistance(from.lat, from.lon, to.lat, to.lon);
-    }
-    
-    public boolean checkOpenList(List<RouteNode> openList, List<Edge> list, int index, double fCurrent){
-        int i = 0;
-        boolean check = false;
-        while(openList.isEmpty()){
-            if(openList.get(i).stop.equals(list.get(index).dest) && openList.get(i).f <= fCurrent){
-                check = true;
+                // Walking transfer between two stops
+                steps.add(new RouteStep(from.stop, to.stop, toMinutes(legDuration), legStart));
             }
         }
-        return check;
+
+        // Walk from the final stop to the destination coordinates
+        steps.add(new RouteStep(goal.stop, latTo, lonTo, toMinutes(finalWalkSeconds), goal.arrivalTime));
+
+        return steps;
     }
 
-    public boolean checkClosedList(List<RouteStep> closedList, List<Edge> list, int index){
-        int i = 0;
-        boolean check = false;
-        while(closedList.isEmpty()){
-            if(closedList.get(i).latTo == (list.get(index).dest.lat) && closedList.get(i).lonTo == (list.get(index).dest.lon)){
-                check = true;
-            }
-        }
-        return check;
+    private List<RouteStep> directWalk(double originLat, double originLon, double latTo, double lonTo,
+                                       int walkSeconds, int startTimeSec) {
+        List<RouteStep> steps = new ArrayList<>();
+        steps.add(new RouteStep(originLat, originLon, latTo, lonTo, toMinutes(walkSeconds), startTimeSec));
+        return steps;
     }
 
-    private Stop findNearestStop(double lat, double lon){
+    private double heuristic(Stop from, Stop to) {
+        double distanceMeters = GeoCalculator.calculateEquirectangularDistance(from.lat, from.lon, to.lat, to.lon);
+        return distanceMeters / MAX_VEHICLE_SPEED_MPS;
+    }
+
+    private int toMinutes(int seconds) {
+        return (int) Math.round(seconds / 60.0);
+    }
+
+    private Stop findNearestStop(double lat, double lon) {
         Stop nearest = null;
         double best = Double.MAX_VALUE;
 
-        for(Stop stop : parser.stops.values()){
+        for (Stop stop : parser.stops.values()) {
             double dist = GeoCalculator.calculateEquirectangularDistance(lat, lon, stop.lat, stop.lon);
-            if(dist < best){
+            if (dist < best) {
                 best = dist;
                 nearest = stop;
             }
         }
         return nearest;
     }
-        
 }

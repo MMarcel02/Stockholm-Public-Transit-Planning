@@ -129,6 +129,27 @@ public class RouteStep {
         this.headSign = raptorRoute.headSign;
     }
 
+    // Public transit constructor for A* (which has the underlying Route/Trip instead of a RaptorRoute)
+    public RouteStep(Stop fromStop, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight, Route route, String shapeId, String headSign) {
+        this.routeStepType = RouteStepType.TRANSIT;
+        this.durationMinutes = durationMinutes;
+        this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
+
+        this.fromStop = fromStop;
+        this.toStop = toStop;
+
+        this.latFrom = fromStop.lat;
+        this.lonFrom = fromStop.lon;
+
+        this.latTo = toStop.lat;
+        this.lonTo = toStop.lon;
+
+        this.route = route;
+        this.raptorRoute = null;
+        this.shapeId = shapeId;
+        this.headSign = headSign;
+    }
+
     // Convert to JSON format in project manual
     public Map<String, Object> toMap() {
         Map<String, Object> stepMap = new LinkedHashMap<>();
