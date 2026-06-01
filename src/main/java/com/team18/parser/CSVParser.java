@@ -62,10 +62,23 @@ public class CSVParser {
 		public String getCol(String name) {
 			int index = Arrays.asList(this.names).indexOf(name);
 			if (index < 0) {
-				return null;
+				return "";
 			}
 
 			return this.values[index];
+		}
+
+		public String getCol(String name, String defaultVal) {
+			int index = Arrays.asList(this.names).indexOf(name);
+			if (index < 0) {
+				return defaultVal;
+			}
+
+			return this.values[index];
+		}
+
+		public String toString() {
+			return Arrays.toString(values);
 		}
 	}
 
@@ -95,13 +108,22 @@ public class CSVParser {
 		}
 	}
 
-	public boolean hasCols(String... cols) {
+	public boolean hasAll(String... cols) {
 		for (String col: cols) {
 			int index = Arrays.asList(this.colNames).indexOf(col);
 			if (index < 0) return false;
 		}
 
 		return true;
+	}
+
+	public boolean hasAny(String... cols) {
+		for (String col: cols) {
+			int index = Arrays.asList(this.colNames).indexOf(col);
+			if (index >= 0) return true;
+		}
+
+		return false;
 	}
 }
 
