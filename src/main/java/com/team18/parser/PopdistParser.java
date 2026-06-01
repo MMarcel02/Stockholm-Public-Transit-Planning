@@ -59,11 +59,16 @@ public class PopdistParser {
 
 			easting -= 500000;
 
+
+			// Move the coordinate to the center of the cell
+			northing += 500;
+			easting += 500;
+
 			double a = 6378137;
 			double b = 6356752.3142;
 			double k0 = 0.9996;
 
-			double e = Math.sqrt(1 - (a*a)/(b*b));
+			double e = 0.08;
 
 			// The SWEREF99 uses the meridian 15° east of Greenwich as the origin,
 			// according to:
@@ -97,7 +102,7 @@ public class PopdistParser {
 			double c1 = ep2*cosfp*cosfp;
 			double t1 = tanfp*tanfp;
 
-			double r1 = a*(1-e*e)/Math.sqrt(3*(1-e*e*sinfp*sinfp));
+			double r1 = a*(1-e*e)/Math.sqrt(Math.pow(1-e*e*sinfp*sinfp, 3));
 			double n1 = a/Math.sqrt(1-e*e*sinfp*sinfp);
 			double d = easting/(n1*k0);
 
@@ -115,6 +120,7 @@ public class PopdistParser {
 			double lon = lon0 + (q5 - q6 + q7) / cosfp;
 
 			points.add(new Point(lat, lon, population));
+			System.out.printf("lat %f lon %f\n", lat, lon);
 		}
 
 		reader.close();
