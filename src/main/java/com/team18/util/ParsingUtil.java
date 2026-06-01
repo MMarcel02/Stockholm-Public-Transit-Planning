@@ -1,10 +1,8 @@
 package com.team18.util;
 
-import java.io.IOException;
-
 public class ParsingUtil {
 
-    public static int timeStringToSecondsAfterMidnight(String timeString) throws IOException{
+    public static int timeStringToSecondsAfterMidnight(String timeString) {
         if (timeString == null || timeString.isEmpty()) {
             return -1;
         }
@@ -20,7 +18,7 @@ public class ParsingUtil {
             }
             return secondsAfterMidnight;
         } catch (NumberFormatException e) {
-            throw new IOException("Time string failed parsing into number");
+            throw new NumberFormatException("Time string failed parsing into number");
         }
     }
 
