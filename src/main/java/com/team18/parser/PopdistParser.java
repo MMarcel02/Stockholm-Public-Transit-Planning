@@ -71,11 +71,12 @@ public class PopdistParser {
 			double e = 0.08;
 
 			// The SWEREF99 uses the meridian 15° east of Greenwich as the origin,
-			// according to:
+			// according to. This is 15° in radians.
 			// - https://www.lantmateriet.se/en/geodata/gps-geodesy-and-swepos/swedish-reference-systems/
-			double lon0 = 15;
+			double lon0 = 0.2617994;
 
-			double mu = northing / (a *
+			double m = northing/k0;
+			double mu = m / (a *
 					(1
 					 - 1 * Math.pow(e, 2)/4
 					 - 3 * Math.pow(e, 4)/64
@@ -119,8 +120,7 @@ public class PopdistParser {
 			double lat = fp - q1 * (q2 - q3 + q4);
 			double lon = lon0 + (q5 - q6 + q7) / cosfp;
 
-			points.add(new Point(lat, lon, population));
-			System.out.printf("lat %f lon %f\n", lat, lon);
+			points.add(new Point(Math.toDegrees(lat), Math.toDegrees(lon), population));
 		}
 
 		reader.close();
