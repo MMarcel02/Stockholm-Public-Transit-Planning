@@ -24,7 +24,8 @@ public class PopdistParser {
 		}
 	}
 
-	int[][] grid;
+	public int[] grid;
+	public int[][] demand;
 
 	double minLat = Double.POSITIVE_INFINITY;
 	double minLon = Double.POSITIVE_INFINITY;
@@ -58,13 +59,37 @@ public class PopdistParser {
 
 		width = (int) Math.floor((maxLon - minLon) / CELL_SIZE_LON);
 		height = (int) Math.floor((maxLat - minLat) / CELL_SIZE_LAT);
+		int aw = width+1;
+		int ah = height+1;
 
-		grid = new int[width+1][height+1];
+		grid = new int[aw*ah];
 
 		for (Point pt : points) {
 			int x = (int) Math.floor(width * ((pt.lon - minLon) / (maxLon - minLon)));
 			int y = (int) Math.floor(height * ((pt.lat - minLat) / (maxLat - minLat)));
-			grid[x][y] = pt.population;
+			grid[x+aw*y] = pt.population;
+		}
+
+		demand = new int[aw*ah][aw*ah];
+
+		for (int iy = 0; iy < ah; iy++) {
+			for (int ix = 0; ix < aw; ix++) {
+				for (int jy = 0; jy < ah; jy++) {
+					for (int jx = 0; jx < aw; jx++) {
+						int i = ix+aw*iy;
+						int j = jx+aw*jy;
+
+						double distance = Math.sqrt(
+								Math.pow((ix - jx), 2)
+								+ Math.pow((iy - jy), 2));
+						double k = 1;
+
+						demand[i][j] = (int) Math.floor(
+							((double) (grid[j] * grid[i]))
+							/ Math.pow(distance, k));
+					}
+				}
+			}
 		}
 	}
 
@@ -72,7 +97,7 @@ public class PopdistParser {
 		int x = (int) Math.floor(width * ((lon - minLon) / (maxLon - minLon)));
 		int y = (int) Math.floor(height * ((lat - minLat) / (maxLat - minLat)));
 
-		return grid[x][y];
+		return grid[x+(width+1)*y];
 	}
 }
 
