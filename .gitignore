@@ -5,6 +5,7 @@ target/
 /data/stockholm/*
 !/data/stockholm/README.md
 !/data/stockholm/pop.csv
+!/data/stockholm/poplatlon.csv
 
 stockholm_routes.jsonl
 stockholm_routes_results.jsonl
