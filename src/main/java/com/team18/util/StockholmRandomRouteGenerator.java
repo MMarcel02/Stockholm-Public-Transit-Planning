@@ -35,7 +35,7 @@ public class StockholmRandomRouteGenerator {
         AreaConfig metroArea = new AreaConfig(
             "Stockholm Outer Bounding Box Area", 
             "stockholm_outer_urban_routes.jsonl", 
-            10500, 
+            1500, 
             StockholmUrbanArea.OUTER_MIN_LAT, StockholmUrbanArea.OUTER_MAX_LAT,
             StockholmUrbanArea.OUTER_MIN_LON, StockholmUrbanArea.OUTER_MAX_LON
         );
@@ -44,7 +44,7 @@ public class StockholmRandomRouteGenerator {
         AreaConfig urbanArea = new AreaConfig(
             "Stockholm Urban Area", 
             "stockholm_inner_urban_routes.jsonl", 
-            10500, 
+            1500, 
             StockholmUrbanArea.INNER_MIN_LAT, StockholmUrbanArea.INNER_MAX_LAT,
             StockholmUrbanArea.INNER_MIN_LON, StockholmUrbanArea.INNER_MAX_LON
         );

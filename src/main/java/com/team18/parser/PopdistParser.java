@@ -5,7 +5,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import com.team18.parser.CSVParser;
 import com.team18.parser.CSVParser.Row;
 
 public class PopdistParser {
@@ -25,6 +24,7 @@ public class PopdistParser {
 	}
 
 	public int[] grid;
+	public double[] demandPointCoordinates;
 	public int[][] demand;
 
 	double minLat = Double.POSITIVE_INFINITY;
@@ -49,7 +49,7 @@ public class PopdistParser {
 
 			points.add(new Point(lat, lon, population));
 		}
-
+		
 		for (Point pt : points) {
 			minLat = Math.min(minLat, pt.lat);
 			minLon = Math.min(minLon, pt.lon);
@@ -63,11 +63,14 @@ public class PopdistParser {
 		int ah = height+1;
 
 		grid = new int[aw*ah];
+		demandPointCoordinates = new double[aw*ah*2];
 
 		for (Point pt : points) {
 			int x = (int) Math.floor(width * ((pt.lon - minLon) / (maxLon - minLon)));
 			int y = (int) Math.floor(height * ((pt.lat - minLat) / (maxLat - minLat)));
 			grid[x+aw*y] = pt.population;
+			demandPointCoordinates[x+aw*y*2] = pt.lat;
+			demandPointCoordinates[x+aw*y*2 + 1] = pt.lon;
 		}
 
 		demand = new int[aw*ah][aw*ah];

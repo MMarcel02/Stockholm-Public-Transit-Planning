@@ -71,18 +71,18 @@ public class RoutingAlgorithmAnalyzer {
         Report raptorReport = timeRouting(raptorRouter, requests);
         raptorReport.printReport();
 
-        System.out.println("Building A* adjacency list...");
-        long startAStarBuild = System.currentTimeMillis();
-        TransitGraph graph = new TransitGraph();
-        graph.build(parser);
-        long aStarBuildTime = System.currentTimeMillis() - startAStarBuild;
-        System.out.printf("A* Build Time: %,d ms%n", aStarBuildTime);
+        // System.out.println("Building A* adjacency list...");
+        // long startAStarBuild = System.currentTimeMillis();
+        // TransitGraph graph = new TransitGraph();
+        // graph.build(parser);
+        // long aStarBuildTime = System.currentTimeMillis() - startAStarBuild;
+        // System.out.printf("A* Build Time: %,d ms%n", aStarBuildTime);
 
-        Router aStarRouter = new AStarRouter(parser);
-        System.out.println("Analyzing all trips with A*...");
-        Report aStarReport = timeRouting(aStarRouter, requests);
-        aStarReport.printReport();
-        raptorReport.printComparison(aStarReport);
+        // Router aStarRouter = new AStarRouter(parser);
+        // System.out.println("Analyzing all trips with A*...");
+        // Report aStarReport = timeRouting(aStarRouter, requests);
+        // aStarReport.printReport();
+        // raptorReport.printComparison(aStarReport);
     }
 
     private static List<RouteRequest> loadRequests(String filename) {
