@@ -1,5 +1,6 @@
 package com.team18.gui;
 
+import com.team18.model.Stop;
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
 import com.team18.model.RouteStepType;
@@ -26,7 +27,6 @@ import java.util.LinkedHashMap;
 
 public class Map {
 	private Group mapGroup;
-	private Canvas stopCanvas;
 	private double dragStartX = 0;
 	private double dragStartY = 0;
 	private double groupTranslateX = 0;
@@ -41,20 +41,11 @@ public class Map {
 	private ArrayList<Tile> activeTiles = new ArrayList<>();
 
 	private GTFSParser parser;
-	private ArrayList<Landmark> stopLandmarks = new ArrayList<>();
 
 	public Map(GTFSParser parser) {
 		this.parser = parser;
 
 		mapGroup = new Group();
-
-		stopCanvas = new Canvas();
-		stopCanvas.setMouseTransparent(true);
-		mapGroup.getChildren().add(stopCanvas);
-
-		for (var stop: parser.stops.values()) {
-			stopLandmarks.add(new Landmark(stop.lat, stop.lon, stop.id, stop.name));
-		}
 
 		// File cacheDir = new File(Tile.Coord.CACHE_DIR);
 		// File[] files = cacheDir.listFiles();
@@ -90,14 +81,14 @@ public class Map {
 
 			CoordSystem.setZoomLevel(CoordSystem.getZoomLevel() + delta);
 
-			refresh();
+			//refresh();
 		});
 
 		mapGroup.setOnMouseDragged(ev -> {
 			mapGroup.setTranslateX(groupTranslateX + (ev.getSceneX() - dragStartX));
 			mapGroup.setTranslateY(groupTranslateY + (ev.getSceneY() - dragStartY));
 
-			refresh();
+			//refresh();
 		});
 
 		mapGroup.setOnScroll(ev -> {
@@ -114,67 +105,25 @@ public class Map {
 
 			CoordSystem.setZoomLevel(CoordSystem.getZoomLevel() + delta);
 
-			refresh();
+			//refresh();
 		});
-	}
-
-	private void refreshStops() {
-		double width = mapGroup.getScene().getWidth() + (Tile.RESOLUTION * 2);
-		double height = mapGroup.getScene().getWidth() + (Tile.RESOLUTION * 2);
-		double minX = -mapGroup.getTranslateX() - Tile.RESOLUTION;
-		double minY = -mapGroup.getTranslateY() - Tile.RESOLUTION;
-		double maxX = minX + width;
-		double maxY = minY + height;
-
-		stopCanvas.setTranslateX(minX);
-		stopCanvas.setTranslateY(minY);
-		stopCanvas.setWidth(width);
-		stopCanvas.setHeight(height);
-
-		GraphicsContext gc = stopCanvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, width, height);
-
-		// TODO: This.
-		//if (zoomLevel < 13) return;
-
-		double radius = CoordSystem.getZoomLevel() >= 15 ? 4.5 : 3.5;
-		gc.setFill(Color.web("#E91E63", 0.80));
-		gc.setStroke(Color.WHITE);
-		gc.setLineWidth(1.0);
-
-		for (Landmark landmark : stopLandmarks) {
-			double[] local = CoordSystem.getLocalFromLatLon(landmark.lat, landmark.lon);
-			if (local[0] < minX || local[0] > maxX || local[1] < minY || local[1] > maxY) {
-				continue;
-			}
-
-			double canvasX = local[0] - minX;
-			double canvasY = local[1] - minY;
-			double diameter = radius * 2;
-			gc.fillOval(canvasX - radius, canvasY - radius, diameter, diameter);
-			gc.strokeOval(canvasX - radius, canvasY - radius, diameter, diameter);
-		}
-	}
-
-	public void refresh() {
-		refreshStops();
 	}
 
 	public Group getMapGroup() { return mapGroup; }
 
-	public Landmark findStopNearLocal(double localX, double localY, double radiusPixels) {
+	public Stop findStopNearLocal(double localX, double localY, double radiusPixels) {
 	        double bestDistanceSquared = radiusPixels * radiusPixels;
-	        Landmark best = null;
+	        Stop best = null;
 	
-	        for (Landmark landmark : stopLandmarks) {
-	                double[] local = CoordSystem.getLocalFromLatLon(landmark.lat, landmark.lon);
+	        for (Stop stop : parser.stops.values()) {
+	                double[] local = CoordSystem.getLocalFromLatLon(stop.lat, stop.lon);
 	                double dx = local[0] - localX;
 	                double dy = local[1] - localY;
 	                double distanceSquared = (dx * dx) + (dy * dy);
 	
 	                if (distanceSquared <= bestDistanceSquared) {
 	                        bestDistanceSquared = distanceSquared;
-	                        best = landmark;
+	                        best = stop;
 	                }
 	        }
 	

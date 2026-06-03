@@ -11,6 +11,7 @@ import com.team18.gui.Layer;
 import com.team18.gui.NavigationLayer;
 import com.team18.gui.MapLayer;
 import com.team18.gui.HeatmapLayer;
+import com.team18.gui.StopLayer;
 import com.team18.gui.BoundingBoxLayer;
 
 import javafx.fxml.FXML;
@@ -61,7 +62,7 @@ public class GuiController {
 	private Stop selectedStartStop;
 	private Stop selectedEndStop;
 	private VBox stopHoverCard;
-	private Landmark hoveredLandmark;
+	private Stop hoveredLandmark;
 	private boolean settingFieldProgrammatically = false;
 	private ResolvedLocation lastHeatmapOrigin;
 	private int lastHeatmapStartTimeSeconds = -1;
@@ -70,6 +71,7 @@ public class GuiController {
 	private NavigationLayer navLayer;
 	private MapLayer mapLayer;
 	private HeatmapLayer heatmapLayer;
+	private StopLayer stopLayer;
 	private BoundingBoxLayer bbLayer;
 
 	@FXML
@@ -112,6 +114,10 @@ public class GuiController {
 		heatmapLayer = new HeatmapLayer(raptorNetwork);
 		map.getMapGroup().getChildren().add(heatmapLayer.getGroup());
 
+		stopLayer = new StopLayer(parser);
+		map.getMapGroup().getChildren().add(stopLayer.getGroup());
+		stopLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
+
 		bbLayer = new BoundingBoxLayer();
 		map.getMapGroup().getChildren().add(bbLayer.getGroup());
 		bbLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
@@ -127,7 +133,7 @@ public class GuiController {
 				double localX = ev.getX();
 				double localY = ev.getY();
 
-				Landmark stop = map.findStopNearLocal(localX, localY, 10);
+				Stop stop = map.findStopNearLocal(localX, localY, 10);
 				if (stop != null) {
 					selectLandmark(stop, settingStart);
 					hideStopHoverCard();
@@ -160,7 +166,7 @@ public class GuiController {
 			}
 
 			Point2D localPoint = map.getMapGroup().sceneToLocal(ev.getSceneX(), ev.getSceneY());
-			Landmark stop = map.findStopNearLocal(localPoint.getX(), localPoint.getY(), 10);
+			Stop stop = map.findStopNearLocal(localPoint.getX(), localPoint.getY(), 10);
 			if (stop == null) {
 				if (isMouseNearStopHoverCard(ev.getX(), ev.getY())) {
 					return;
@@ -182,7 +188,7 @@ public class GuiController {
 		}).start();
 	}
 
-	private void selectLandmark(Landmark landmark, boolean[] settingStart) {
+	private void selectLandmark(Stop landmark, boolean[] settingStart) {
 		if (settingStart[0]) {
 			selectLandmarkAsStart(landmark, settingStart);
 		} else {
@@ -190,7 +196,7 @@ public class GuiController {
 		}
 	}
 
-	private void selectLandmarkAsStart(Landmark landmark, boolean[] settingStart) {
+	private void selectLandmarkAsStart(Stop landmark, boolean[] settingStart) {
 		String fieldText = getLandmarkFieldText(landmark);
 		setFieldText(startField, fieldText);
 		selectedStartStop = findExactStopByName(fieldText);
@@ -198,7 +204,7 @@ public class GuiController {
 		settingStart[0] = false;
 	}
 
-	private void selectLandmarkAsEnd(Landmark landmark, boolean[] settingStart) {
+	private void selectLandmarkAsEnd(Stop landmark, boolean[] settingStart) {
 		String fieldText = getLandmarkFieldText(landmark);
 		setFieldText(endField, fieldText);
 		selectedEndStop = findExactStopByName(fieldText);
@@ -206,7 +212,7 @@ public class GuiController {
 		settingStart[0] = true;
 	}
 
-	private String getLandmarkFieldText(Landmark landmark) {
+	private String getLandmarkFieldText(Stop landmark) {
 		return landmark.name != null && !landmark.name.isBlank()
 				? landmark.name
 				: String.format("%.6f, %.6f", landmark.lat, landmark.lon);
@@ -224,7 +230,7 @@ public class GuiController {
 		mapContainer.getChildren().add(stopHoverCard);
 	}
 
-	private void showStopHoverCard(Landmark landmark, double mouseX, double mouseY, boolean[] settingStart) {
+	private void showStopHoverCard(Stop landmark, double mouseX, double mouseY, boolean[] settingStart) {
 		if (landmark == hoveredLandmark && stopHoverCard.isVisible()) {
 			positionStopHoverCard(mouseX, mouseY);
 			return;
@@ -367,7 +373,7 @@ public class GuiController {
 		}
 	}
 
-	private List<String> getArrivalRows(Landmark landmark) {
+	private List<String> getArrivalRows(Stop landmark) {
 		List<ArrivalInfo> arrivals = stopArrivalsByStopId.get(landmark.id);
 		if (arrivals == null || arrivals.isEmpty()) {
 			return List.of("No scheduled rides found");
