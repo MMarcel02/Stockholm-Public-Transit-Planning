@@ -27,7 +27,6 @@ import java.util.LinkedHashMap;
 public class Map {
 	private Group mapGroup;
 	private Canvas stopCanvas;
-	private Canvas boundingBoxCanvas;
 	private double dragStartX = 0;
 	private double dragStartY = 0;
 	private double groupTranslateX = 0;
@@ -48,10 +47,6 @@ public class Map {
 		this.parser = parser;
 
 		mapGroup = new Group();
-
-		boundingBoxCanvas = new Canvas();
-		boundingBoxCanvas.setMouseTransparent(true);
-		mapGroup.getChildren().add(boundingBoxCanvas);
 
 		stopCanvas = new Canvas();
 		stopCanvas.setMouseTransparent(true);
@@ -161,57 +156,7 @@ public class Map {
 		}
 	}
 
-	private void refreshBoundingBox() {
-		double width = mapGroup.getScene().getWidth() + (Tile.RESOLUTION * 2);
-		double height = mapGroup.getScene().getHeight() + (Tile.RESOLUTION * 2);
-		double minX = -mapGroup.getTranslateX() - Tile.RESOLUTION;
-		double minY = -mapGroup.getTranslateY() - Tile.RESOLUTION;
-
-		boundingBoxCanvas.setTranslateY(minY);
-		boundingBoxCanvas.setTranslateX(minX);
-		boundingBoxCanvas.setHeight(height);
-		boundingBoxCanvas.setWidth(width);
-
-		GraphicsContext gc = boundingBoxCanvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, width, height);
-
-
-		double[] outerTopLeft = CoordSystem.getLocalFromLatLon(
-			StockholmUrbanArea.OUTER_MAX_LAT, 
-			StockholmUrbanArea.OUTER_MIN_LON
-		);
-		
-		double[] outerBottomRight = CoordSystem.getLocalFromLatLon(
-			StockholmUrbanArea.OUTER_MIN_LAT, 
-			StockholmUrbanArea.OUTER_MAX_LON
-		);
-
-		double[] innerTopLeft = CoordSystem.getLocalFromLatLon(
-			StockholmUrbanArea.INNER_MAX_LAT, 
-			StockholmUrbanArea.INNER_MIN_LON
-		);
-		
-		double[] innerBottomRight = CoordSystem.getLocalFromLatLon(
-			StockholmUrbanArea.INNER_MIN_LAT, 
-			StockholmUrbanArea.INNER_MAX_LON
-		);
-
-		double outRectY = outerTopLeft[1] - minY;
-		double outRectX = outerTopLeft[0] - minX;
-		double outRectWidth = outerBottomRight[0] - outerTopLeft[0];
-		double outRectHeight = outerBottomRight[1] - outerTopLeft[1];
-		gc.strokeRect(outRectX, outRectY, outRectWidth, outRectHeight);
-
-		double inRectX = innerTopLeft[0] - minX;
-		double inRectY = innerTopLeft[1] - minY;
-		double inRectWidth = innerBottomRight[0] - innerTopLeft[0];
-		double inRectHeight = innerBottomRight[1] - innerTopLeft[1];
-		gc.strokeRect(inRectX, inRectY, inRectWidth, inRectHeight);
-
-	}
-
 	public void refresh() {
-		refreshBoundingBox();
 		refreshStops();
 	}
 

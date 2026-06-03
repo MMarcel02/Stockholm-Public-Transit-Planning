@@ -11,6 +11,7 @@ import com.team18.gui.Layer;
 import com.team18.gui.NavigationLayer;
 import com.team18.gui.MapLayer;
 import com.team18.gui.HeatmapLayer;
+import com.team18.gui.BoundingBoxLayer;
 
 import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
@@ -69,6 +70,7 @@ public class GuiController {
 	private NavigationLayer navLayer;
 	private MapLayer mapLayer;
 	private HeatmapLayer heatmapLayer;
+	private BoundingBoxLayer bbLayer;
 
 	@FXML
 	public void initialize() {
@@ -109,6 +111,10 @@ public class GuiController {
 
 		heatmapLayer = new HeatmapLayer(raptorNetwork);
 		map.getMapGroup().getChildren().add(heatmapLayer.getGroup());
+
+		bbLayer = new BoundingBoxLayer();
+		map.getMapGroup().getChildren().add(bbLayer.getGroup());
+		bbLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
 
 		final boolean[] settingStart = {true};
 		setupStopHoverCard();
