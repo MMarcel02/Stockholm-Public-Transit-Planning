@@ -1,15 +1,16 @@
 package com.team18.optimizer;
 
-import com.team18.routing.raptor.RaptorAlgorithm;
-import com.team18.routing.raptor.RaptorNetwork;
-import com.team18.routing.raptor.RaptorRoute;
-import com.team18.util.GeoCalculator;
-import com.team18.util.ParsingUtil;
-import com.team18.model.Stop;
-
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+
+import com.team18.model.Route;
+import com.team18.model.Stop;
+import com.team18.routing.raptor.RaptorAlgorithm;
+import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.GeoCalculator;
+import com.team18.util.ParsingUtil;
 
 public class Optimizer {
 
@@ -17,7 +18,6 @@ public class Optimizer {
     public RaptorAlgorithm raptor;
     public double[] demandPointCoordinates;
     public int[][] demandMatrix;
-    public int[][] tripDurationMatrix;
     
     public int MAX_WALK_DISTANCE = 1000; // should prolly standardize this into some global static class since used multiple places
     public double WALK_SPEED_MPS = 50.0 / 36.0; // same for this
@@ -35,13 +35,11 @@ public class Optimizer {
         this.raptor = new RaptorAlgorithm(network);
         this.demandMatrix = demandMatrix;
         this.demandPointCoordinates = demandPointCoordinates;
-        this.tripDurationMatrix = new int[demandMatrix.length][demandMatrix.length];
         
         this.totalDemandPoints = demandMatrix.length;
         this.totalStops = network.stopLookup.length;
         this.walkTimeFromAllStopsToAllDemandPoints = new int[totalDemandPoints][totalStops];
 
-        // Populate walks only once 
         this.stopsReachableFromDemandPoint = new int[totalDemandPoints][];
         
         for (int i = 0; i < totalDemandPoints; i++) {
@@ -63,37 +61,93 @@ public class Optimizer {
                 stopsReachableFromDemandPoint[i][j] = tempReachable.get(j);
             }
         }
-
     }
 
-    public void optimize() {
-        Set<Integer> routesToDisable = new HashSet<>();
+    // Constructor for multithreading so dont need to calc the demand point stops reachable and walktimes for each additional thread
+    public Optimizer(RaptorNetwork localNetwork, double[] demandPointCoordinates, int[][] demandMatrix, 
+                      int[][] stopsReachable, int[][] walkTimes) {
         
-        for (int j = 0; j < 1; j++) {
-            int bestRouteToDisableSoFar = -1;
-            double bestAvgWithOneRouteDisabled = Integer.MAX_VALUE;
+        this.network = localNetwork;
+        this.raptor = new RaptorAlgorithm(localNetwork); 
+        
+        this.demandPointCoordinates = demandPointCoordinates;
+        this.demandMatrix = demandMatrix;
+        
+        this.totalDemandPoints = demandMatrix.length;
+        this.totalStops = localNetwork.stopLookup.length;
+        
+        this.stopsReachableFromDemandPoint = stopsReachable;
+        this.walkTimeFromAllStopsToAllDemandPoints = walkTimes;
+        
+    }
 
-            // rework this to disable parent routes and not individual raptor routes
+    public void singleThreadedOptimize() {
+        Set<String> diasbledParentRoutes = new HashSet<>();
 
-            for (int i = 0; i < network.routesEnabledArr.length; i++) {
-                if (routesToDisable.contains(i)) continue;
-                network.toggleRoute(i);
+        for (int j = 0; j < 3; j++) {
+            String bestRouteToDisableSoFar = null;
+            double bestAvgWithOneRouteDisabled = Double.MAX_VALUE;
+            for (String parentRotueId : network.parentRouteToRaptorRoutesMap.keySet()) {
+                if (diasbledParentRoutes.contains(parentRotueId)) continue;
+                network.toggleParentRoute(parentRotueId);
                 double newAvg = calculateAvgTripDuration(); 
                 if (newAvg < bestAvgWithOneRouteDisabled) {
                     bestAvgWithOneRouteDisabled = newAvg;
-                    bestRouteToDisableSoFar = i;    
+                    bestRouteToDisableSoFar = parentRotueId;    
                 }
-                network.toggleRoute(i);
-                System.out.println("inner loop" + i + "out of" + network.routesEnabledArr.length);
+                network.toggleParentRoute(parentRotueId);
             }
-            System.out.println("outer loop finished");
-            routesToDisable.add(bestRouteToDisableSoFar);
-            network.toggleRoute(bestRouteToDisableSoFar);
+            diasbledParentRoutes.add(bestRouteToDisableSoFar);
+            network.toggleParentRoute(bestRouteToDisableSoFar);
         }
 
-        for (Integer route : routesToDisable) {
-            RaptorRoute rRoute = network.raptorRouteLookup[route];
-            System.out.println(rRoute.parentRoute.id + " " + rRoute.parentRoute.operator + " " + rRoute.parentRoute.shortName + " " + rRoute.parentRoute.longName);
+        Map<String, Route> parentRouteLookup = network.parentRouteLookup;
+        for (String routeId : diasbledParentRoutes) {
+            Route route = parentRouteLookup.get(routeId);
+            
+            System.out.println("id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
+        }
+    }
+
+    public void multiThreadedOptimize() {
+        Set<String> diasbledParentRoutes = new HashSet<>();
+        
+        for (int j = 0; j < 3; j++) {
+
+            Map.Entry<String, Double> bestRouteToDisable = network.parentRouteToRaptorRoutesMap.keySet().parallelStream()
+                .filter(parentRotueId -> !diasbledParentRoutes.contains(parentRotueId))
+                .map(parentRotueId -> {
+
+                    RaptorNetwork localNetwork = network.copyForMultithreading();
+
+                    Optimizer localOptimizer = new Optimizer(
+                        localNetwork, 
+                        this.demandPointCoordinates, 
+                        this.demandMatrix,
+                        this.stopsReachableFromDemandPoint,
+                        this.walkTimeFromAllStopsToAllDemandPoints
+                    );
+
+                    localNetwork.toggleParentRoute(parentRotueId);
+                    
+                    double avg = localOptimizer.calculateAvgTripDuration(); 
+                    return Map.entry(parentRotueId, avg);
+                })   
+                .min(Map.Entry.comparingByValue())
+                .orElse(null);
+
+            if (bestRouteToDisable != null) {
+                String bestRouteToDisableId = bestRouteToDisable.getKey();
+                diasbledParentRoutes.add(bestRouteToDisableId);
+                network.toggleParentRoute(bestRouteToDisableId);
+            }
+        }
+
+        Map<String, Route> parentRouteLookup = network.parentRouteLookup;
+        for (String routeId : diasbledParentRoutes) {
+            Route route = parentRouteLookup.get(routeId);
+            
+            System.out.println("id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
         }
     }
 
@@ -107,7 +161,6 @@ public class Optimizer {
 
             for (int j = 0; j < totalDemandPoints; j++) {
                 if (i == j) {
-                    tripDurationMatrix[i][j] = 0; // put 0 for now, this is for time to walk inside of a square  
                     continue;
                 }
 
@@ -146,9 +199,9 @@ public class Optimizer {
 
     public void avgTimeToCalcAvgTripDuration() {
         long curr = System.currentTimeMillis();
-        int amountToTime = 5;
+        int amountToTime = 30;
         for (int i = 0; i < amountToTime; i++) {
-            network.toggleRoute(i);    
+            network.toggleRaptorRoute(i);    
             calculateAvgTripDuration();
         }
         long finish = System.currentTimeMillis();

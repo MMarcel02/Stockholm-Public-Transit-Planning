@@ -1,15 +1,5 @@
 package com.team18;
 
-import com.team18.model.RouteStep;
-import com.team18.parser.GTFSParser;
-import com.team18.routing.raptor.RaptorAlgorithm;
-import com.team18.routing.raptor.RaptorBuilder;
-import com.team18.routing.raptor.RaptorNetwork;
-import com.team18.routing.Router;
-import com.team18.routing.AStar.AStarRouter;
-import com.team18.routing.AStar.TransitGraph;
-import com.team18.util.ParsingUtil;
-
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -18,11 +8,18 @@ import java.io.OutputStreamWriter;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.*;
+import java.util.zip.ZipException;
 
 import com.leastfixedpoint.json.JSONReader;
 import com.leastfixedpoint.json.JSONSyntaxError;
 import com.leastfixedpoint.json.JSONWriter;
+import com.team18.model.RouteStep;
+import com.team18.parser.GTFSParser;
+import com.team18.routing.Router;
+import com.team18.routing.raptor.RaptorAlgorithm;
+import com.team18.routing.raptor.RaptorBuilder;
+import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.ParsingUtil;
 
 public class RoutingEngine {
     private RaptorNetwork raptorNetwork;

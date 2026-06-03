@@ -26,7 +26,6 @@ public class RaptorBuilder {
         //         Sort all trips in each RaptorRoute by earliest departure time
         Map<List<Stop>, List<Trip>> raptorMap = new HashMap<>();
 
-
         for (Trip trip : trips.values()) {
             List<Stop> stopsInRoute = new ArrayList<>();
 
@@ -65,7 +64,7 @@ public class RaptorBuilder {
         
         // Need an int ID for raptor, but have String ID in GTFS, so we make new int ids and a lookup table
         Stop[] stopLookup = new Stop[stops.size()];
-        HashMap<String, Integer> stopStringToIntMap = new HashMap<>();
+        Map<String, Integer> stopStringToIntMap = new HashMap<>();
 
         int currentStopId = 0;
         for (Stop stop : stops.values()) {
@@ -111,7 +110,8 @@ public class RaptorBuilder {
         //          stopsArr[] all stops, each stop has 2 values [routeOffset, transferOffset]
         //          stopRoutes[] all routes for each stop 
         //          transfersArr[] all transfers within walking distance of each stop, each transfer has 2 values [targetStopId, walkTimeSeconds]
-
+        
+        Map<String, List<Integer>> parentRouteToRaptorRoutesMap = new HashMap<>();
         RaptorRoute[] raptorRouteLookup = new RaptorRoute[totalRaptorRoutes];
         int[] routesArr = new int[totalRaptorRoutes * 4];   
         int[] routeStopsArr = new int[totalRouteStops];     
@@ -129,7 +129,11 @@ public class RaptorBuilder {
             List<Trip> tripsInRoute = entry.getValue();
             Route parentRoute = tripsInRoute.get(0).route;
 
-            raptorRouteLookup[currRouteIndex] = new RaptorRoute(currRouteIndex, parentRoute, stopsInRoute, tripsInRoute);
+            RaptorRoute raptorRoute = new RaptorRoute(currRouteIndex, parentRoute, stopsInRoute, tripsInRoute);
+            parentRouteToRaptorRoutesMap.putIfAbsent(parentRoute.id, new ArrayList<>());
+            List<Integer> raptorRoutesBelongingToParent = parentRouteToRaptorRoutesMap.get(parentRoute.id);
+            raptorRoutesBelongingToParent.add(currRouteIndex);
+            raptorRouteLookup[currRouteIndex] = raptorRoute;
 
             routesArr[currRouteIndex*4] = tripsInRoute.size();
             routesArr[currRouteIndex*4 + 1] = stopsInRoute.size();
@@ -197,6 +201,8 @@ public class RaptorBuilder {
         return new RaptorNetwork(
             stopStringToIntMap,
             stopLookup, 
+            routes,
+            parentRouteToRaptorRoutesMap,
             raptorRouteLookup, 
             routesArr, 
             routesEnabledArr,

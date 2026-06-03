@@ -1,21 +1,20 @@
 package com.team18;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
 import com.team18.model.RouteStepType;
-import com.team18.util.ParsingUtil;
+import com.team18.parser.GTFSParser;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.ParsingUtil;
 
 public class RaptorAlgorithmTest {
     
@@ -114,7 +113,7 @@ public class RaptorAlgorithmTest {
             // Disable boarding station forcing new algorithm to take different route
             RouteStep firstStepOriginal = stepsOriginal.get(0);
             raptorRouteToDisable = firstStepOriginal.raptorRoute.id;
-            raptorNetwork.toggleRoute(raptorRouteToDisable);
+            raptorNetwork.toggleRaptorRoute(raptorRouteToDisable);
 
             List<RouteStep> stepsAltered = raptor.getFastestTrip(59.3301, 18.0582, 59.392128, 17.903773, ParsingUtil.timeStringToSecondsAfterMidnight("08:30"));
 
@@ -137,7 +136,7 @@ public class RaptorAlgorithmTest {
             e.printStackTrace();
         } finally {
             if (raptorRouteToDisable != -1) {
-                raptorNetwork.toggleRoute(raptorRouteToDisable);
+                raptorNetwork.toggleRaptorRoute(raptorRouteToDisable);
             }
         }
     }

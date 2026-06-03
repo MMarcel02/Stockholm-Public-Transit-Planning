@@ -1,14 +1,19 @@
 package com.team18.routing.raptor;
 
 import com.team18.model.Stop;
+import com.team18.model.Route;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
 
 public class RaptorNetwork {
 
-    public final HashMap<String, Integer> stopStringToIntMap;
+    public final Map<String, Integer> stopStringToIntMap;
     public final Stop[] stopLookup;
+
+    public final Map<String, Route> parentRouteLookup;
+    public final Map<String, List<Integer>> parentRouteToRaptorRoutesMap;
     public final RaptorRoute[] raptorRouteLookup;
 
     public final int[] routesArr;
@@ -21,8 +26,10 @@ public class RaptorNetwork {
     public final int[] transfersArr;
 
     public RaptorNetwork(
-            HashMap<String, Integer> stopStringToIntMap,
+            Map<String, Integer> stopStringToIntMap,
             Stop[] stopLookup, 
+            Map<String, Route> parentRouteLookup,
+            Map<String, List<Integer>> parentRouteToRaptorRoutesMap,
             RaptorRoute[] raptorRouteLookup,
             int[] routesArr, 
             boolean[] routesEnabledArr,
@@ -35,6 +42,8 @@ public class RaptorNetwork {
         
         this.stopStringToIntMap = stopStringToIntMap;
         this.stopLookup = stopLookup;
+        this.parentRouteLookup = parentRouteLookup;
+        this.parentRouteToRaptorRoutesMap = parentRouteToRaptorRoutesMap;
         this.raptorRouteLookup = raptorRouteLookup;
         this.routesArr = routesArr;
         this.routesEnabledArr = routesEnabledArr;
@@ -46,9 +55,35 @@ public class RaptorNetwork {
         this.transfersArr = transfersArr;
     }
 
+    public RaptorNetwork copyForMultithreading() {
+        return new RaptorNetwork(
+            stopStringToIntMap,
+            stopLookup, 
+            parentRouteLookup,
+            parentRouteToRaptorRoutesMap,
+            raptorRouteLookup,
+            routesArr, 
+            Arrays.copyOf(routesEnabledArr, routesEnabledArr.length), 
+            routeStopsArr,
+            stopTimesArr,
+            stopsArr,
+            Arrays.copyOf(stopsEnabledArr, stopsEnabledArr.length),  
+            stopRoutes,
+            transfersArr
+        );
+    }
 
-    public void toggleRoute(int routeId) {
-        routesEnabledArr[routeId] = !routesEnabledArr[routeId];
+    public void toggleRaptorRoute(int raptorRouteId) {
+        routesEnabledArr[raptorRouteId] = !routesEnabledArr[raptorRouteId];
+    }
+
+    public void toggleParentRoute(String parentRouteId) {
+        List<Integer> raptorRoutesToToggle = parentRouteToRaptorRoutesMap.get(parentRouteId);
+        int totalRaptorRoutesToToggle = raptorRoutesToToggle.size();
+        for (int i = 0; i < totalRaptorRoutesToToggle; i++) {
+            int raptorRouteId = raptorRoutesToToggle.get(i);
+            routesEnabledArr[raptorRouteId] = !routesEnabledArr[raptorRouteId];
+        }
     }
 
     public void disableAllRoutes() {

@@ -88,7 +88,7 @@ public class PopdistParser {
 						double k = 1;
 
 						demand[i][j] = (int) Math.floor(
-							((double) (grid[j] * grid[i]))
+							(((double) grid[j] * grid[i]))
 							/ Math.pow(distance, k));
 					}
 				}

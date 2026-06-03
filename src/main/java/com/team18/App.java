@@ -1,20 +1,17 @@
 package com.team18;
 
-import com.team18.gui.GuiApp;
 import com.team18.optimizer.Optimizer;
 import com.team18.parser.GTFSParser;
 import com.team18.parser.PopdistParser;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.raptor.RaptorNetwork;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 public class App 
 {
 	public static void main( String[] args )
-	{
+	{	
 		// GuiApp.main(args);
+		System.out.println("Threads available: " + Runtime.getRuntime().availableProcessors());
 		try {
 			PopdistParser parser = new PopdistParser();
 			parser.loadFromCsv("data/stockholm/poplatlon.csv");
@@ -26,10 +23,15 @@ public class App
 
 			Optimizer optimizer = new Optimizer(network, parser.demandPointCoordinates, parser.demand);
 
+			// long curr = System.currentTimeMillis();
+			// optimizer.singleThreadedOptimize();
+			// long end = System.currentTimeMillis();
+			// System.out.println("Time for total optimization single threaded (mins): " + ((end - curr) / 60000.0));
+
 			long curr = System.currentTimeMillis();
-			optimizer.optimize();
+			optimizer.multiThreadedOptimize();
 			long end = System.currentTimeMillis();
-			System.out.println(end - curr);
+			System.out.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
 			// optimizer.avgTimeToCalcAvgTripDuration();
 			// System.out.println(optimizer.calculateAvgTripDuration());
