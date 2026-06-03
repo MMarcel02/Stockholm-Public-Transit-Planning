@@ -10,6 +10,7 @@ import com.team18.util.StockholmUrbanArea;
 import com.team18.gui.Layer;
 import com.team18.gui.NavigationLayer;
 import com.team18.gui.MapLayer;
+import com.team18.gui.HeatmapLayer;
 
 import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
@@ -67,6 +68,7 @@ public class GuiController {
 
 	private NavigationLayer navLayer;
 	private MapLayer mapLayer;
+	private HeatmapLayer heatmapLayer;
 
 	@FXML
 	public void initialize() {
@@ -104,6 +106,9 @@ public class GuiController {
 		map.getMapGroup().getChildren().add(mapLayer.getGroup());
 		// TODO: NOOOO
 		mapLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
+
+		heatmapLayer = new HeatmapLayer(raptorNetwork);
+		map.getMapGroup().getChildren().add(heatmapLayer.getGroup());
 
 		final boolean[] settingStart = {true};
 		setupStopHoverCard();
@@ -272,7 +277,10 @@ public class GuiController {
 		disableButton.setOnAction(ev -> {
 			raptorNetwork.toggleStop(landmark.id);
 			if (lastHeatmapOrigin != null) {
-				generateHeatmap(lastHeatmapOrigin, lastHeatmapStartTimeSeconds);
+				//generateHeatmap(lastHeatmapOrigin, lastHeatmapStartTimeSeconds);
+				heatmapLayer.configure(lastHeatmapOrigin.lat, lastHeatmapOrigin.lon,
+						lastHeatmapStartTimeSeconds, hasDisabledStops());
+				heatmapLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
 			}
 			
 			// TODO: Make a diff button for this obvs, just in here for testing
@@ -505,109 +513,13 @@ public class GuiController {
 			lastHeatmapOrigin = origin;
 			lastHeatmapStartTimeSeconds = startTimeSeconds;
 			navLayer.setStartMarker(origin.lat, origin.lon);
-			generateHeatmap(origin, startTimeSeconds);
+			//generateHeatmap(origin, startTimeSeconds);
+			heatmapLayer.configure(origin.lat, origin.lon, startTimeSeconds, hasDisabledStops());
+			heatmapLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
 		} catch (Exception e) {
 			showStatus("Invalid heatmap input. Choose a start stop or enter coordinates, then enter HH:MM time.", true);
 			e.printStackTrace();
 		}
-	}
-
-	private void generateHeatmap(ResolvedLocation origin, int startTimeSeconds) {
-		long startedAt = System.nanoTime();
-		boolean differenceMode = hasDisabledStops();
-
-		try {
-			int[] currentTimes = new RaptorAlgorithm(raptorNetwork)
-					.getTravelTimesToStops(origin.lat, origin.lon, startTimeSeconds);
-			List<Map.HeatmapPoint> points;
-
-			if (differenceMode) {
-				boolean[] disabledState = Arrays.copyOf(raptorNetwork.stopsEnabledArr, raptorNetwork.stopsEnabledArr.length);
-				int[] baselineTimes;
-
-				try {
-					Arrays.fill(raptorNetwork.stopsEnabledArr, true);
-					baselineTimes = new RaptorAlgorithm(raptorNetwork)
-							.getTravelTimesToStops(origin.lat, origin.lon, startTimeSeconds);
-				} finally {
-					System.arraycopy(disabledState, 0, raptorNetwork.stopsEnabledArr, 0, disabledState.length);
-				}
-
-				points = buildDifferenceHeatmapPoints(currentTimes, baselineTimes, origin);
-			} else {
-				points = buildTravelTimeHeatmapPoints(currentTimes, origin);
-			}
-
-			map.setHeatmap(points, differenceMode, getHeatmapCellLatSpan(), getHeatmapCellLonSpan());
-			double elapsedSeconds = (System.nanoTime() - startedAt) / 1_000_000_000.0;
-			String mode = differenceMode ? "Stop removal impact heatmap" : "Journey time heatmap";
-			showStatus(String.format(Locale.US, "%s generated: %d cells in %.1fs.", mode, points.size(), elapsedSeconds), false);
-		} catch (Exception e) {
-			showStatus("Failed to generate heatmap: " + e.getMessage(), true);
-			e.printStackTrace();
-		}
-	}
-
-	private List<Map.HeatmapPoint> buildTravelTimeHeatmapPoints(int[] travelTimes, ResolvedLocation origin) {
-		List<Map.HeatmapPoint> points = new ArrayList<>();
-		double cellLatSpan = getHeatmapCellLatSpan();
-		double cellLonSpan = getHeatmapCellLonSpan();
-
-		for (int row = 0; row < HEATMAP_GRID_ROWS; row++) {
-			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * cellLatSpan);
-			for (int col = 0; col < HEATMAP_GRID_COLUMNS; col++) {
-				double lon = StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * cellLonSpan);
-				int estimatedSeconds = estimateTravelTimeToPoint(lat, lon, travelTimes, origin);
-				points.add(new Map.HeatmapPoint(lat, lon, estimatedSeconds / 60.0));
-			}
-		}
-
-		return points;
-	}
-
-	private List<Map.HeatmapPoint> buildDifferenceHeatmapPoints(int[] currentTimes, int[] baselineTimes, ResolvedLocation origin) {
-		List<Map.HeatmapPoint> points = new ArrayList<>();
-		double cellLatSpan = getHeatmapCellLatSpan();
-		double cellLonSpan = getHeatmapCellLonSpan();
-
-		for (int row = 0; row < HEATMAP_GRID_ROWS; row++) {
-			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * cellLatSpan);
-			for (int col = 0; col < HEATMAP_GRID_COLUMNS; col++) {
-				double lon = StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * cellLonSpan);
-				int currentSeconds = estimateTravelTimeToPoint(lat, lon, currentTimes, origin);
-				int baselineSeconds = estimateTravelTimeToPoint(lat, lon, baselineTimes, origin);
-				double delayMinutes = Math.max(0.0, (currentSeconds - baselineSeconds) / 60.0);
-				points.add(new Map.HeatmapPoint(lat, lon, delayMinutes));
-			}
-		}
-
-		return points;
-	}
-
-	private int estimateTravelTimeToPoint(double lat, double lon, int[] travelTimes, ResolvedLocation origin) {
-		double directWalkDistance = GeoCalculator.calculateEquirectangularDistance(origin.lat, origin.lon, lat, lon);
-		int bestSeconds = (int) Math.round(directWalkDistance / WALK_SPEED_MPS);
-
-		for (int i = 0; i < travelTimes.length; i++) {
-			if (travelTimes[i] == Integer.MAX_VALUE) continue;
-
-			Stop stop = raptorNetwork.stopLookup[i];
-			double walkDistance = GeoCalculator.calculateEquirectangularDistance(stop.lat, stop.lon, lat, lon);
-			int totalSeconds = travelTimes[i] + (int) Math.round(walkDistance / WALK_SPEED_MPS);
-			if (totalSeconds < bestSeconds) {
-				bestSeconds = totalSeconds;
-			}
-		}
-
-		return bestSeconds;
-	}
-
-	private double getHeatmapCellLatSpan() {
-		return (StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT) / HEATMAP_GRID_ROWS;
-	}
-
-	private double getHeatmapCellLonSpan() {
-		return (StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON) / HEATMAP_GRID_COLUMNS;
 	}
 
 	private boolean hasDisabledStops() {

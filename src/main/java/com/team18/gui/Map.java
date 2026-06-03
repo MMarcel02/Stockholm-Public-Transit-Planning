@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 
 public class Map {
 	private Group mapGroup;
-	private Canvas heatmapCanvas;
 	private Canvas stopCanvas;
 	private Canvas boundingBoxCanvas;
 	private double dragStartX = 0;
@@ -44,10 +43,6 @@ public class Map {
 
 	private GTFSParser parser;
 	private ArrayList<Landmark> stopLandmarks = new ArrayList<>();
-	private List<HeatmapPoint> heatmapPoints = List.of();
-	private boolean heatmapDifferenceMode = false;
-	private double heatmapCellLatSpan = 0.0;
-	private double heatmapCellLonSpan = 0.0;
 
 	public Map(GTFSParser parser) {
 		this.parser = parser;
@@ -57,10 +52,6 @@ public class Map {
 		boundingBoxCanvas = new Canvas();
 		boundingBoxCanvas.setMouseTransparent(true);
 		mapGroup.getChildren().add(boundingBoxCanvas);
-
-		heatmapCanvas = new Canvas();
-		heatmapCanvas.setMouseTransparent(true);
-		mapGroup.getChildren().add(heatmapCanvas);
 
 		stopCanvas = new Canvas();
 		stopCanvas.setMouseTransparent(true);
@@ -132,21 +123,6 @@ public class Map {
 		});
 	}
 
-	public void setHeatmap(List<HeatmapPoint> heatmapPoints, boolean differenceMode, double cellLatSpan, double cellLonSpan) {
-		this.heatmapPoints = heatmapPoints == null ? List.of() : List.copyOf(heatmapPoints);
-		this.heatmapDifferenceMode = differenceMode;
-		this.heatmapCellLatSpan = cellLatSpan;
-		this.heatmapCellLonSpan = cellLonSpan;
-		refresh();
-	}
-
-	public void clearHeatmap() {
-		this.heatmapPoints = List.of();
-		this.heatmapCellLatSpan = 0.0;
-		this.heatmapCellLonSpan = 0.0;
-		refresh();
-	}
-
 	private void refreshStops() {
 		double width = mapGroup.getScene().getWidth() + (Tile.RESOLUTION * 2);
 		double height = mapGroup.getScene().getWidth() + (Tile.RESOLUTION * 2);
@@ -183,88 +159,6 @@ public class Map {
 			gc.fillOval(canvasX - radius, canvasY - radius, diameter, diameter);
 			gc.strokeOval(canvasX - radius, canvasY - radius, diameter, diameter);
 		}
-	}
-
-	private void refreshHeatmap() {
-		double width = mapGroup.getScene().getWidth() + (Tile.RESOLUTION * 2);
-		double height = mapGroup.getScene().getHeight() + (Tile.RESOLUTION * 2);
-		double minX = -mapGroup.getTranslateX() - Tile.RESOLUTION;
-		double minY = -mapGroup.getTranslateY() - Tile.RESOLUTION;
-		double maxX = minX + width;
-		double maxY = minY + height;
-
-		heatmapCanvas.setTranslateX(minX);
-		heatmapCanvas.setTranslateY(minY);
-		heatmapCanvas.setWidth(width);
-		heatmapCanvas.setHeight(height);
-
-		GraphicsContext gc = heatmapCanvas.getGraphicsContext2D();
-		gc.clearRect(0, 0, width, height);
-
-		if (heatmapPoints.isEmpty()) return;
-
-		double radius = 22;
-		if (CoordSystem.getZoomLevel() < 15) radius = 16;
-		if (CoordSystem.getZoomLevel() < 13) radius = 11;
-
-		for (HeatmapPoint point : heatmapPoints) {
-			gc.setFill(colorForHeatmapValue(point.valueMinutes, heatmapDifferenceMode));
-			if (heatmapCellLatSpan > 0 && heatmapCellLonSpan > 0) {
-				double[] topLeft = CoordSystem.getLocalFromLatLon(
-						point.lat + (heatmapCellLatSpan / 2.0),
-						point.lon - (heatmapCellLonSpan / 2.0)
-				);
-				double[] bottomRight = CoordSystem.getLocalFromLatLon(
-						point.lat - (heatmapCellLatSpan / 2.0),
-						point.lon + (heatmapCellLonSpan / 2.0)
-				);
-				if (bottomRight[0] < minX || topLeft[0] > maxX || bottomRight[1] < minY || topLeft[1] > maxY) {
-					continue;
-				}
-				double cellX = topLeft[0] - minX;
-				double cellY = topLeft[1] - minY;
-				gc.fillRect(cellX, cellY, bottomRight[0] - topLeft[0] + 1, bottomRight[1] - topLeft[1] + 1);
-			} else {
-				double[] local = CoordSystem.getLocalFromLatLon(point.lat, point.lon);
-				if (local[0] < minX - radius || local[0] > maxX + radius || local[1] < minY - radius || local[1] > maxY + radius) {
-					continue;
-				}
-
-				double canvasX = local[0] - minX;
-				double canvasY = local[1] - minY;
-				double diameter = radius * 2;
-				gc.fillOval(canvasX - radius, canvasY - radius, diameter, diameter);
-			}
-		}
-	}
-
-	private Color colorForHeatmapValue(double valueMinutes, boolean differenceMode) {
-		if (differenceMode) {
-			double[] thresholds = {0, 2, 5, 8, 12, 16, 22, 30};
-			String[] colors = {"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835", "#FB8C00", "#EF9A9A", "#E53935", "#8E0000"};
-			return interpolatePalette(valueMinutes, thresholds, colors, 0.50);
-		}
-
-		double[] thresholds = {0, 10, 20, 30, 45, 60, 75, 90};
-		String[] colors = {"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835", "#FB8C00", "#EF9A9A", "#E53935", "#8E0000"};
-		return interpolatePalette(valueMinutes, thresholds, colors, 0.48);
-	}
-
-	private Color interpolatePalette(double value, double[] thresholds, String[] colors, double opacity) {
-		if (value <= thresholds[0]) {
-			return Color.web(colors[0], opacity);
-		}
-
-		for (int i = 1; i < thresholds.length; i++) {
-			if (value <= thresholds[i]) {
-				double ratio = (value - thresholds[i - 1]) / (thresholds[i] - thresholds[i - 1]);
-				Color start = Color.web(colors[i - 1]);
-				Color end = Color.web(colors[i]);
-				return start.interpolate(end, ratio).deriveColor(0, 1, 1, opacity);
-			}
-		}
-
-		return Color.web(colors[colors.length - 1], opacity);
 	}
 
 	private void refreshBoundingBox() {
@@ -318,23 +212,10 @@ public class Map {
 
 	public void refresh() {
 		refreshBoundingBox();
-		refreshHeatmap();
 		refreshStops();
 	}
 
 	public Group getMapGroup() { return mapGroup; }
-
-	public static class HeatmapPoint {
-		public final double lat;
-		public final double lon;
-		public final double valueMinutes;
-
-		public HeatmapPoint(double lat, double lon, double valueMinutes) {
-			this.lat = lat;
-			this.lon = lon;
-			this.valueMinutes = valueMinutes;
-		}
-	}
 
 	public Landmark findStopNearLocal(double localX, double localY, double radiusPixels) {
 	        double bestDistanceSquared = radiusPixels * radiusPixels;
@@ -353,5 +234,16 @@ public class Map {
 	        }
 	
 	        return best;
+	}
+	public static class HeatmapPoint {
+		public final double lat;
+		public final double lon;
+		public final double valueMinutes;
+
+		public HeatmapPoint(double lat, double lon, double valueMinutes) {
+			this.lat = lat;
+			this.lon = lon;
+			this.valueMinutes = valueMinutes;
+		}
 	}
 }
