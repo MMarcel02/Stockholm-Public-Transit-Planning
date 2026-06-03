@@ -7,6 +7,8 @@ import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.util.GeoCalculator;
 import com.team18.util.ParsingUtil;
 import com.team18.util.StockholmUrbanArea;
+import com.team18.gui.Layer;
+import com.team18.gui.NavigationLayer;
 
 import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
@@ -62,6 +64,8 @@ public class GuiController {
 	private int lastHeatmapStartTimeSeconds = -1;
 	public List<RouteStep> currentRoute;
 
+	private NavigationLayer navLayer;
+
 	@FXML
 	public void initialize() {
 		GTFSParser parser = null;
@@ -91,6 +95,9 @@ public class GuiController {
 			mapContainer.getChildren().add(map.getMapGroup());
 		}
 
+		navLayer = new NavigationLayer(parser);
+		map.getMapGroup().getChildren().add(navLayer.render());
+
 		final boolean[] settingStart = {true};
 		setupStopHoverCard();
 
@@ -118,12 +125,12 @@ public class GuiController {
 				if (settingStart[0]) {
 					setFieldText(startField, coordString);
 					selectedStartStop = null;
-					map.setStartMarker(lat, lon); // green pin
+					navLayer.setStartMarker(lat, lon); // green pin
 					settingStart[0] = false;
 				} else {
 					setFieldText(endField, coordString);
 					selectedEndStop = null;
-					map.setEndMarker(lat, lon);   // red pin
+					navLayer.setEndMarker(lat, lon);   // red pin
 					settingStart[0] = true;       //
 				}
 			}
@@ -169,7 +176,7 @@ public class GuiController {
 		String fieldText = getLandmarkFieldText(landmark);
 		setFieldText(startField, fieldText);
 		selectedStartStop = findExactStopByName(fieldText);
-		map.setStartMarker(landmark.lat, landmark.lon);
+		navLayer.setStartMarker(landmark.lat, landmark.lon);
 		settingStart[0] = false;
 	}
 
@@ -177,7 +184,7 @@ public class GuiController {
 		String fieldText = getLandmarkFieldText(landmark);
 		setFieldText(endField, fieldText);
 		selectedEndStop = findExactStopByName(fieldText);
-		map.setEndMarker(landmark.lat, landmark.lon);
+		navLayer.setEndMarker(landmark.lat, landmark.lon);
 		settingStart[0] = true;
 	}
 
@@ -458,9 +465,11 @@ public class GuiController {
 			Router raptorAlgorithm = new RaptorAlgorithm(raptorNetwork);
 
 			currentRoute = raptorAlgorithm.getFastestTrip(startLocation.lat, startLocation.lon, endLocation.lat, endLocation.lon, startTimeSeconds);
-			map.setStartMarker(startLocation.lat, startLocation.lon);
-			map.setEndMarker(endLocation.lat, endLocation.lon);
-			map.setRoute(new FullRoute(startLocation.lat, startLocation.lon, currentRoute));
+			navLayer.setStartMarker(startLocation.lat, startLocation.lon);
+			navLayer.setEndMarker(endLocation.lat, endLocation.lon);
+
+			//map.setRoute(new FullRoute(startLocation.lat, startLocation.lon, currentRoute));
+			navLayer.navigate(currentRoute);
 
 			displayRouteInstructions(currentRoute, startLocation.lat, startLocation.lon);
 
@@ -486,7 +495,7 @@ public class GuiController {
 
 			lastHeatmapOrigin = origin;
 			lastHeatmapStartTimeSeconds = startTimeSeconds;
-			map.setStartMarker(origin.lat, origin.lon);
+			navLayer.setStartMarker(origin.lat, origin.lon);
 			generateHeatmap(origin, startTimeSeconds);
 		} catch (Exception e) {
 			showStatus("Invalid heatmap input. Choose a start stop or enter coordinates, then enter HH:MM time.", true);
@@ -699,10 +708,10 @@ public class GuiController {
 				setFieldText(field, stop.name);
 				if (isStartField) {
 					selectedStartStop = stop;
-					map.setStartMarker(stop.lat, stop.lon);
+					navLayer.setStartMarker(stop.lat, stop.lon);
 				} else {
 					selectedEndStop = stop;
-					map.setEndMarker(stop.lat, stop.lon);
+					navLayer.setEndMarker(stop.lat, stop.lon);
 				}
 			});
 			suggestionsMenu.getItems().add(item);

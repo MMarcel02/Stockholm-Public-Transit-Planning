@@ -7,6 +7,8 @@ import com.team18.model.ShapePoint;
 import com.team18.util.GeoCalculator;
 import com.team18.util.StockholmUrbanArea;
 
+import com.team18.gui.Layer;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -564,7 +566,9 @@ public class Map {
 		refreshBoundingBox();
 		refreshHeatmap();
 		refreshStops();
-		refreshRoute();
+
+		// TODO: YES.
+		//refreshRoute();
 	}
 
 	private double getViewportWidth() {
