@@ -24,7 +24,7 @@
             <Separator/>
 
             <Label text="Analysis" styleClass="header-label"/>
-            <Button text="Generate Heatmap" styleClass="secondary-button" maxWidth="Infinity"/>
+            <Button text="Generate Heatmap" onAction="#handleGenerateHeatmap" styleClass="secondary-button" maxWidth="Infinity"/>
         </VBox>
     </left>
 
