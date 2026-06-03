@@ -1,11 +1,5 @@
 package com.team18.util;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -13,6 +7,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 
 public class StockholmUrbanPruner {
@@ -20,6 +20,7 @@ public class StockholmUrbanPruner {
     // Reference used for zip stuff: https://www.baeldung.com/java-compress-and-uncompress
     
     private static HashSet<String> stopIds = new HashSet<>();
+    private static HashSet<String> finalStopIds = new HashSet<>();
     private static HashSet<String> tripIds = new HashSet<>();
     private static HashSet<String> routeIds = new HashSet<>();
     private static HashSet<String> serviceIds = new HashSet<>();
@@ -30,6 +31,7 @@ public class StockholmUrbanPruner {
             unzipSl();
             pruneStops();    
             pruneStopTimes();
+            pruneStopsWithNoTrips();
             pruneTrips();
             pruneRoutes();
             pruneShapes();
@@ -154,6 +156,8 @@ public class StockholmUrbanPruner {
                 if (lines.size() >= 2) {
                     tripIds.add(tripId);
                     for (String l : lines) {
+                        String[] savedLineSplit = l.split(",");
+                        finalStopIds.add(savedLineSplit[3]);
                         bw.write(String.format("%s%n", l));
                     }
                 }
@@ -174,6 +178,10 @@ public class StockholmUrbanPruner {
         if (lines.size() >= 2) {
             tripIds.add(tripId);
             for (String l : lines) {
+                String[] lineSplit = l.split(",");
+                String newStopId = lineSplit[3];
+                finalStopIds.add(newStopId);
+                
                 bw.write(String.format("%s%n", l));
             }
         }
@@ -186,6 +194,32 @@ public class StockholmUrbanPruner {
             tmp.renameTo(oldFile);
         }
     }
+
+    private static void pruneStopsWithNoTrips() throws IOException {
+        File tmp = File.createTempFile("tempStops", "");           
+        BufferedReader br = new BufferedReader(new FileReader("data/stockholm/sl_center/stops.txt"));
+        BufferedWriter bw = new BufferedWriter(new FileWriter(tmp));
+        String header = br.readLine();
+        bw.write(String.format("%s%n", header));
+        String line;
+        while ((line = br.readLine()) != null) {
+            String[] lineSplit = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+            String id = lineSplit[0];
+
+            if (finalStopIds.contains(id)) {
+                bw.write(String.format("%s%n", line));
+            }
+        }
+
+        br.close();
+        bw.close();
+
+        File oldFile = new File("data/stockholm/sl_center/stops.txt");
+        if (oldFile.delete()) {
+            tmp.renameTo(oldFile);
+        }
+    }
+
 
     private static void pruneTrips() throws IOException {
         File tmp = File.createTempFile("trips", "");

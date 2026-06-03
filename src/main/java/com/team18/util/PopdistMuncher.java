@@ -1,18 +1,15 @@
 package com.team18.util;
 
-import java.io.FileReader;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import com.team18.parser.CSVParser;
 import com.team18.parser.CSVParser.Row;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
-import com.team18.util.StockholmUrbanArea;
-import java.io.IOException;
-import com.team18.parser.PopdistParser;
 import com.team18.parser.PopdistParser.Point;
 
 public class PopdistMuncher {
@@ -120,7 +117,7 @@ public class PopdistMuncher {
 
 		reader.close();
 
-		File output = new File("data/stockholm/poplatlon.csv");
+		File output = new File("data/stockholm/population.csv");
 		BufferedWriter bufw = new BufferedWriter(new FileWriter(output));
 
 		bufw.write("lat,lon,population\n");
