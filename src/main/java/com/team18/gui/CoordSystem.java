@@ -5,7 +5,18 @@ import java.lang.Math;
 import com.team18.gui.Tile;
 
 public final class CoordSystem {
-	public static int zoomLevel = 14;
+	private static final int MAX_ZOOM = 16;
+	private static int zoomLevel = 14;
+
+	public static void setZoomLevel(int newLevel) {
+		zoomLevel = newLevel;
+		if (zoomLevel > MAX_ZOOM) zoomLevel = MAX_ZOOM;
+		if (zoomLevel < 1) zoomLevel = 1;
+	}
+
+	public static int getZoomLevel() {
+		return zoomLevel;
+	}
 
 	public static double[] getLatLonFromLocal(double localX, double localY) {
 		Tile.Coord origin = getOrigin();
@@ -34,7 +45,7 @@ public final class CoordSystem {
 		return new double[]{localX, localY};
 	}
 
-	private static Tile.Coord getOrigin() {
+	public static Tile.Coord getOrigin() {
 		return Tile.Coord.fromLatLon(59.3293, 18.0686, zoomLevel);
 	}
 }

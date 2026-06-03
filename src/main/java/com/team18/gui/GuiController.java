@@ -9,6 +9,7 @@ import com.team18.util.ParsingUtil;
 import com.team18.util.StockholmUrbanArea;
 import com.team18.gui.Layer;
 import com.team18.gui.NavigationLayer;
+import com.team18.gui.MapLayer;
 
 import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
@@ -65,6 +66,7 @@ public class GuiController {
 	public List<RouteStep> currentRoute;
 
 	private NavigationLayer navLayer;
+	private MapLayer mapLayer;
 
 	@FXML
 	public void initialize() {
@@ -96,7 +98,12 @@ public class GuiController {
 		}
 
 		navLayer = new NavigationLayer(parser);
-		map.getMapGroup().getChildren().add(navLayer.render());
+		map.getMapGroup().getChildren().add(navLayer.getGroup());
+
+		mapLayer = new MapLayer();
+		map.getMapGroup().getChildren().add(mapLayer.getGroup());
+		// TODO: NOOOO
+		mapLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
 
 		final boolean[] settingStart = {true};
 		setupStopHoverCard();
@@ -116,7 +123,7 @@ public class GuiController {
 					return;
 				}
 
-				double[] latLon = map.getLatLonFromLocal(localX, localY);
+				double[] latLon = CoordSystem.getLatLonFromLocal(localX, localY);
 				double lat = latLon[0];
 				double lon = latLon[1];
 
@@ -470,6 +477,8 @@ public class GuiController {
 
 			//map.setRoute(new FullRoute(startLocation.lat, startLocation.lon, currentRoute));
 			navLayer.navigate(currentRoute);
+			// TODO: NOOOO
+			navLayer.render(map.getMapGroup().getTranslateX(), map.getMapGroup().getTranslateY(), 1920, 1080);
 
 			displayRouteInstructions(currentRoute, startLocation.lat, startLocation.lon);
 

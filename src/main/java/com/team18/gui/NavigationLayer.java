@@ -20,13 +20,14 @@ import com.team18.util.GeoCalculator;
 
 public class NavigationLayer implements Layer {
 	GTFSParser parser;
-	Group group;
+	Group group = new Group();
 
 	Circle startMarker = null;
 	Circle endMarker = null;
 
+	List<RouteStep> steps = null;
+
 	public NavigationLayer(GTFSParser parser) {
-		group = new Group();
 		this.parser = parser;
 	}
 
@@ -53,7 +54,13 @@ public class NavigationLayer implements Layer {
 	}
 
 	public void navigate(List<RouteStep> steps) {
+		this.steps = steps;
+	}
+
+	public void render(double x, double y, double width, double height) {
 		group.getChildren().clear();
+
+		if (steps == null) return;
 
 		for (RouteStep step: steps) {
 			Shape segment = null;
@@ -101,7 +108,7 @@ public class NavigationLayer implements Layer {
 		}
 	}
 
-	public Group render() {
+	public Group getGroup() {
 		return group;
 	}
 
