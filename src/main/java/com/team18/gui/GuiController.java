@@ -6,6 +6,7 @@ import com.team18.routing.Router;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.util.GeoCalculator;
 import com.team18.util.ParsingUtil;
+import com.team18.util.StockholmUrbanArea;
 
 import javafx.fxml.FXML;
 import javafx.scene.layout.Pane;
@@ -28,6 +29,7 @@ import com.team18.model.StopTime;
 import com.team18.model.Trip;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +39,9 @@ public class GuiController {
 	private static final int MAX_SUGGESTIONS = 10;
 	private static final double STOP_HOVER_CARD_WIDTH = 340;
 	private static final double STOP_HOVER_CARD_HEIGHT = 390;
+	private static final int HEATMAP_GRID_COLUMNS = 90;
+	private static final int HEATMAP_GRID_ROWS = 56;
+	private static final double WALK_SPEED_MPS = 50.0 / 36.0;
 
 	@FXML private Pane mapContainer;
 	@FXML private TextField startField;
@@ -53,6 +58,8 @@ public class GuiController {
 	private VBox stopHoverCard;
 	private Landmark hoveredLandmark;
 	private boolean settingFieldProgrammatically = false;
+	private ResolvedLocation lastHeatmapOrigin;
+	private int lastHeatmapStartTimeSeconds = -1;
 	public List<RouteStep> currentRoute;
 
 	@FXML
@@ -194,6 +201,7 @@ public class GuiController {
 
 	private void showStopHoverCard(Landmark landmark, double mouseX, double mouseY, boolean[] settingStart) {
 		if (landmark == hoveredLandmark && stopHoverCard.isVisible()) {
+			positionStopHoverCard(mouseX, mouseY);
 			return;
 		}
 
@@ -249,6 +257,9 @@ public class GuiController {
 		disableButton.setMinHeight(34);
 		disableButton.setOnAction(ev -> {
 			raptorNetwork.toggleStop(landmark.id);
+			if (lastHeatmapOrigin != null) {
+				generateHeatmap(lastHeatmapOrigin, lastHeatmapStartTimeSeconds);
+			}
 			
 			// TODO: Make a diff button for this obvs, just in here for testing
 			// Would be cool to have it as a button on the actual GUI, then you can click to disable / enable all stops
@@ -273,17 +284,16 @@ public class GuiController {
 	}
 
 	private void positionStopHoverCard(double mouseX, double mouseY) {
-		double x = mouseX + 14;
-		double y = mouseY + 14;
+		double cardWidth = Math.max(stopHoverCard.getWidth(), STOP_HOVER_CARD_WIDTH);
+		double cardHeight = Math.max(stopHoverCard.getHeight(), STOP_HOVER_CARD_HEIGHT);
+		double margin = 8;
 
-		if (x + STOP_HOVER_CARD_WIDTH > mapContainer.getWidth()) {
-			x = mouseX - STOP_HOVER_CARD_WIDTH - 14;
-		}
-		if (y + STOP_HOVER_CARD_HEIGHT > mapContainer.getHeight()) {
-			y = mouseY - STOP_HOVER_CARD_HEIGHT - 14;
-		}
+		double maxX = Math.max(margin, mapContainer.getWidth() - cardWidth - margin);
+		double maxY = Math.max(margin, mapContainer.getHeight() - cardHeight - margin);
+		double x = Math.min(Math.max(mouseX, margin), maxX);
+		double y = Math.min(Math.max(mouseY, margin), maxY);
 
-		stopHoverCard.relocate(Math.max(8, x), Math.max(8, y));
+		stopHoverCard.relocate(x, y);
 	}
 
 	private boolean isMouseNearStopHoverCard(double mouseX, double mouseY) {
@@ -461,6 +471,140 @@ public class GuiController {
 			routeStepsContainer.getChildren().add(errorLabel);
 			e.printStackTrace();
 		}
+	}
+
+	@FXML
+	public void handleGenerateHeatmap() {
+		if (raptorNetwork == null) {
+			showStatus("Network still loading... Please wait.", true);
+			return;
+		}
+
+		try {
+			ResolvedLocation origin = resolveLocation(startField.getText(), selectedStartStop);
+			int startTimeSeconds = ParsingUtil.timeStringToSecondsAfterMidnight(timeField.getText());
+
+			lastHeatmapOrigin = origin;
+			lastHeatmapStartTimeSeconds = startTimeSeconds;
+			map.setStartMarker(origin.lat, origin.lon);
+			generateHeatmap(origin, startTimeSeconds);
+		} catch (Exception e) {
+			showStatus("Invalid heatmap input. Choose a start stop or enter coordinates, then enter HH:MM time.", true);
+			e.printStackTrace();
+		}
+	}
+
+	private void generateHeatmap(ResolvedLocation origin, int startTimeSeconds) {
+		long startedAt = System.nanoTime();
+		boolean differenceMode = hasDisabledStops();
+
+		try {
+			int[] currentTimes = new RaptorAlgorithm(raptorNetwork)
+					.getTravelTimesToStops(origin.lat, origin.lon, startTimeSeconds);
+			List<Map.HeatmapPoint> points;
+
+			if (differenceMode) {
+				boolean[] disabledState = Arrays.copyOf(raptorNetwork.stopsEnabledArr, raptorNetwork.stopsEnabledArr.length);
+				int[] baselineTimes;
+
+				try {
+					Arrays.fill(raptorNetwork.stopsEnabledArr, true);
+					baselineTimes = new RaptorAlgorithm(raptorNetwork)
+							.getTravelTimesToStops(origin.lat, origin.lon, startTimeSeconds);
+				} finally {
+					System.arraycopy(disabledState, 0, raptorNetwork.stopsEnabledArr, 0, disabledState.length);
+				}
+
+				points = buildDifferenceHeatmapPoints(currentTimes, baselineTimes, origin);
+			} else {
+				points = buildTravelTimeHeatmapPoints(currentTimes, origin);
+			}
+
+			map.setHeatmap(points, differenceMode, getHeatmapCellLatSpan(), getHeatmapCellLonSpan());
+			double elapsedSeconds = (System.nanoTime() - startedAt) / 1_000_000_000.0;
+			String mode = differenceMode ? "Stop removal impact heatmap" : "Journey time heatmap";
+			showStatus(String.format(Locale.US, "%s generated: %d cells in %.1fs.", mode, points.size(), elapsedSeconds), false);
+		} catch (Exception e) {
+			showStatus("Failed to generate heatmap: " + e.getMessage(), true);
+			e.printStackTrace();
+		}
+	}
+
+	private List<Map.HeatmapPoint> buildTravelTimeHeatmapPoints(int[] travelTimes, ResolvedLocation origin) {
+		List<Map.HeatmapPoint> points = new ArrayList<>();
+		double cellLatSpan = getHeatmapCellLatSpan();
+		double cellLonSpan = getHeatmapCellLonSpan();
+
+		for (int row = 0; row < HEATMAP_GRID_ROWS; row++) {
+			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * cellLatSpan);
+			for (int col = 0; col < HEATMAP_GRID_COLUMNS; col++) {
+				double lon = StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * cellLonSpan);
+				int estimatedSeconds = estimateTravelTimeToPoint(lat, lon, travelTimes, origin);
+				points.add(new Map.HeatmapPoint(lat, lon, estimatedSeconds / 60.0));
+			}
+		}
+
+		return points;
+	}
+
+	private List<Map.HeatmapPoint> buildDifferenceHeatmapPoints(int[] currentTimes, int[] baselineTimes, ResolvedLocation origin) {
+		List<Map.HeatmapPoint> points = new ArrayList<>();
+		double cellLatSpan = getHeatmapCellLatSpan();
+		double cellLonSpan = getHeatmapCellLonSpan();
+
+		for (int row = 0; row < HEATMAP_GRID_ROWS; row++) {
+			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * cellLatSpan);
+			for (int col = 0; col < HEATMAP_GRID_COLUMNS; col++) {
+				double lon = StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * cellLonSpan);
+				int currentSeconds = estimateTravelTimeToPoint(lat, lon, currentTimes, origin);
+				int baselineSeconds = estimateTravelTimeToPoint(lat, lon, baselineTimes, origin);
+				double delayMinutes = Math.max(0.0, (currentSeconds - baselineSeconds) / 60.0);
+				points.add(new Map.HeatmapPoint(lat, lon, delayMinutes));
+			}
+		}
+
+		return points;
+	}
+
+	private int estimateTravelTimeToPoint(double lat, double lon, int[] travelTimes, ResolvedLocation origin) {
+		double directWalkDistance = GeoCalculator.calculateEquirectangularDistance(origin.lat, origin.lon, lat, lon);
+		int bestSeconds = (int) Math.round(directWalkDistance / WALK_SPEED_MPS);
+
+		for (int i = 0; i < travelTimes.length; i++) {
+			if (travelTimes[i] == Integer.MAX_VALUE) continue;
+
+			Stop stop = raptorNetwork.stopLookup[i];
+			double walkDistance = GeoCalculator.calculateEquirectangularDistance(stop.lat, stop.lon, lat, lon);
+			int totalSeconds = travelTimes[i] + (int) Math.round(walkDistance / WALK_SPEED_MPS);
+			if (totalSeconds < bestSeconds) {
+				bestSeconds = totalSeconds;
+			}
+		}
+
+		return bestSeconds;
+	}
+
+	private double getHeatmapCellLatSpan() {
+		return (StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT) / HEATMAP_GRID_ROWS;
+	}
+
+	private double getHeatmapCellLonSpan() {
+		return (StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON) / HEATMAP_GRID_COLUMNS;
+	}
+
+	private boolean hasDisabledStops() {
+		for (boolean enabled : raptorNetwork.stopsEnabledArr) {
+			if (!enabled) return true;
+		}
+		return false;
+	}
+
+	private void showStatus(String message, boolean error) {
+		routeStepsContainer.getChildren().clear();
+		Label statusLabel = new Label(message);
+		statusLabel.setWrapText(true);
+		statusLabel.setStyle(error ? "-fx-text-fill: red; -fx-font-weight: bold;" : "-fx-text-fill: #1f2d3d; -fx-font-weight: bold;");
+		routeStepsContainer.getChildren().add(statusLabel);
 	}
 
 	private VBox buildRouteSummary(List<RouteStep> steps, double startLat, double startLon) {
