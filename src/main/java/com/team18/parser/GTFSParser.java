@@ -18,6 +18,7 @@ import java.util.zip.ZipFile;
 import com.team18.model.Calendar;
 import com.team18.model.CalendarDates;
 import com.team18.model.Route;
+import com.team18.model.Route.RouteType;
 import com.team18.model.ShapePoint;
 import com.team18.model.Stop;
 import com.team18.model.StopTime;
@@ -187,6 +188,9 @@ public class GTFSParser {
         }
         if (!csvp.hasAny("route_short_name", "route_long_name")) {
             throw new IOException("Missing both columns: route_short_name and route_long_name. Min. of 1 required");
+        }   
+        if(!hasCol(csvp, "route_type")){
+            throw new IOException("Missing required column route_type in routes.txt");
         }
 
         Row row;
@@ -213,7 +217,21 @@ public class GTFSParser {
                 String shortName = row.getCol("route_short_name");
                 String longName = row.getCol("route_long_name");
 
-                routes.put(id, new Route(id, operator, shortName, longName));
+                String routeTypeString = getCol(row, "route_type");
+                if (routeTypeString.isEmpty()) {
+                    throw new IOException("Missing required route_type for a particular route (id): " + rowValues(row));
+                }
+
+                RouteType routeType;
+                try {
+                    routeType = RouteType.fromGtfsCode(Integer.parseInt(routeTypeString));
+                } catch (NumberFormatException e) {
+                    throw new IOException("Invalid route_type format for route '" + id + "': " + routeTypeString);
+                } catch (IllegalArgumentException e) {
+                    throw new IOException(e.getMessage() + " (route '" + id + "')");
+                }
+
+                routes.put(id, new Route(id, operator, shortName, longName, routeType));
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
