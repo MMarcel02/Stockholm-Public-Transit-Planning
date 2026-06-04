@@ -3,8 +3,9 @@ package com.team18.routing.raptor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import com.team18.model.Route;
 import com.team18.model.Stop;
@@ -18,14 +19,38 @@ public class RaptorBuilder {
     private final double WALK_SPEED_MPS = 50.0 / 36.0; // 5km/h in metres/second
     private final double MAX_WALK_DISTANCE = MAX_WALK_TIME_SECONDS * WALK_SPEED_MPS;
 
+    public class RouteKey {
+        public List<Stop> stops;
+        public String serviceId;
+
+        public RouteKey(List<Stop> stops, String serviceId) {
+            this.stops = stops;
+            this.serviceId = serviceId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RouteKey routeKey = (RouteKey) o;
+
+            return Objects.equals(stops, routeKey.stops) && 
+                Objects.equals(serviceId, routeKey.serviceId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(stops, serviceId);
+        }
+    }
 
     public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips) {
 
         // Stage 0: Generate RaptorRoutes
         //         Each RaptorRoute is a unique order of stops (not neccessairly the same as the routes in GTFS data)
         //         Sort all trips in each RaptorRoute by earliest departure time
-        Map<List<Stop>, List<Trip>> raptorMap = new HashMap<>();
-
+        Map<RouteKey, List<Trip>> raptorMap = new HashMap<>();
+        
         for (Trip trip : trips.values()) {
             List<Stop> stopsInRoute = new ArrayList<>();
 
@@ -33,8 +58,10 @@ public class RaptorBuilder {
                 stopsInRoute.add(stopTime.stop);
             }
 
-            raptorMap.putIfAbsent(stopsInRoute, new ArrayList<>());
-            raptorMap.get(stopsInRoute).add(trip);
+            RouteKey routeKey = new RouteKey(stopsInRoute, trip.serviceId);
+
+            raptorMap.putIfAbsent(routeKey, new ArrayList<>());
+            raptorMap.get(routeKey).add(trip);
         }
 
         for (List<Trip> raptorTrips : raptorMap.values()) {
@@ -50,8 +77,8 @@ public class RaptorBuilder {
         int totalRaptorRoutes = raptorMap.size();
         
         int totalRouteStops = 0;
-        for (List<Stop> stopsInRoute : raptorMap.keySet()) {
-            totalRouteStops += stopsInRoute.size();
+        for (RouteKey routeKey : raptorMap.keySet()) {
+            totalRouteStops += routeKey.stops.size();
         }
 
         // Calculate how many total stop time events there are in all trips
@@ -124,12 +151,13 @@ public class RaptorBuilder {
         int currStopsOffset = 0;
         int currStopTimesOffset = 0;
 
-        for (Map.Entry<List<Stop>, List<Trip>> entry : raptorMap.entrySet()) {
-            List<Stop> stopsInRoute = entry.getKey();
+        for (Map.Entry<RouteKey, List<Trip>> entry : raptorMap.entrySet()) {
+            RouteKey routeKey = entry.getKey();
+            List<Stop> stopsInRoute = routeKey.stops;
             List<Trip> tripsInRoute = entry.getValue();
             Route parentRoute = tripsInRoute.get(0).route;
 
-            RaptorRoute raptorRoute = new RaptorRoute(currRouteIndex, parentRoute, stopsInRoute, tripsInRoute);
+            RaptorRoute raptorRoute = new RaptorRoute(currRouteIndex, parentRoute, routeKey.serviceId, stopsInRoute, tripsInRoute);
             parentRouteToRaptorRoutesMap.putIfAbsent(parentRoute.id, new ArrayList<>());
             List<Integer> raptorRoutesBelongingToParent = parentRouteToRaptorRoutesMap.get(parentRoute.id);
             raptorRoutesBelongingToParent.add(currRouteIndex);

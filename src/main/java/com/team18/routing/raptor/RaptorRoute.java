@@ -1,9 +1,10 @@
 package com.team18.routing.raptor;
 
+import java.util.List;
+
 import com.team18.model.Route;
 import com.team18.model.Stop;
 import com.team18.model.Trip;
-import java.util.List;
 
 // A route in the RAPTOR algorithm is a unique sequence of stops, this is not guaranteed by routes.txt in all GTFS datasets
 // so we use RaptorBuilder to make specific raptor routes
@@ -14,16 +15,18 @@ public class RaptorRoute {
     public final List<Stop> stops;
     public final List<Trip> trips;
     public final Route parentRoute;
+    public final String serviceId;
+
 
     public final String shapeId;
     public final String headSign;
 
-    public RaptorRoute(int id, Route parentRoute, List<Stop> patternStops, List<Trip> patternTrips) {
+    public RaptorRoute(int id, Route parentRoute, String serviceId, List<Stop> patternStops, List<Trip> patternTrips) {
         this.id = id;
-        
+        this.parentRoute = parentRoute;
+        this.serviceId = serviceId;
         this.stops = patternStops; 
         this.trips = patternTrips;
-        this.parentRoute = parentRoute;
         
         this.shapeId = patternTrips.get(0).shapeId;
         
