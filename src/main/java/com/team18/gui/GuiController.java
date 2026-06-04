@@ -39,9 +39,12 @@ public class GuiController {
 	private static final int MAX_SUGGESTIONS = 10;
 	private static final double STOP_HOVER_CARD_WIDTH = 340;
 	private static final double STOP_HOVER_CARD_HEIGHT = 390;
-	private static final int HEATMAP_GRID_COLUMNS = 90;
-	private static final int HEATMAP_GRID_ROWS = 56;
+	private static final double HEATMAP_CELL_SIZE_METERS = 100.0;
+	private static final int HEATMAP_KD_LEAF_SIZE = 16;
+	private static final int HEATMAP_GRID_COLUMNS = calculateHeatmapGridColumns();
+	private static final int HEATMAP_GRID_ROWS = calculateHeatmapGridRows();
 	private static final double WALK_SPEED_MPS = 50.0 / 36.0;
+	private static final double EARTH_RADIUS_METERS = 6371000.0;
 
 	@FXML private Pane mapContainer;
 	@FXML private TextField startField;
@@ -523,7 +526,8 @@ public class GuiController {
 			map.setHeatmap(points, differenceMode, getHeatmapCellLatSpan(), getHeatmapCellLonSpan());
 			double elapsedSeconds = (System.nanoTime() - startedAt) / 1_000_000_000.0;
 			String mode = differenceMode ? "Stop removal impact heatmap" : "Journey time heatmap";
-			showStatus(String.format(Locale.US, "%s generated: %d cells in %.1fs.", mode, points.size(), elapsedSeconds), false);
+			showStatus(String.format(Locale.US, "%s generated: %d cells at %.0fm resolution in %.1fs.",
+					mode, points.size(), HEATMAP_CELL_SIZE_METERS, elapsedSeconds), false);
 		} catch (Exception e) {
 			showStatus("Failed to generate heatmap: " + e.getMessage(), true);
 			e.printStackTrace();
@@ -531,7 +535,8 @@ public class GuiController {
 	}
 
 	private List<Map.HeatmapPoint> buildTravelTimeHeatmapPoints(int[] travelTimes, ResolvedLocation origin) {
-		List<Map.HeatmapPoint> points = new ArrayList<>();
+		List<Map.HeatmapPoint> points = new ArrayList<>(HEATMAP_GRID_ROWS * HEATMAP_GRID_COLUMNS);
+		HeatmapEstimator estimator = new HeatmapEstimator(origin, travelTimes, raptorNetwork.stopLookup);
 		double cellLatSpan = getHeatmapCellLatSpan();
 		double cellLonSpan = getHeatmapCellLonSpan();
 
@@ -539,7 +544,7 @@ public class GuiController {
 			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * cellLatSpan);
 			for (int col = 0; col < HEATMAP_GRID_COLUMNS; col++) {
 				double lon = StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * cellLonSpan);
-				int estimatedSeconds = estimateTravelTimeToPoint(lat, lon, travelTimes, origin);
+				int estimatedSeconds = estimator.estimateTravelTimeToPoint(lat, lon);
 				points.add(new Map.HeatmapPoint(lat, lon, estimatedSeconds / 60.0));
 			}
 		}
@@ -548,7 +553,9 @@ public class GuiController {
 	}
 
 	private List<Map.HeatmapPoint> buildDifferenceHeatmapPoints(int[] currentTimes, int[] baselineTimes, ResolvedLocation origin) {
-		List<Map.HeatmapPoint> points = new ArrayList<>();
+		List<Map.HeatmapPoint> points = new ArrayList<>(HEATMAP_GRID_ROWS * HEATMAP_GRID_COLUMNS);
+		HeatmapEstimator currentEstimator = new HeatmapEstimator(origin, currentTimes, raptorNetwork.stopLookup);
+		HeatmapEstimator baselineEstimator = new HeatmapEstimator(origin, baselineTimes, raptorNetwork.stopLookup);
 		double cellLatSpan = getHeatmapCellLatSpan();
 		double cellLonSpan = getHeatmapCellLonSpan();
 
@@ -556,8 +563,8 @@ public class GuiController {
 			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * cellLatSpan);
 			for (int col = 0; col < HEATMAP_GRID_COLUMNS; col++) {
 				double lon = StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * cellLonSpan);
-				int currentSeconds = estimateTravelTimeToPoint(lat, lon, currentTimes, origin);
-				int baselineSeconds = estimateTravelTimeToPoint(lat, lon, baselineTimes, origin);
+				int currentSeconds = currentEstimator.estimateTravelTimeToPoint(lat, lon);
+				int baselineSeconds = baselineEstimator.estimateTravelTimeToPoint(lat, lon);
 				double delayMinutes = Math.max(0.0, (currentSeconds - baselineSeconds) / 60.0);
 				points.add(new Map.HeatmapPoint(lat, lon, delayMinutes));
 			}
@@ -566,30 +573,34 @@ public class GuiController {
 		return points;
 	}
 
-	private int estimateTravelTimeToPoint(double lat, double lon, int[] travelTimes, ResolvedLocation origin) {
-		double directWalkDistance = GeoCalculator.calculateEquirectangularDistance(origin.lat, origin.lon, lat, lon);
-		int bestSeconds = (int) Math.round(directWalkDistance / WALK_SPEED_MPS);
-
-		for (int i = 0; i < travelTimes.length; i++) {
-			if (travelTimes[i] == Integer.MAX_VALUE) continue;
-
-			Stop stop = raptorNetwork.stopLookup[i];
-			double walkDistance = GeoCalculator.calculateEquirectangularDistance(stop.lat, stop.lon, lat, lon);
-			int totalSeconds = travelTimes[i] + (int) Math.round(walkDistance / WALK_SPEED_MPS);
-			if (totalSeconds < bestSeconds) {
-				bestSeconds = totalSeconds;
-			}
-		}
-
-		return bestSeconds;
-	}
-
 	private double getHeatmapCellLatSpan() {
 		return (StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT) / HEATMAP_GRID_ROWS;
 	}
 
 	private double getHeatmapCellLonSpan() {
 		return (StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON) / HEATMAP_GRID_COLUMNS;
+	}
+
+	private static int calculateHeatmapGridRows() {
+		double centerLon = (StockholmUrbanArea.OUTER_MIN_LON + StockholmUrbanArea.OUTER_MAX_LON) / 2.0;
+		double heightMeters = GeoCalculator.calculateEquirectangularDistance(
+				StockholmUrbanArea.OUTER_MIN_LAT,
+				centerLon,
+				StockholmUrbanArea.OUTER_MAX_LAT,
+				centerLon
+		);
+		return (int) Math.ceil(heightMeters / HEATMAP_CELL_SIZE_METERS);
+	}
+
+	private static int calculateHeatmapGridColumns() {
+		double centerLat = (StockholmUrbanArea.OUTER_MIN_LAT + StockholmUrbanArea.OUTER_MAX_LAT) / 2.0;
+		double widthMeters = GeoCalculator.calculateEquirectangularDistance(
+				centerLat,
+				StockholmUrbanArea.OUTER_MIN_LON,
+				centerLat,
+				StockholmUrbanArea.OUTER_MAX_LON
+		);
+		return (int) Math.ceil(widthMeters / HEATMAP_CELL_SIZE_METERS);
 	}
 
 	private boolean hasDisabledStops() {
@@ -800,6 +811,158 @@ public class GuiController {
 
 	private String normalize(String value) {
 		return value == null ? "" : value.trim().toLowerCase();
+	}
+
+	private static class HeatmapEstimator {
+		private final double originLat;
+		private final double originLon;
+		private final HeatmapKdNode root;
+
+		HeatmapEstimator(ResolvedLocation origin, int[] travelTimes, Stop[] stopLookup) {
+			this.originLat = origin.lat;
+			this.originLon = origin.lon;
+
+			List<HeatmapCandidate> candidates = new ArrayList<>();
+			for (int i = 0; i < travelTimes.length; i++) {
+				if (travelTimes[i] == Integer.MAX_VALUE) continue;
+
+				Stop stop = stopLookup[i];
+				candidates.add(new HeatmapCandidate(stop.lat, stop.lon, travelTimes[i]));
+			}
+
+			HeatmapCandidate[] candidateArray = candidates.toArray(new HeatmapCandidate[0]);
+			this.root = candidateArray.length == 0
+					? null
+					: new HeatmapKdNode(candidateArray, 0, candidateArray.length);
+		}
+
+		int estimateTravelTimeToPoint(double lat, double lon) {
+			double directWalkDistance = GeoCalculator.calculateEquirectangularDistance(originLat, originLon, lat, lon);
+			int bestSeconds = (int) Math.round(directWalkDistance / WALK_SPEED_MPS);
+			return root == null ? bestSeconds : root.estimateTravelTimeToPoint(lat, lon, bestSeconds);
+		}
+	}
+
+	private static class HeatmapKdNode {
+		private final double minLat;
+		private final double maxLat;
+		private final double minLon;
+		private final double maxLon;
+		private final int minTravelSeconds;
+		private final HeatmapCandidate[] candidates;
+		private final HeatmapKdNode left;
+		private final HeatmapKdNode right;
+
+		HeatmapKdNode(HeatmapCandidate[] points, int start, int end) {
+			double nodeMinLat = Double.POSITIVE_INFINITY;
+			double nodeMaxLat = Double.NEGATIVE_INFINITY;
+			double nodeMinLon = Double.POSITIVE_INFINITY;
+			double nodeMaxLon = Double.NEGATIVE_INFINITY;
+			int nodeMinTravelSeconds = Integer.MAX_VALUE;
+
+			for (int i = start; i < end; i++) {
+				HeatmapCandidate point = points[i];
+				nodeMinLat = Math.min(nodeMinLat, point.lat);
+				nodeMaxLat = Math.max(nodeMaxLat, point.lat);
+				nodeMinLon = Math.min(nodeMinLon, point.lon);
+				nodeMaxLon = Math.max(nodeMaxLon, point.lon);
+				nodeMinTravelSeconds = Math.min(nodeMinTravelSeconds, point.travelSeconds);
+			}
+
+			this.minLat = nodeMinLat;
+			this.maxLat = nodeMaxLat;
+			this.minLon = nodeMinLon;
+			this.maxLon = nodeMaxLon;
+			this.minTravelSeconds = nodeMinTravelSeconds;
+
+			if (end - start <= HEATMAP_KD_LEAF_SIZE) {
+				this.candidates = Arrays.copyOfRange(points, start, end);
+				this.left = null;
+				this.right = null;
+				return;
+			}
+
+			boolean splitByLat = (maxLat - minLat) >= (maxLon - minLon);
+			Arrays.sort(points, start, end, splitByLat
+					? Comparator.comparingDouble(candidate -> candidate.lat)
+					: Comparator.comparingDouble(candidate -> candidate.lon));
+
+			int midpoint = start + ((end - start) / 2);
+			this.candidates = null;
+			this.left = new HeatmapKdNode(points, start, midpoint);
+			this.right = new HeatmapKdNode(points, midpoint, end);
+		}
+
+		int estimateTravelTimeToPoint(double lat, double lon, int bestSeconds) {
+			if (lowerBoundSeconds(lat, lon) >= bestSeconds) {
+				return bestSeconds;
+			}
+
+			if (candidates != null) {
+				for (HeatmapCandidate candidate : candidates) {
+					if (candidate.travelSeconds >= bestSeconds) continue;
+
+					double walkDistance = GeoCalculator.calculateEquirectangularDistance(candidate.lat, candidate.lon, lat, lon);
+					int totalSeconds = candidate.travelSeconds + (int) Math.round(walkDistance / WALK_SPEED_MPS);
+					if (totalSeconds < bestSeconds) {
+						bestSeconds = totalSeconds;
+					}
+				}
+				return bestSeconds;
+			}
+
+			double leftLowerBound = left.lowerBoundSeconds(lat, lon);
+			double rightLowerBound = right.lowerBoundSeconds(lat, lon);
+
+			if (leftLowerBound <= rightLowerBound) {
+				bestSeconds = left.estimateTravelTimeToPoint(lat, lon, bestSeconds);
+				bestSeconds = right.estimateTravelTimeToPoint(lat, lon, bestSeconds);
+			} else {
+				bestSeconds = right.estimateTravelTimeToPoint(lat, lon, bestSeconds);
+				bestSeconds = left.estimateTravelTimeToPoint(lat, lon, bestSeconds);
+			}
+
+			return bestSeconds;
+		}
+
+		private double lowerBoundSeconds(double lat, double lon) {
+			return minTravelSeconds + (minimumDistanceToBoundsMeters(lat, lon) / WALK_SPEED_MPS);
+		}
+
+		private double minimumDistanceToBoundsMeters(double lat, double lon) {
+			double latDistance = 0.0;
+			if (lat < minLat) {
+				latDistance = Math.toRadians(minLat - lat) * EARTH_RADIUS_METERS;
+			} else if (lat > maxLat) {
+				latDistance = Math.toRadians(lat - maxLat) * EARTH_RADIUS_METERS;
+			}
+
+			double lonDistance = 0.0;
+			if (lon < minLon) {
+				lonDistance = conservativeLongitudeDistanceMeters(lat, minLat, maxLat, minLon - lon);
+			} else if (lon > maxLon) {
+				lonDistance = conservativeLongitudeDistanceMeters(lat, minLat, maxLat, lon - maxLon);
+			}
+
+			return Math.max(latDistance, lonDistance);
+		}
+
+		private double conservativeLongitudeDistanceMeters(double queryLat, double boundsMinLat, double boundsMaxLat, double deltaLonDegrees) {
+			double maxAbsLat = Math.max(Math.abs(queryLat), Math.max(Math.abs(boundsMinLat), Math.abs(boundsMaxLat)));
+			return Math.toRadians(deltaLonDegrees) * EARTH_RADIUS_METERS * Math.cos(Math.toRadians(maxAbsLat));
+		}
+	}
+
+	private static class HeatmapCandidate {
+		final double lat;
+		final double lon;
+		final int travelSeconds;
+
+		HeatmapCandidate(double lat, double lon, int travelSeconds) {
+			this.lat = lat;
+			this.lon = lon;
+			this.travelSeconds = travelSeconds;
+		}
 	}
 
 	private static class ResolvedLocation {
