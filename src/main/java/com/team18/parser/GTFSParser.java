@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -30,8 +32,9 @@ public class GTFSParser {
     public Map<String, Route> routes = new HashMap<>();
     public Map<String, Trip> trips = new HashMap<>();
     public Map<String, Calendar> calendar = new HashMap<>();
-    public Map<String, CalendarDates> calendar_dates = new HashMap<>();
+    public Map<CalendarDates, String> calendar_dates = new HashMap<>();
     public Map<String, List<ShapePoint>> shapes = new HashMap<>();
+    public Map<LocalDate, List<String>> serviceByCalendar = new HashMap<>();
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -111,6 +114,8 @@ public class GTFSParser {
                     throw new IOException("Unknown file type: " + type);
             }
         }
+
+        parseServiceIDbyCalendar();
     }
 
     public void parseStops(CSVParser csvp) throws IOException {
@@ -373,10 +378,6 @@ public class GTFSParser {
                     throw new IOException("Missing required service id for a particular period: " + row.toString());
                 }
 
-                if (week.length() < 7) {
-                    throw new IOException("Missing required activity information for a particular period: " + row.toString());
-                }
-
                 if (startDate.isEmpty() || endDate.isEmpty()) {
                     throw new IOException("Incomplete period for a particular service: " + row.toString());
                 }
@@ -412,12 +413,67 @@ public class GTFSParser {
                     throw new IOException("Missing exception type for a particular service/date: " + row.toString());
                 }
 
-                calendar_dates.put(id, new CalendarDates(id, date, exceptionType));
+                calendar_dates.put(new CalendarDates(id, parseDate(date)), exceptionType);
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
                 throw new IOException("Error parsing line: " + row.toString() + " | " + e.getMessage(), e);
             }
         }
+    }
+
+    public void parseServiceIDbyCalendar(){
+        
+        for(Calendar calendarDate : calendar.values()){
+            LocalDate startDate = parseDate(calendarDate.startDate);
+            LocalDate endDate = parseDate(calendarDate.endDate);
+
+            for(LocalDate i = startDate; !i.isAfter(endDate); i = i.plusDays(1)){
+                int dayIndex = i.getDayOfWeek().getValue()-1;
+                boolean enabled = calendarDate.week[dayIndex];
+                CalendarDates exceptionDates = new CalendarDates(calendarDate.id, i);
+                String exceptionType = calendar_dates.get(exceptionDates);
+                if(exceptionType != null) {
+                    if(exceptionType.equals("1")){
+                        enabled = true;
+                    }
+                    else if(exceptionType.equals("2")){
+                        enabled = false;
+                    }
+                }
+                List<String> ids = serviceByCalendar.get(i);
+                if(ids == null){
+                    ids = new ArrayList<>();
+                }
+                if(enabled){
+                    ids.add(calendarDate.id);
+                }
+                serviceByCalendar.put(i, ids);
+            }
+        }
+
+    }
+
+    private LocalDate parseDate (String date){
+
+        DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+        return LocalDate.parse(date, format);
+    }
+
+    private boolean hasCol(CSVParser csvp, String name) {
+        return Arrays.asList(csvp.colNames).contains(name);
+    }
+
+    private String getCol(Row row, String name) {
+        int index = Arrays.asList(row.names).indexOf(name);
+        if (index < 0 || index >= row.values.length) {
+            return "";
+        }
+        return row.values[index].trim();
+    }
+
+    private String rowValues(Row row) {
+        return Arrays.toString(row.values);
     }
 }

@@ -1,5 +1,6 @@
 package com.team18.routing.raptor;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,7 +13,6 @@ import com.team18.model.Stop;
 import com.team18.model.StopTime;
 import com.team18.model.Trip;
 import com.team18.util.GeoCalculator;
-
 
 public class RaptorBuilder {
     private final int MAX_WALK_TIME_SECONDS = 1800; // 30 minutes (can play around with this)
@@ -44,7 +44,7 @@ public class RaptorBuilder {
         }
     }
 
-    public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips) {
+    public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips, Map<LocalDate, List<String>> serviceByCalendar) {
 
         // Stage 0: Generate RaptorRoutes
         //         Each RaptorRoute is a unique order of stops (not neccessairly the same as the routes in GTFS data)
@@ -53,7 +53,6 @@ public class RaptorBuilder {
         
         for (Trip trip : trips.values()) {
             List<Stop> stopsInRoute = new ArrayList<>();
-
             for (StopTime stopTime : trip.stopTimes) {
                 stopsInRoute.add(stopTime.stop);
             }
@@ -239,10 +238,11 @@ public class RaptorBuilder {
             stopsArr, 
             stopsEnabledArr,
             stopRoutes, 
-            transfersArr
+            transfersArr,
+            serviceByCalendar,
+            trips
         );
     }
-
 }
 
     

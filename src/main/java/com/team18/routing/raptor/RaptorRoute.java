@@ -20,8 +20,9 @@ public class RaptorRoute {
 
     public final String shapeId;
     public final String headSign;
+    public final String serviceId;
 
-    public RaptorRoute(int id, Route parentRoute, String serviceId, List<Stop> patternStops, List<Trip> patternTrips) {
+    public RaptorRoute(int id, Route parentRoute, List<Stop> patternStops, List<Trip> patternTrips, String serviceId) {
         this.id = id;
         this.parentRoute = parentRoute;
         this.serviceId = serviceId;
@@ -29,6 +30,8 @@ public class RaptorRoute {
         this.trips = patternTrips;
         
         this.shapeId = patternTrips.get(0).shapeId;
+
+        this.serviceId = serviceId;
         
         // We try to get the headSign from one of the trip objects (blank for most in Stockholm GTFS)
         if (!patternTrips.isEmpty() && patternTrips.get(0).headSign != null) {

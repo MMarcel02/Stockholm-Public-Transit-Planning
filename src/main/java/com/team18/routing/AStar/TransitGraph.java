@@ -11,6 +11,10 @@ import com.team18.model.Stop;
 import com.team18.model.Trip;
 import com.team18.model.StopTime;
 import com.team18.util.GeoCalculator;
+import com.team18.model.Calendar;
+import com.team18.model.CalendarDates;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class TransitGraph {
     private Map<String, List<Edge>> adjacency = new java.util.HashMap<>();
@@ -30,10 +34,20 @@ public class TransitGraph {
     }
 
     public void buildTransitEdges(GTFSParser parser){
+        Map<String, CalendarDates> exceptionDates = parser.calendar_dates;
+        Map<String, Calendar> calendarDates = parser.calendar;
+        LocalDate currentDate = LocalDate.now();
+        LocalDate dayToday = LocalDate.now();
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyyMMdd");
+        DateTimeFormatter getDayToday = DateTimeFormatter.ofPattern("E");
+        String formattedDate = currentDate.format(dateFormat);
+        String formattedDay = dayToday.format(getDayToday);
+        
         for(Trip trip : parser.trips.values()){
             List<StopTime> stopTimes = new ArrayList<>(trip.stopTimes);
 
             for(int i = 0; i < stopTimes.size() - 1; ++i){
+                
                 StopTime current = stopTimes.get(i);
                 StopTime next = stopTimes.get(i + 1);
 
@@ -42,6 +56,30 @@ public class TransitGraph {
                 double walkingTime = (GeoCalculator.calculateEquirectangularDistance(current.stop.lat, current.stop.lon, next.stop.lat, next.stop.lon) / WALKING_SPEED) / 60.0;
 
                 if (travelTime < 0) continue;
+
+                int dayIndex = setDayIndex(formattedDay);
+                
+                int exceptionStartDate = Integer.parseInt(calendarDates.get(trip.serviceId).startDate);
+                int exceptionEndDate = Integer.parseInt(calendarDates.get(trip.serviceId).endDate);
+                String weekStates = calendarDates.get(trip.serviceId).week;
+                if(exceptionStartDate <= Integer.parseInt(formattedDate) && exceptionEndDate >= Integer.parseInt((formattedDate))){
+
+                    for(int j = exceptionStartDate; j <= exceptionEndDate; j++){
+
+
+                        if(weekStates.charAt(dayIndex) == '0'){
+                            if (exceptionDates.get(trip.serviceId).date == formattedDate && exceptionDates.get(trip.serviceId).exceptionType != "1"){
+                                continue;
+                            }
+                        }
+
+                        dayIndex++;
+                        if(dayIndex > 6){
+                            dayIndex = 0;
+                        }
+
+                    }
+                }
 
                 Edge transitEdge = new Edge(next.stop, "transit",  trip.id, current.departureTime, travelTime, walkingTime, trip);
 
@@ -82,5 +120,44 @@ public class TransitGraph {
     // View-only on the adjacency Map, if needed
     public Map<String, List<Edge>> getAdjacency(){
         return Collections.unmodifiableMap(adjacency);
+    }
+
+    public int setDayIndex(String formattedDay){
+        int dayIndex = -1;
+        switch(formattedDay){
+            case "Mon":{
+                dayIndex = 0;
+                break;
+            }
+            case "Tue":{
+                dayIndex = 1;
+                break;
+            }
+            case "Wed":{
+                dayIndex = 2;
+                break;
+            }
+            case "Thu":{
+                dayIndex = 3;
+                break;
+            }
+            case "Fri":{
+                dayIndex = 4;
+                break;
+            }
+            case "Sat":{
+                dayIndex = 5;
+                break;
+            }
+            case "Sun":{
+                dayIndex = 6;
+                break;
+            }
+            default:{
+                dayIndex = -1;
+                break;
+            }
+        }
+        return dayIndex;
     }
 }

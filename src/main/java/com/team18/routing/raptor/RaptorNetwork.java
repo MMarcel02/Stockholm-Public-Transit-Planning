@@ -3,7 +3,9 @@ package com.team18.routing.raptor;
 import com.team18.model.Stop;
 import com.team18.model.Route;
 
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
@@ -24,6 +26,8 @@ public class RaptorNetwork {
     public final boolean[] stopsEnabledArr;
     public final int[] stopRoutes;
     public final int[] transfersArr;
+    public final Map<LocalDate, List<String>> serviceByCalendar;
+    public final Map<String, Trip> trips;
 
     public RaptorNetwork(
             Map<String, Integer> stopStringToIntMap,
@@ -38,8 +42,11 @@ public class RaptorNetwork {
             int[] stopsArr, 
             boolean[] stopsEnabledArr,
             int[] stopRoutes, 
-            int[] transfersArr) {
-        
+            int[] transfersArr,
+            Map<LocalDate, List<String>> serviceByCalendar,
+            Map<String, Trip> trips
+             ) {
+            
         this.stopStringToIntMap = stopStringToIntMap;
         this.stopLookup = stopLookup;
         this.parentRouteLookup = parentRouteLookup;
@@ -53,6 +60,8 @@ public class RaptorNetwork {
         this.stopsEnabledArr = stopsEnabledArr;
         this.stopRoutes = stopRoutes;
         this.transfersArr = transfersArr;
+        this.serviceByCalendar = serviceByCalendar;
+        this.trips = trips;
     }
 
     public RaptorNetwork copyForMultithreading() {
@@ -105,5 +114,14 @@ public class RaptorNetwork {
 
     public void enableAllStops() {
         Arrays.fill(stopsEnabledArr, true);
+    }
+
+    public void disableByCalendar(LocalDate date) {
+        List<String> ids = serviceByCalendar.get(date);
+        for(String id : ids){
+            for(RaptorRoute route : raptorRouteLookup){
+                if(route.)
+            }
+        }
     }
 }
