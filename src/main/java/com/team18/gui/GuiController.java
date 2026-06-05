@@ -391,9 +391,11 @@ public class GuiController {
 	}
 
 	private String formatAbsoluteTime(int secondsAfterMidnight) {
-		int hours = secondsAfterMidnight / 3600;
+		int hours = (secondsAfterMidnight / 3600) % 24;
 		int minutes = (secondsAfterMidnight % 3600) / 60;
-		return String.format(Locale.US, "%02d:%02d", hours, minutes);
+		String dayMarker = (secondsAfterMidnight >= 86400) ? " (+1)" : "";
+
+		return String.format(Locale.US, "%02d:%02d%s", hours, minutes, dayMarker);
 	}
 
 	public void displayRouteInstructions(List<RouteStep> steps, double startLat, double startLon) {
