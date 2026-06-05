@@ -3,11 +3,12 @@ package com.team18.gui;
 import java.util.ArrayList;
 
 import javafx.scene.Group;
+import javafx.scene.input.MouseEvent;
 
 import com.team18.parser.GTFSParser;
 import com.team18.routing.raptor.RaptorNetwork;
 
-public class LayerStack {
+public class LayerStack implements Layer {
 	double dragStartX = 0;
 	double dragStartY = 0;
 	double groupTranslateX = 0;
@@ -28,6 +29,7 @@ public class LayerStack {
 		layers.add(mapLayer = new MapLayer());
 		layers.add(heatmapLayer = new HeatmapLayer(network));
 		layers.add(bbLayer = new BoundingBoxLayer());
+		layers.add(navLayer = new NavigationLayer(parser));
 		layers.add(stopLayer = new StopLayer(parser, network, journeyInput));
 
 		for (Layer layer: layers) {
@@ -36,21 +38,35 @@ public class LayerStack {
 
 			group.getChildren().add(layerGroup);
 		}
+	}
 
-		group.setOnMousePressed(ev -> {
-			dragStartX = ev.getSceneX();
-			dragStartY = ev.getSceneY();
-			groupTranslateX = group.getTranslateX();
-			groupTranslateY = group.getTranslateY();
+	public void render(double x, double y, double width, double height) {
+		double actualX = group.getTranslateX();
+		double actualY = group.getTranslateY();
 
-			int delta = 0;
-			if (ev.isMiddleButtonDown()) {
-				delta = 1;
-			} else if (ev.isSecondaryButtonDown()) {
-				delta = -1;
-			}
-			if (delta == 0) return;
+		for (Layer layer: layers) {
+			layer.render(actualX, actualY, width, height);
+		}
+	}
 
+	public Group getGroup() {
+		return group;
+	}
+
+	public boolean mousePressed(MouseEvent event) {
+		dragStartX = event.getSceneX();
+		dragStartY = event.getSceneY();
+		groupTranslateX = group.getTranslateX();
+		groupTranslateY = group.getTranslateY();
+
+		int delta = 0;
+		if (event.isMiddleButtonDown()) {
+			delta = 1;
+		} else if (event.isSecondaryButtonDown()) {
+			delta = -1;
+		}
+
+		if (delta != 0) {
 			double factor = Math.pow(2, delta);
 			if (factor < 0) factor = 1 / (-factor);
 
@@ -60,52 +76,47 @@ public class LayerStack {
 
 			CoordSystem.setZoomLevel(CoordSystem.getZoomLevel() + delta);
 
-			render(group.getScene().getWidth(), group.getScene().getHeight());
+			render(0, 0, group.getScene().getWidth(), group.getScene().getHeight());
 
-			for (Layer layer: layers) {
-				if (layer.mousePressed(ev)) break;
-			}
-		});
-
-		group.setOnMouseClicked(ev -> {
-			for (Layer layer: layers) {
-				if (layer.mouseClicked(ev)) break;
-			}
-		});
-
-		group.setOnMouseMoved(ev -> {
-			for (Layer layer: layers) {
-				if (layer.mouseMoved(ev)) break;
-			}
-		});
-
-		group.setOnMouseExited(ev -> {
-			for (Layer layer: layers) {
-				if (layer.mouseExited(ev)) break;
-			}
-		});
-
-		group.setOnMouseDragged(ev -> {
-			group.setTranslateX(groupTranslateX + (ev.getSceneX() - dragStartX));
-			group.setTranslateY(groupTranslateY + (ev.getSceneY() - dragStartY));
-
-			for (Layer layer: layers) {
-				if (layer.mouseDragged(ev)) break;
-			}
-		});
-	}
-
-	public void render(double width, double height) {
-		double x = group.getTranslateX();
-		double y = group.getTranslateY();
+			return true;
+		}
 
 		for (Layer layer: layers) {
-			layer.render(x, y, width, height);
+			if (layer.mousePressed(event)) return true;
 		}
+
+		return false;
 	}
 
-	public Group getGroup() {
-		return group;
+	public boolean mouseClicked(MouseEvent event) {
+		for (Layer layer: layers) {
+			if (layer.mouseClicked(event)) return true;
+		}
+
+		return false;
+	}
+
+	public boolean mouseMoved(MouseEvent event) {
+		for (Layer layer: layers) {
+			if (layer.mouseMoved(event)) return true;
+		}
+
+		return false;
+	}
+
+	public boolean mouseExited(MouseEvent event) {
+		for (Layer layer: layers) {
+			if (layer.mouseExited(event)) return true;
+		}
+
+		return false;
+	}
+
+	public boolean mouseDragged(MouseEvent event) {
+		group.setTranslateX(groupTranslateX + (event.getSceneX() - dragStartX));
+		group.setTranslateY(groupTranslateY + (event.getSceneY() - dragStartY));
+
+		return true;
 	}
 }
 

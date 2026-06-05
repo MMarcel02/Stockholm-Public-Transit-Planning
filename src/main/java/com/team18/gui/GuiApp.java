@@ -8,14 +8,19 @@ import javafx.stage.Stage;
 
 public class GuiApp extends Application {
 	@Override
-	public void start(Stage primaryStage) throws Exception {
-		Parent root = FXMLLoader.load(getClass().getResource("/GUI.fxml"));
-		primaryStage.setTitle("Stockholm Public Transport Router");
+	public void start(Stage stage) throws Exception {
+		FXMLLoader loader = new FXMLLoader(getClass().getResource("/GUI.fxml"));
+		Parent root = (Parent) loader.load();
+
+		// GuiController controller = loader.getController();
+
+		stage.setTitle("Stockholm Public Transport Router");
 		Scene scene = new Scene(root, 1024, 768);
-		scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
-		primaryStage.setScene(scene);
-		primaryStage.show();
-		primaryStage.setFullScreen(true);
+		scene.getStylesheets().add(
+				getClass().getResource("/styles.css").toExternalForm());
+		stage.setScene(scene);
+		stage.show();
+		stage.setFullScreen(true);
 	}
 
 	public static void main(String[] args) {

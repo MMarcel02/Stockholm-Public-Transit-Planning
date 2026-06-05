@@ -5,7 +5,10 @@ import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.Router;
 import com.team18.routing.raptor.RaptorAlgorithm;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
+import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -16,13 +19,15 @@ import com.team18.model.RouteStep;
 import java.util.List;
 
 public class GuiController {
-	@FXML private Pane mapContainer;
-	@FXML private TextField startField;
-	@FXML private TextField endField;
-	@FXML private TextField timeField;
-	@FXML private VBox routeStepsContainer;
+	public Stage stage;
 
-	private RaptorNetwork network;
+	@FXML Pane mapContainer;
+	@FXML TextField startField;
+	@FXML TextField endField;
+	@FXML TextField timeField;
+	@FXML VBox routeStepsContainer;
+
+	RaptorNetwork network;
 
 	JourneyInput journeyInput;
 	LayerStack stack;
@@ -56,7 +61,27 @@ public class GuiController {
 
 		routeDisplay = new RouteDisplay(routeStepsContainer);
 
-		stack.render(mapContainer.getWidth(), mapContainer.getHeight());
+		mapContainer.widthProperty().addListener(new ChangeListener<Number>() {
+			@Override
+			public void changed(ObservableValue<? extends Number> obs,
+					Number oldWidth, Number newWidth) {
+				stack.render(0, 0, mapContainer.getWidth(), mapContainer.getHeight());
+			}
+		});
+
+		mapContainer.heightProperty().addListener(new ChangeListener<Number>() {
+			@Override
+			public void changed(ObservableValue<? extends Number> obs,
+					Number oldHeight, Number newHeight) {
+				stack.render(0, 0, mapContainer.getWidth(), mapContainer.getHeight());
+			}
+		});
+
+		mapContainer.setOnMousePressed(ev -> stack.mousePressed(ev));
+		mapContainer.setOnMouseClicked(ev -> stack.mouseClicked(ev));
+		mapContainer.setOnMouseMoved(ev -> stack.mouseMoved(ev));
+		mapContainer.setOnMouseExited(ev -> stack.mouseExited(ev));
+		mapContainer.setOnMouseDragged(ev -> stack.mouseDragged(ev));
 	}
 
 	@FXML
