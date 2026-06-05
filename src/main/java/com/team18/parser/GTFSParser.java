@@ -13,14 +13,8 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import com.team18.model.Calendar;
-import com.team18.model.CalendarDates;
-import com.team18.model.Route;
+import com.team18.model.*;
 import com.team18.model.Route.RouteType;
-import com.team18.model.ShapePoint;
-import com.team18.model.Stop;
-import com.team18.model.StopTime;
-import com.team18.model.Trip;
 import com.team18.parser.CSVParser.Row;
 import com.team18.util.ParsingUtil;
 
@@ -259,6 +253,13 @@ public class GTFSParser {
                     throw new IOException("RouteID not found in routes: " + routeId);
                 }
 
+//                VehicleData vd = VehicleData.forType(route.routeType);
+//                double operationCostPerMin = (vd.operatingCostPerHour.average() / 60.0f);
+//
+//                route.trips.get()
+//
+//                var totalCostPerTrip = ()
+
                 Trip newTrip = new Trip(id, route, serviceId, headSign, shapeId.isEmpty() ? null : shapeId);
                 trips.put(id, newTrip);
                 route.trips.add(newTrip);
@@ -365,6 +366,12 @@ public class GTFSParser {
 
         for (Trip trip : trips.values()) {
             trip.stopTimes.sort((st1, st2) -> Integer.compare(st1.stopSequence, st2.stopSequence));
+            int startOftrip = trip.stopTimes.get(0).arrivalTime;
+            int endOftrip = trip.stopTimes.get(trip.stopTimes.size() - 1).departureTime;
+
+            int durationOfTrip = endOftrip - startOftrip;
+
+            trip.cost = (double)(durationOfTrip * trip.route.vehicleData().operatingCostPerHour.mid / 3600.0f);
         }
     }
 
