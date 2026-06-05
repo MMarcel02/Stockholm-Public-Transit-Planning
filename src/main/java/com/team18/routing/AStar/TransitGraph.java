@@ -34,7 +34,7 @@ public class TransitGraph {
     }
 
     public void buildTransitEdges(GTFSParser parser){
-        Map<String, CalendarDates> exceptionDates = parser.calendar_dates;
+        Map<CalendarDates, String> exceptionDates = parser.calendar_dates;
         Map<String, Calendar> calendarDates = parser.calendar;
         LocalDate currentDate = LocalDate.now();
         LocalDate dayToday = LocalDate.now();
@@ -61,16 +61,13 @@ public class TransitGraph {
                 
                 int exceptionStartDate = Integer.parseInt(calendarDates.get(trip.serviceId).startDate);
                 int exceptionEndDate = Integer.parseInt(calendarDates.get(trip.serviceId).endDate);
-                String weekStates = calendarDates.get(trip.serviceId).week;
                 if(exceptionStartDate <= Integer.parseInt(formattedDate) && exceptionEndDate >= Integer.parseInt((formattedDate))){
 
-                    for(int j = exceptionStartDate; j <= exceptionEndDate; j++){
+                    for(LocalDate j = LocalDate.parse(calendarDates.get(trip.serviceId).startDate); !j.isAfter(LocalDate.parse(calendarDates.get(trip.serviceId).endDate)); j = j.plusDays(1)){
 
-
-                        if(weekStates.charAt(dayIndex) == '0'){
-                            if (exceptionDates.get(trip.serviceId).date == formattedDate && exceptionDates.get(trip.serviceId).exceptionType != "1"){
-                                continue;
-                            }
+                        CalendarDates checkDate = new CalendarDates(trip.serviceId, j);
+                        if (exceptionDates.get(checkDate).){
+                            continue;
                         }
 
                         dayIndex++;

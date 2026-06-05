@@ -156,7 +156,7 @@ public class RaptorBuilder {
             List<Trip> tripsInRoute = entry.getValue();
             Route parentRoute = tripsInRoute.get(0).route;
 
-            RaptorRoute raptorRoute = new RaptorRoute(currRouteIndex, parentRoute, routeKey.serviceId, stopsInRoute, tripsInRoute);
+            RaptorRoute raptorRoute = new RaptorRoute(currRouteIndex, parentRoute, stopsInRoute, tripsInRoute, routeKey.serviceId);
             parentRouteToRaptorRoutesMap.putIfAbsent(parentRoute.id, new ArrayList<>());
             List<Integer> raptorRoutesBelongingToParent = parentRouteToRaptorRoutesMap.get(parentRoute.id);
             raptorRoutesBelongingToParent.add(currRouteIndex);
@@ -239,8 +239,7 @@ public class RaptorBuilder {
             stopsEnabledArr,
             stopRoutes, 
             transfersArr,
-            serviceByCalendar,
-            trips
+            serviceByCalendar
         );
     }
 }

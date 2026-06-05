@@ -27,7 +27,6 @@ public class RaptorNetwork {
     public final int[] stopRoutes;
     public final int[] transfersArr;
     public final Map<LocalDate, List<String>> serviceByCalendar;
-    public final Map<String, Trip> trips;
 
     public RaptorNetwork(
             Map<String, Integer> stopStringToIntMap,
@@ -43,8 +42,7 @@ public class RaptorNetwork {
             boolean[] stopsEnabledArr,
             int[] stopRoutes, 
             int[] transfersArr,
-            Map<LocalDate, List<String>> serviceByCalendar,
-            Map<String, Trip> trips
+            Map<LocalDate, List<String>> serviceByCalendar
              ) {
             
         this.stopStringToIntMap = stopStringToIntMap;
@@ -61,7 +59,6 @@ public class RaptorNetwork {
         this.stopRoutes = stopRoutes;
         this.transfersArr = transfersArr;
         this.serviceByCalendar = serviceByCalendar;
-        this.trips = trips;
     }
 
     public RaptorNetwork copyForMultithreading() {
@@ -78,7 +75,8 @@ public class RaptorNetwork {
             stopsArr,
             Arrays.copyOf(stopsEnabledArr, stopsEnabledArr.length),  
             stopRoutes,
-            transfersArr
+            transfersArr,
+            serviceByCalendar
         );
     }
 
@@ -120,7 +118,9 @@ public class RaptorNetwork {
         List<String> ids = serviceByCalendar.get(date);
         for(String id : ids){
             for(RaptorRoute route : raptorRouteLookup){
-                if(route.)
+                if(!route.serviceId.equals(id)){
+                    toggleRaptorRoute(route.id);
+                }
             }
         }
     }

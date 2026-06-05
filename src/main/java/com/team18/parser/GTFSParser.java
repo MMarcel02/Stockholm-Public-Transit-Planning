@@ -370,9 +370,18 @@ public class GTFSParser {
                 String friday = row.getCol("friday");
                 String saturday = row.getCol("saturday");
                 String sunday = row.getCol("sunday");
-                String week = monday.concat(tuesday).concat(wednesday).concat(thursday).concat(friday).concat(saturday).concat(sunday);
                 String startDate = row.getCol("start_date");
                 String endDate = row.getCol("end_date");
+
+                boolean[] week = new boolean[7];
+
+                if(monday.equals("1")) week[0] = true;
+                if(tuesday.equals("1")) week[0] = true;
+                if(wednesday.equals("1")) week[0] = true;
+                if(thursday.equals("1")) week[0] = true;
+                if(friday.equals("1")) week[0] = true;
+                if(saturday.equals("1")) week[0] = true;
+                if(sunday.equals("1")) week[0] = true;
 
                 if (id.isEmpty()) {
                     throw new IOException("Missing required service id for a particular period: " + row.toString());
@@ -461,19 +470,4 @@ public class GTFSParser {
         return LocalDate.parse(date, format);
     }
 
-    private boolean hasCol(CSVParser csvp, String name) {
-        return Arrays.asList(csvp.colNames).contains(name);
-    }
-
-    private String getCol(Row row, String name) {
-        int index = Arrays.asList(row.names).indexOf(name);
-        if (index < 0 || index >= row.values.length) {
-            return "";
-        }
-        return row.values[index].trim();
-    }
-
-    private String rowValues(Row row) {
-        return Arrays.toString(row.values);
-    }
 }
