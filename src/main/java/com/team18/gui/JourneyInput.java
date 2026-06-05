@@ -1,0 +1,190 @@
+package com.team18.gui;
+
+import java.util.List;
+import java.util.ArrayList;
+
+import javafx.geometry.Side;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.CustomMenuItem;
+import javafx.scene.control.ListView;
+import javafx.scene.control.OverrunStyle;
+import javafx.scene.control.TextField;
+
+import com.team18.parser.GTFSParser;
+
+public class JourneyInput {
+	static final int MAX_SUGGESTIONS = 10;
+
+	TextField startField;
+	TextField endField;
+	TextField timeField;
+
+	// True when it's being set through code.
+	boolean fieldsLocked = false;
+
+	List<Stop> stops = new ArrayList<>();
+
+	public JourneyInput(GTFSParser parser,
+			TextField startField, TextField endField, TextField timeField) {
+		this.startField = startField;
+		this.endField = endField;
+		this.timeField = timeField;
+
+		stops = new ArrayList<>(parser.stops.values());
+		stops.sort(Comparator.comparing(stop -> stop.name.toLowerCase()));
+
+		setupAutocomplete(startField);
+		setupAutocomplete(endField);
+	}
+
+	public void setStart(String text) { setField(startField, text); }
+	public String getStart() { return startField.getText(); }
+
+	public void setEnd(String text) { setField(endField, text); }
+	public String getEnd() { return endField.getText(); }
+
+	public void setTime(String text) { setField(timeField, text); }
+	public String getTime() { return timeField.getText(); }
+
+	public double[] resolveStart() { return resolve(getStart()); }
+	public double[] resolveEnd() { return resolve(getEnd()); }
+
+	public int getTimeInSeconds() {
+		return ParsingUtil.timeStringToSecondsAfterMidnight(getTime());
+	}
+
+	double[] resolve(String text) {
+		Stop stop = findStop(input);
+		if (stop != null) {
+			return new double[2] {stop.lat, stop.lon};
+		}
+
+		List<Stop> suggestions = findSuggestions(input);
+		if (!suggestions.isEmpty()) {
+			Stop firstSuggestion = suggestions.get(0);
+			return new double[2] {firstSuggestion.lat, firstSuggestion.lon};
+		}
+
+		String[] parts = input.split(",");
+		if (parts.length != 2) {
+			throw new IllegalArgumentException(
+					"Location must be a stop name or lat, lon pair.");
+		}
+
+		double lat = Double.parseDouble(parts[0].trim());
+		double lon = Double.parseDouble(parts[1].trim());
+
+		return new int[2] {lat, lon};
+	}
+
+
+	void setupAutocomplete(TextField field) {
+		ContextMenu menu = new ContextMenu();
+		menu.getStyleClass().add("suggestions-menu");
+
+		field.textProperty().addListener((observable, oldValue, newValue) -> {
+			if (fieldsLocked) return;
+			showSuggestions(field, menu);
+		});
+
+		field.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+			if (!isFocused) {
+				menu.hide();
+			} else if (!field.getText().isBlank()) {
+				showSuggestions(field, menu);
+			}
+		});
+	}
+
+	void showSuggestions(TextField field, ContextMenu menu) {
+		List<Stop> suggestions = findSuggestions(field.getText());
+		if (suggestions.isEmpty() || !field.isFocused()) {
+			suggestionsMenu.hide();
+			return;
+		}
+
+		menu.getItems().clear();
+		for (Stop stop: suggestions) {
+			Label label = new Label(stop.name);
+			label.getStyleClass().add("suggestion-item");
+
+			CustomMenuItem item = new CustomMenuItem(label, true);
+			item.setOnAction(event -> {
+				setField(field, stop.name);
+			});
+			menu.getItems().add(item);
+		}
+
+		if (!menu.isShowing()) {
+			menu.show(field, Side.BOTTOM, 0, 0);
+		}
+	}
+
+	List<Stop> findSuggestions(String query) {
+		String normQuery = normalize(query);
+		if (normQuery.length() < 2) return List.of();
+
+		List<Stop> prefixMatches = new ArrayList<>();
+		List<Stop> containsMatches = new ArrayList<>();
+
+		for (Stop stop: stops) {
+			String normName = normalize(stop.name);
+
+			if (normName.startsWith(normQuery)) {
+				prefixMatches.add(stop);
+			} else if (normName.contains(normQuery)) {
+				containsMatches.add(stop);
+			}
+		}
+
+		List<Stop> suggestions = new ArrayList<>();
+		addUniqueSuggestions(suggestions, prefixMatches);
+		addUniqueSuggestions(suggestions, containsMatches);
+
+		if (suggestions.size() > MAX_SUGGESTIONS) {
+			return suggestions.subList(0, MAX_SUGGESTIONS);
+		}
+
+		return suggestions;
+	}
+
+	void addUniqueStops(List<Stop> target, List<Stop> candidates) {
+		for (Stop candidate: candidates) {
+			boolean alreadyAdded = false;
+			for (Stop existing: target) {
+				if (existing.name.equalsIgnoreCase(candidate.name)) {
+					alreadyAdded = true;
+					break;
+				}
+			}
+
+			if (!alreadyAdded) {
+				target.add(candidate);
+			}
+
+			if (target.size() >= MAX_SUGGESTIONS) return;
+		}
+	}
+
+	private Stop findStop(String name) {
+		String normalizedName = normalize(name);
+		for (Stop stop: stops) {
+			if (normalize(stop.name).equals(normalizedName)) {
+				return stop;
+			}
+		}
+		return null;
+	}
+
+	String normalize(String value) {
+		return value == null ? "" : value.trim().toLowerCase();
+	}
+
+	void setField(TextField field, String text) {
+		fieldsLocked = true;
+		field.setText(text);
+		field.positionCaret(text.length());
+		fieldsLocked = false;
+	}
+}
+

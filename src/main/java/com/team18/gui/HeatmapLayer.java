@@ -25,7 +25,6 @@ public class HeatmapLayer implements Layer {
 	private RaptorNetwork network;
 
 	private List<Point> points = List.of();
-	private boolean differenceMode = false; // ??
 
 	private Canvas canvas = new Canvas();
 	private Group group = new Group();
@@ -49,9 +48,11 @@ public class HeatmapLayer implements Layer {
 		this.network = network;
 	}
 
-	public void configure(double originLat, double originLon, int startTimeSeconds,
-			boolean differenceMode) {
-		this.differenceMode = differenceMode;
+	public void configure(double originLat, double originLon, int startTimeSeconds) {
+		differenceMode = false;
+		for (boolean enabled: network.stopsEnabledArr) {
+			if (!enabled) differenceMode = true;
+		}
 
 		int[] times = new RaptorAlgorithm(network)
 				.getTravelTimesToStops(originLat, originLon, startTimeSeconds);
