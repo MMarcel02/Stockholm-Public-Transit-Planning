@@ -2,6 +2,8 @@ package com.team18.gui;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.io.IOException;
 
 import javafx.geometry.Side;
 import javafx.scene.control.ContextMenu;
@@ -9,8 +11,11 @@ import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.ListView;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Label;
 
 import com.team18.parser.GTFSParser;
+import com.team18.util.ParsingUtil;
+import com.team18.model.Stop;
 
 public class JourneyInput {
 	static final int MAX_SUGGESTIONS = 10;
@@ -49,23 +54,23 @@ public class JourneyInput {
 	public double[] resolveStart() { return resolve(getStart()); }
 	public double[] resolveEnd() { return resolve(getEnd()); }
 
-	public int getTimeInSeconds() {
+	public int getTimeInSeconds() throws IOException {
 		return ParsingUtil.timeStringToSecondsAfterMidnight(getTime());
 	}
 
 	double[] resolve(String text) {
-		Stop stop = findStop(input);
+		Stop stop = findStop(text);
 		if (stop != null) {
-			return new double[2] {stop.lat, stop.lon};
+			return new double[] {stop.lat, stop.lon};
 		}
 
-		List<Stop> suggestions = findSuggestions(input);
+		List<Stop> suggestions = findSuggestions(text);
 		if (!suggestions.isEmpty()) {
 			Stop firstSuggestion = suggestions.get(0);
-			return new double[2] {firstSuggestion.lat, firstSuggestion.lon};
+			return new double[] {firstSuggestion.lat, firstSuggestion.lon};
 		}
 
-		String[] parts = input.split(",");
+		String[] parts = text.split(",");
 		if (parts.length != 2) {
 			throw new IllegalArgumentException(
 					"Location must be a stop name or lat, lon pair.");
@@ -74,7 +79,7 @@ public class JourneyInput {
 		double lat = Double.parseDouble(parts[0].trim());
 		double lon = Double.parseDouble(parts[1].trim());
 
-		return new int[2] {lat, lon};
+		return new double[] {lat, lon};
 	}
 
 
@@ -99,7 +104,7 @@ public class JourneyInput {
 	void showSuggestions(TextField field, ContextMenu menu) {
 		List<Stop> suggestions = findSuggestions(field.getText());
 		if (suggestions.isEmpty() || !field.isFocused()) {
-			suggestionsMenu.hide();
+			menu.hide();
 			return;
 		}
 
@@ -138,8 +143,8 @@ public class JourneyInput {
 		}
 
 		List<Stop> suggestions = new ArrayList<>();
-		addUniqueSuggestions(suggestions, prefixMatches);
-		addUniqueSuggestions(suggestions, containsMatches);
+		addUniqueStops(suggestions, prefixMatches);
+		addUniqueStops(suggestions, containsMatches);
 
 		if (suggestions.size() > MAX_SUGGESTIONS) {
 			return suggestions.subList(0, MAX_SUGGESTIONS);

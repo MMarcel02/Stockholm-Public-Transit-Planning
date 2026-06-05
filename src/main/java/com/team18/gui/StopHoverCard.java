@@ -1,6 +1,7 @@
 package com.team18.gui;
 
 import java.util.List;
+import java.util.Locale;
 
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
@@ -13,10 +14,15 @@ import com.team18.model.Stop;
 import com.team18.routing.raptor.RaptorNetwork;
 
 public class StopHoverCard {
+	final double CARD_WIDTH = 340;
+	final double CARD_HEIGHT = 390;
+
 	Stop currentStop = null;
 	VBox card = new VBox();
 
 	JourneyInput journeyInput;
+
+	RaptorNetwork network;
 
 	public StopHoverCard(JourneyInput journeyInput, RaptorNetwork network) {
 		card.getStyleClass().add("stop-hover-card");
@@ -28,9 +34,10 @@ public class StopHoverCard {
 		card.setOnMouseExited(ev -> hide());
 
 		this.journeyInput = journeyInput;
+		this.network = network;
 	}
 
-	public void show(Stop stop, List<String> arrivals,
+	public void show(Stop stop, List<String> arrivalStrings,
 			double viewWidth, double viewHeight,
 			double mouseX, double mouseY) {
 		if (stop == currentStop && card.isVisible()) {
@@ -71,7 +78,7 @@ public class StopHoverCard {
 		arrivalsList.setMinWidth(CARD_WIDTH - 24);
 		arrivalsList.setPrefHeight(145);
 		arrivalsList.setMinHeight(145);
-		arrivalsList.getItems().addAll(arrivals);
+		arrivalsList.getItems().addAll(arrivalStrings);
 
 		card.getChildren().add(arrivalsList);
 
@@ -126,7 +133,7 @@ public class StopHoverCard {
 		card.setVisible(false);
 	}
 
-	public boolean overlapping(double mouseX, double mouseY) {
+	public boolean overlaps(double mouseX, double mouseY) {
 		if (!card.isVisible()) {
 			return false;
 		}
@@ -150,8 +157,8 @@ public class StopHoverCard {
 		double height = Math.max(card.getHeight(), CARD_HEIGHT);
 		double margin = 8;
 
-		double maxX = Math.max(margin, viewWidth - cardWidth - margin);
-		double maxY = Math.max(margin, viewHeight - cardHeight - margin);
+		double maxX = Math.max(margin, viewWidth - width - margin);
+		double maxY = Math.max(margin, viewHeight - height - margin);
 		double x = Math.min(Math.max(mouseX, margin), maxX);
 		double y = Math.min(Math.max(mouseY, margin), maxY);
 

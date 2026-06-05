@@ -24,9 +24,9 @@ public class GuiController {
 
 	private RaptorNetwork network;
 
-	StopHoverCard stopHoverCard = new StopHoverCard();
 	JourneyInput journeyInput;
 	LayerStack stack;
+	RouteDisplay routeDisplay;
 
 	@FXML
 	public void initialize() {
@@ -35,7 +35,6 @@ public class GuiController {
 			System.err.println("Loading GTFS data...");
 			parser = new GTFSParser();
 			parser.loadFromZip("data/stockholm/sl_center.zip");
-			buildStopArrivalIndex(parser);
 
 			System.err.println("Building RAPTOR Network...");
 			RaptorBuilder builder = new RaptorBuilder();
@@ -53,9 +52,11 @@ public class GuiController {
 		journeyInput = new JourneyInput(parser, startField, endField, timeField);
 
 		stack = new LayerStack(parser, network, journeyInput);
-		mapContainer.getChildren.add(stack.getGroup());
+		mapContainer.getChildren().add(stack.getGroup());
 
 		routeDisplay = new RouteDisplay(routeStepsContainer);
+
+		stack.render(mapContainer.getWidth(), mapContainer.getHeight());
 	}
 
 	@FXML
@@ -73,11 +74,11 @@ public class GuiController {
 				startTimeSeconds
 			);
 
-			stack.navLayer.setStartMarker(startLocation.lat, startLocation.lon);
-			stack.navLayer.setEndMarker(endLocation.lat, endLocation.lon);
-			stack.navLayer.navigate(currentRoute);
+			//stack.navLayer.setStartMarker(startLocation.lat, startLocation.lon);
+			//stack.navLayer.setEndMarker(endLocation.lat, endLocation.lon);
 
-			routeDisplay.display(currentRoute);
+			stack.navLayer.navigate(route);
+			routeDisplay.display(route);
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}
@@ -96,4 +97,5 @@ public class GuiController {
 			routeDisplay.displayInvalidInput();
 		}
 	}
+}
 

@@ -23,7 +23,8 @@ public class LayerStack {
 
 	Group group = new Group();
 
-	public LayerStack(GTFSParser parser, RaptorNetwork network, JourneyInput input) {
+	public LayerStack(GTFSParser parser, RaptorNetwork network,
+			JourneyInput journeyInput) {
 		layers.add(mapLayer = new MapLayer());
 		layers.add(heatmapLayer = new HeatmapLayer(network));
 		layers.add(bbLayer = new BoundingBoxLayer());

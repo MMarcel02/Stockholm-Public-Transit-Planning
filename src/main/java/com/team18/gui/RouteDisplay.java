@@ -4,9 +4,11 @@ import java.util.List;
 
 import javafx.scene.layout.VBox;
 import javafx.scene.control.Label;
+import java.util.Locale;
 
 import com.team18.model.RouteStep;
 import com.team18.model.RouteStepType;
+import com.team18.util.GeoCalculator;
 
 public class RouteDisplay {
 	VBox vbox;
@@ -124,12 +126,12 @@ public class RouteDisplay {
 		}
 
 		int hours = roundedMinutes / 60;
-		int minutes = roundedMinutes % 60;
-		if (minutes == 0) {
+		int remMinutes = roundedMinutes % 60;
+		if (remMinutes == 0) {
 			return hours + " hr";
 		}
 
-		return hours + " hr " + minutes + " min";
+		return hours + " hr " + remMinutes + " min";
 	}
 
 	private String formatKilometers(double meters) {

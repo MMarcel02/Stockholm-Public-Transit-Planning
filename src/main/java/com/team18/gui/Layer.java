@@ -2,7 +2,6 @@ package com.team18.gui;
 
 import javafx.scene.Group;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.input.MouseDraggedEvent;
 
 public interface Layer {
 	// Render will force the layer to fully re-render its contents,
@@ -34,7 +33,7 @@ public interface Layer {
 		return false;
 	}
 
-	public default boolean mouseDragged(MouseDraggedEvent event) {
+	public default boolean mouseDragged(MouseEvent event) {
 		return false;
 	}
 }

@@ -17,17 +17,19 @@ import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorNetwork;
 
 public class HeatmapLayer implements Layer {
-	private static final int COL_COUNT = 90;
-	private static final int ROW_COUNT = 56;
+	static final int COL_COUNT = 90;
+	static final int ROW_COUNT = 56;
 
-	private static final double WALK_SPEED_MPS = 50.0 / 36.0;
+	static final double WALK_SPEED_MPS = 50.0 / 36.0;
 
-	private RaptorNetwork network;
+	RaptorNetwork network;
 
-	private List<Point> points = List.of();
+	List<Point> points = List.of();
 
-	private Canvas canvas = new Canvas();
-	private Group group = new Group();
+	Canvas canvas = new Canvas();
+	Group group = new Group();
+
+	boolean differenceMode = false;
 
 	public static class Point {
 		public final double lat;

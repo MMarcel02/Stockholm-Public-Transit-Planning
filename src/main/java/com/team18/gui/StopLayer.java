@@ -1,5 +1,12 @@
 package com.team18.gui;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Comparator;
+import java.util.Locale;
+
 import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -8,7 +15,11 @@ import javafx.scene.input.MouseEvent;
 
 import com.team18.parser.GTFSParser;
 import com.team18.model.Stop;
+import com.team18.model.Trip;
+import com.team18.model.StopTime;
 import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.GeoCalculator;
+import com.team18.util.ParsingUtil;
 
 public class StopLayer implements Layer {
 	static final double CLICK_RADIUS = 10;
@@ -44,7 +55,7 @@ public class StopLayer implements Layer {
 			this.headSign = headSign;
 		}
 
-		String toString() {
+		public String toString() {
 			String route = shortName;
 			if (route.isBlank()) route = longName;
 			if (route.isBlank()) route = "Route";
@@ -169,12 +180,16 @@ public class StopLayer implements Layer {
 
 		List<String> arrivals = getArrivalStrings(stop);
 		hoverCard.show(stop, arrivals, viewWidth, viewHeight, ev.getX(), ev.getY());
+
+		return true;
 	}
 
 	public boolean mouseExited(MouseEvent ev) {
 		if (!hoverCard.hovered()) {
 			hoverCard.hide();
 		}
+
+		return false;
 	}
 
 	Stop findNearStop(double localX, double localY) {
@@ -204,7 +219,7 @@ public class StopLayer implements Layer {
 		for (Trip trip: parser.trips.values()) {
 			for (StopTime time: trip.stopTimes) {
 				Arrival arrival = new Arrival(
-					stopTime.arrivalTime,
+					time.arrivalTime,
 					trip.route.shortName,
 					trip.route.longName,
 					trip.headSign
@@ -216,7 +231,7 @@ public class StopLayer implements Layer {
 			}
 		}
 
-		for (List<Arriva> arrivals: arrivalMap.values()) {
+		for (List<Arrival> arrivals: arrivalMap.values()) {
 			arrivals.sort(Comparator.comparingInt(arrival -> arrival.timeSeconds));
 		}
 	}
