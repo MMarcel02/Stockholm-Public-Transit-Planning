@@ -118,7 +118,8 @@ public class GuiController {
 			double[] origin = journeyInput.resolveStart();
 			int startTimeSeconds = journeyInput.getTimeInSeconds();
 
-			stack.heatmapLayer.configure(origin[0], origin[1], startTimeSeconds);
+			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
+					startTimeSeconds);
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}

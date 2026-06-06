@@ -55,7 +55,8 @@ public class HeatmapLayer implements Layer {
 		this.network = network;
 	}
 
-	public void configure(double originLat, double originLon, int startTimeSeconds) {
+	public void configureDelayMode(double originLat, double originLon,
+			int startTimeSeconds) {
 		differenceMode = false;
 		for (boolean enabled: network.stopsEnabledArr) {
 			if (!enabled) differenceMode = true;
@@ -125,6 +126,14 @@ public class HeatmapLayer implements Layer {
 				}
 			}
 		}
+
+		update();
+	}
+
+	public void configureManual(List<Point> points) {
+		this.points = points;
+		this.differenceMode = false;
+		update();
 	}
 
 	private int estimateTravelTimeToPoint(double originLat, double originLon,
