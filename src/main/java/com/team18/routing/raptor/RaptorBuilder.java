@@ -7,18 +7,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.team18.model.Route;
 import com.team18.model.Stop;
 import com.team18.model.StopTime;
 import com.team18.model.Trip;
+import com.team18.optimizer.Config;
 import com.team18.util.GeoCalculator;
 
 public class RaptorBuilder {
-    private final int MAX_WALK_TIME_SECONDS = 1800; // 30 minutes (can play around with this)
-    private final double WALK_SPEED_MPS = 50.0 / 36.0; // 5km/h in metres/second
-    private final double MAX_WALK_DISTANCE = MAX_WALK_TIME_SECONDS * WALK_SPEED_MPS;
-
     public class RouteKey {
         public List<Stop> stops;
         public String serviceId;
@@ -44,7 +42,7 @@ public class RaptorBuilder {
         }
     }
 
-    public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips, Map<LocalDate, List<String>> serviceByCalendar) {
+    public RaptorNetwork build(Map<String, String> agencies, Map<String, Stop> stops, Map<String, Route> routes, Map<String, Trip> trips, Map<LocalDate, Set<String>> serviceByCalendar) {
 
         // Stage 0: Generate RaptorRoutes
         //         Each RaptorRoute is a unique order of stops (not neccessairly the same as the routes in GTFS data)
@@ -100,13 +98,13 @@ public class RaptorBuilder {
         }
 
         // Temp list of list of routes belonging to each stop, will flatten once populated
-        List<List<Integer>> tempStopRoutes = new ArrayList<List<Integer>>(stops.size());
+        List<List<Integer>> tempStopRoutes = new ArrayList<>(stops.size());
         for (int i = 0; i < stops.size(); i++) {
             tempStopRoutes.add(new ArrayList<>());
         }
 
         // Temp list of list of int[targetStopId, walkTimeSeconds], will flatten once populated
-        List<List<int[]>> tempTransfers = new ArrayList<List<int[]>>(stops.size());
+        List<List<int[]>> tempTransfers = new ArrayList<>(stops.size());
         for (int i = 0; i < stops.size(); i++) {
             tempTransfers.add(new ArrayList<>());
         }
@@ -120,8 +118,8 @@ public class RaptorBuilder {
 
                 double distanceBetweenStops = GeoCalculator.calculateEquirectangularDistance(initialStop.lat, initialStop.lon, targetStop.lat, targetStop.lon);
 
-                if (distanceBetweenStops <= MAX_WALK_DISTANCE) {
-                    int walkTimeSeconds = (int) (distanceBetweenStops / WALK_SPEED_MPS);
+                if (distanceBetweenStops <= Config.MAX_WALK_DISTANCE_TRANSFERS_METRES) {
+                    int walkTimeSeconds = (int) (distanceBetweenStops / Config.WALK_SPEED_MPS);
                     tempTransfers.get(i).add(new int[]{j, walkTimeSeconds});
                     totalTransferCount++;
                 }

@@ -1,9 +1,9 @@
 package com.team18.parser;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.IOException;
 
 public class CSVParser {
 	public String[] colNames;
@@ -77,6 +77,7 @@ public class CSVParser {
 			return this.values[index];
 		}
 
+		@Override
 		public String toString() {
 			return Arrays.toString(values);
 		}

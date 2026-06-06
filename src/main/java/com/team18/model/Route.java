@@ -1,7 +1,7 @@
 package com.team18.model;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Route {
     public enum RouteType {
@@ -40,6 +40,9 @@ public class Route {
     public final String longName;
     public final RouteType routeType;
 
+    public double weekdayOperatingCostSEK;
+    public double weekendOperatingCostSEK;
+
     public List<Trip> trips = new ArrayList<>();
 
     public Route(String id, String operator, String shortName, String longName, RouteType routeType) {
@@ -48,6 +51,9 @@ public class Route {
         this.shortName = shortName;
         this.longName = longName;
         this.routeType = routeType;
+
+        this.weekdayOperatingCostSEK = 0.0;
+        this.weekendOperatingCostSEK = 0.0;
     }
 
     public VehicleData vehicleData() {

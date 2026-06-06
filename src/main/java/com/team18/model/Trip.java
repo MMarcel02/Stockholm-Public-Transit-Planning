@@ -9,7 +9,7 @@ public class Trip {
     public final String serviceId;
     public final String headSign;
     public final String shapeId;
-    public double cost;
+    public double operatingCostSEK;
 
     public List<StopTime> stopTimes = new ArrayList<>();
 
@@ -19,5 +19,7 @@ public class Trip {
         this.serviceId = serviceId;
         this.headSign = headSign;
         this.shapeId = shapeId;
+
+        this.operatingCostSEK = 0.0;
     }
 }

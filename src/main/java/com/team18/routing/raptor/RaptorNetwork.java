@@ -1,13 +1,14 @@
 package com.team18.routing.raptor;
 
-import com.team18.model.Stop;
-import com.team18.model.Route;
-
 import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.team18.model.Route;
+import com.team18.model.Stop;
 
 public class RaptorNetwork {
 
@@ -26,7 +27,9 @@ public class RaptorNetwork {
     public final boolean[] stopsEnabledArr;
     public final int[] stopRoutes;
     public final int[] transfersArr;
-    public final Map<LocalDate, List<String>> serviceByCalendar;
+    public final Map<LocalDate, Set<String>> serviceByCalendar;
+
+    public Set<String> disabledParentRoutesByOptimizer = new HashSet<>();
 
     public RaptorNetwork(
             Map<String, Integer> stopStringToIntMap,
@@ -42,7 +45,7 @@ public class RaptorNetwork {
             boolean[] stopsEnabledArr,
             int[] stopRoutes, 
             int[] transfersArr,
-            Map<LocalDate, List<String>> serviceByCalendar
+            Map<LocalDate, Set<String>> serviceByCalendar
              ) {
             
         this.stopStringToIntMap = stopStringToIntMap;
@@ -62,7 +65,7 @@ public class RaptorNetwork {
     }
 
     public RaptorNetwork copyForMultithreading() {
-        return new RaptorNetwork(
+        RaptorNetwork localNetwork = new RaptorNetwork(
             stopStringToIntMap,
             stopLookup, 
             parentRouteLookup,
@@ -78,6 +81,9 @@ public class RaptorNetwork {
             transfersArr,
             serviceByCalendar
         );
+
+        localNetwork.disabledParentRoutesByOptimizer = new HashSet<>(this.disabledParentRoutesByOptimizer);
+        return localNetwork;
     }
 
     public void toggleRaptorRoute(int raptorRouteId) {
@@ -114,14 +120,17 @@ public class RaptorNetwork {
         Arrays.fill(stopsEnabledArr, true);
     }
 
-    public void disableByCalendar(LocalDate date) {
-        List<String> ids = serviceByCalendar.get(date);
-        for(String id : ids){
-            for(RaptorRoute route : raptorRouteLookup){
-                if(!route.serviceId.equals(id)){
-                    toggleRaptorRoute(route.id);
-                }
-            }
+    public void disableParentRouteOptimizer(String routeId) {
+        disabledParentRoutesByOptimizer.add(routeId);
+    }
+
+    public void setByCalendar(LocalDate date) {
+        Set<String> ids = serviceByCalendar.get(date);
+        for(RaptorRoute route : raptorRouteLookup){
+            boolean isScheduled = ids.contains(route.serviceId);
+            boolean isDisabledByOptimizer = disabledParentRoutesByOptimizer.contains(route.parentRoute.id);
+            
+            routesEnabledArr[route.id] = isScheduled && !isDisabledByOptimizer;
         }
     }
 }

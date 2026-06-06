@@ -6,18 +6,12 @@ import java.util.List;
 
 import com.team18.model.RouteStep;
 import com.team18.model.Stop;
+import com.team18.optimizer.Config;
 import com.team18.routing.Router;
 import com.team18.util.GeoCalculator;
 
 
 public class RaptorAlgorithm implements Router {
-
-    private final int MAX_WALK_TIME_SECONDS = 1800; // 30 minutes (can play around with this)
-    private final double WALK_SPEED_MPS = 50.0 / 36.0; // 5km/h in metres/second
-    private final double MAX_WALK_DISTANCE = 2500;
-
-    private final int MAX_ROUNDS = 8;
-
     private final Stop[] stopLookup;
     private final RaptorRoute[] raptorRouteLookup;
 
@@ -67,13 +61,13 @@ public class RaptorAlgorithm implements Router {
         this.totalStops = raptorNetwork.stopLookup.length;
         this.totalRoutes = routesEnabledArr.length;
 
-        this.arrivalTimesPerRound = new int[(MAX_ROUNDS + 1) * totalStops];
+        this.arrivalTimesPerRound = new int[(Config.MAX_RAPTOR_ROUNDS + 1) * totalStops];
         this.bestArrivalTime = new int[totalStops];
         this.walkTimeToDestination = new int[totalStops];
-        this.destinationBestArrivalTimePerRound = new int[MAX_ROUNDS + 1];
-        this.destinationPriorStopPerRound = new int[MAX_ROUNDS + 1];
-        this.priorStopPerRound = new int[(MAX_ROUNDS + 1) * totalStops];
-        this.routeTakenPerRound = new int[(MAX_ROUNDS + 1) * totalStops];
+        this.destinationBestArrivalTimePerRound = new int[Config.MAX_RAPTOR_ROUNDS + 1];
+        this.destinationPriorStopPerRound = new int[Config.MAX_RAPTOR_ROUNDS + 1];
+        this.priorStopPerRound = new int[(Config.MAX_RAPTOR_ROUNDS + 1) * totalStops];
+        this.routeTakenPerRound = new int[(Config.MAX_RAPTOR_ROUNDS + 1) * totalStops];
 
         this.isStopMarked = new boolean[totalStops];
         this.markedStopsList = new int[totalStops];
@@ -124,8 +118,8 @@ public class RaptorAlgorithm implements Router {
             Stop stop = stopLookup[i];
 
             double distFromSouce = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, stop.lat, stop.lon);
-            if (distFromSouce <= MAX_WALK_DISTANCE) {
-                int arrivalTime = startTimeSecondsAfterMidnight + (int) (distFromSouce / WALK_SPEED_MPS);
+            if (distFromSouce <= Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+                int arrivalTime = startTimeSecondsAfterMidnight + (int) (distFromSouce / Config.WALK_SPEED_MPS);
                 arrivalTimesPerRound[i] = arrivalTime;
                 bestArrivalTime[i] = arrivalTime;
 
@@ -134,8 +128,8 @@ public class RaptorAlgorithm implements Router {
             }
 
             double distToDestination = GeoCalculator.calculateEquirectangularDistance(stop.lat, stop.lon, latTo, lonTo);
-            if (distToDestination <= MAX_WALK_DISTANCE) {
-                walkTimeToDestination[i] = (int) (distToDestination / WALK_SPEED_MPS);
+            if (distToDestination <= Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+                walkTimeToDestination[i] = (int) (distToDestination / Config.WALK_SPEED_MPS);
             }
         }
 
@@ -145,15 +139,15 @@ public class RaptorAlgorithm implements Router {
 
         int bestTimeAtDestination = Integer.MAX_VALUE;
         double directDist = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, latTo, lonTo);
-        if (directDist <= MAX_WALK_DISTANCE) {
-            bestTimeAtDestination = startTimeSecondsAfterMidnight + (int) (directDist / WALK_SPEED_MPS);
+        if (directDist <= Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+            bestTimeAtDestination = startTimeSecondsAfterMidnight + (int) (directDist / Config.WALK_SPEED_MPS);
             destinationBestArrivalTimePerRound[0] = bestTimeAtDestination;
             destinationPriorStopPerRound[0] = -2;
         }
 
         int roundsCompleted = 0;
 
-        for (int round = 1; round < MAX_ROUNDS; round++) {
+        for (int round = 1; round < Config.MAX_RAPTOR_ROUNDS; round++) {
 
             // Stage 1: Copy results and mark
             //          Copy previous rounds results to set our worst case time for this round
@@ -361,333 +355,13 @@ public class RaptorAlgorithm implements Router {
 
             roundsCompleted++;
 
-            // Tiny optimization, basically if we went through the whole network in under MAX_ROUNDS, then we can break out early
+            // Tiny optimization, basically if we went through the whole network in under Config.MAX_RAPTOR_ROUNDS, then we can break out early
             if (markedStopsCount == 0) {
                 break;
             }
         }
 
         return reconstructJourney(latFrom, lonFrom, latTo, lonTo, startTimeSecondsAfterMidnight, roundsCompleted);
-    }
-
-    public int[] getTravelTimesToStops(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight) {
-        int[] arrivalTimes = computeBestArrivalTimesToStops(latFrom, lonFrom, startTimeSecondsAfterMidnight);
-        int[] travelTimes = new int[arrivalTimes.length];
-
-        for (int i = 0; i < arrivalTimes.length; i++) {
-            travelTimes[i] = arrivalTimes[i] == Integer.MAX_VALUE
-                    ? Integer.MAX_VALUE
-                    : arrivalTimes[i] - startTimeSecondsAfterMidnight;
-        }
-
-        return travelTimes;
-    }
-
-    private int[] computeBestArrivalTimesToStops(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight) {
-        int totalStops = stopLookup.length;
-        int[] arrivalTimesPerRound = new int[(MAX_ROUNDS + 1) * totalStops];
-        int[] bestArrivalTime = new int[totalStops];
-        Arrays.fill(bestArrivalTime, Integer.MAX_VALUE);
-        Arrays.fill(arrivalTimesPerRound, Integer.MAX_VALUE);
-
-        Set<Integer> markedStops = new HashSet<>();
-        Map<Integer, Integer> routesToProcess = new HashMap<>();
-
-        for (int i = 0; i < totalStops; i++) {
-            if (!stopsEnabledArr[i]) continue;
-
-            Stop stop = stopLookup[i];
-            double distFromSource = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, stop.lat, stop.lon);
-            if (distFromSource <= MAX_WALK_DISTANCE) {
-                int arrivalTime = startTimeSecondsAfterMidnight + (int)(distFromSource / WALK_SPEED_MPS);
-                arrivalTimesPerRound[i] = arrivalTime;
-                bestArrivalTime[i] = arrivalTime;
-                markedStops.add(i);
-            }
-        }
-
-        for (int round = 1; round < MAX_ROUNDS; round++) {
-            int startIndexPrevRound = (round - 1) * totalStops;
-            int startIndexCurrRound = round * totalStops;
-            System.arraycopy(arrivalTimesPerRound, startIndexPrevRound, arrivalTimesPerRound, startIndexCurrRound, totalStops);
-
-            routesToProcess.clear();
-
-            for (int markedStopId : markedStops) {
-                int startIndexOfStopRoutes = stopsArr[markedStopId * 2];
-                int endIndexOfStopRoutes = stopsArr[(markedStopId + 1) * 2];
-                for (int i = startIndexOfStopRoutes; i < endIndexOfStopRoutes; i++) {
-                    int routeId = stopRoutes[i];
-
-                    if (!routesEnabledArr[routeId]) continue;
-
-                    if (routesToProcess.containsKey(routeId)) {
-                        int existingStopId = routesToProcess.get(routeId);
-                        if (isStopEarlierInRoute(routeId, markedStopId, existingStopId)) {
-                            routesToProcess.put(routeId, markedStopId);
-                        }
-                    } else {
-                        routesToProcess.put(routeId, markedStopId);
-                    }
-                }
-            }
-
-            markedStops.clear();
-
-            for (Map.Entry<Integer, Integer> entry : routesToProcess.entrySet()) {
-                int routeId = entry.getKey();
-                int earliestBoardingStopId = entry.getValue();
-
-                int numTripsInRoute = routesArr[routeId * 4];
-                int numStopsInRoute = routesArr[routeId * 4 + 1];
-                int stopsOffset = routesArr[routeId * 4 + 2];
-                int stopTimesOffset = routesArr[routeId * 4 + 3];
-
-                boolean foundBoardingStop = false;
-                int relativeTripIndex = -1;
-
-                for (int relativeStopIndex = 0; relativeStopIndex < numStopsInRoute; relativeStopIndex++) {
-                    int stopIdInRoute = routeStopsArr[stopsOffset + relativeStopIndex];
-
-                    if (!stopsEnabledArr[stopIdInRoute]) continue;
-
-                    if (stopIdInRoute == earliestBoardingStopId) foundBoardingStop = true;
-
-                    if (foundBoardingStop) {
-                        if (relativeTripIndex != -1) {
-                            int arrivalTimeIndex = stopTimesOffset + (relativeTripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2);
-                            int arrivalTime = stopTimesArr[arrivalTimeIndex];
-
-                            if (arrivalTime < bestArrivalTime[stopIdInRoute]) {
-                                bestArrivalTime[stopIdInRoute] = arrivalTime;
-                                arrivalTimesPerRound[(round * totalStops) + stopIdInRoute] = arrivalTime;
-                                markedStops.add(stopIdInRoute);
-                            }
-                        }
-
-                        int prevRoundArrivalTimeIndex = ((round - 1) * totalStops) + stopIdInRoute;
-                        int prevRoundArrivalTime = arrivalTimesPerRound[prevRoundArrivalTimeIndex];
-                        boolean canCatchEarlierBus = false;
-
-                        if (relativeTripIndex != -1) {
-                            int departureTimeIndex = stopTimesOffset + (relativeTripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2) + 1;
-                            int departureTime = stopTimesArr[departureTimeIndex];
-                            if (prevRoundArrivalTime <= departureTime) {
-                                canCatchEarlierBus = true;
-                            }
-                        }
-
-                        if (relativeTripIndex == -1 || canCatchEarlierBus) {
-                            if (prevRoundArrivalTime != Integer.MAX_VALUE) {
-                                int newRelativeTripIndex = -1;
-
-                                for (int tripIndex = 0; tripIndex < numTripsInRoute; tripIndex++) {
-                                    int departureTimeIndex = stopTimesOffset + (tripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2) + 1;
-                                    int departureTime = stopTimesArr[departureTimeIndex];
-
-                                    if (prevRoundArrivalTime <= departureTime) {
-                                        newRelativeTripIndex = tripIndex;
-                                        break;
-                                    }
-                                }
-
-                                if (newRelativeTripIndex != -1) {
-                                    relativeTripIndex = newRelativeTripIndex;
-                                    earliestBoardingStopId = stopIdInRoute;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Set<Integer> stopsReachedByTransit = new HashSet<>(markedStops);
-            for (Integer stopId : stopsReachedByTransit) {
-                int arrivalTimeAtStopInCurrRound = arrivalTimesPerRound[(round * totalStops) + stopId];
-                int transferOffsetIndexStart = stopsArr[(stopId * 2) + 1];
-                int transferOffsetIndexEnd = stopsArr[(stopId + 1) * 2 + 1];
-
-                for (int transferIndex = transferOffsetIndexStart; transferIndex < transferOffsetIndexEnd; transferIndex += 2) {
-                    int targetStopId = transfersArr[transferIndex];
-                    int walkTimeSeconds = transfersArr[transferIndex + 1];
-                    int arrivalTimeAtTarget = arrivalTimeAtStopInCurrRound + walkTimeSeconds;
-
-                    if (!stopsEnabledArr[targetStopId]) continue;
-
-                    if (arrivalTimeAtTarget < bestArrivalTime[targetStopId]) {
-                        arrivalTimesPerRound[(round * totalStops) + targetStopId] = arrivalTimeAtTarget;
-                        bestArrivalTime[targetStopId] = arrivalTimeAtTarget;
-                        markedStops.add(targetStopId);
-                    }
-                }
-            }
-
-            if (markedStops.isEmpty()) {
-                break;
-            }
-        }
-
-        return bestArrivalTime;
-    }
-
-    public int[] getTravelTimesToStops(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight) {
-        int[] arrivalTimes = computeBestArrivalTimesToStops(latFrom, lonFrom, startTimeSecondsAfterMidnight);
-        int[] travelTimes = new int[arrivalTimes.length];
-
-        for (int i = 0; i < arrivalTimes.length; i++) {
-            travelTimes[i] = arrivalTimes[i] == Integer.MAX_VALUE
-                    ? Integer.MAX_VALUE
-                    : arrivalTimes[i] - startTimeSecondsAfterMidnight;
-        }
-
-        return travelTimes;
-    }
-
-    private int[] computeBestArrivalTimesToStops(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight) {
-        int totalStops = stopLookup.length;
-        int[] arrivalTimesPerRound = new int[(MAX_ROUNDS + 1) * totalStops];
-        int[] bestArrivalTime = new int[totalStops];
-        Arrays.fill(bestArrivalTime, Integer.MAX_VALUE);
-        Arrays.fill(arrivalTimesPerRound, Integer.MAX_VALUE);
-
-        Set<Integer> markedStops = new HashSet<>();
-        Map<Integer, Integer> routesToProcess = new HashMap<>();
-
-        for (int i = 0; i < totalStops; i++) {
-            if (!stopsEnabledArr[i]) continue;
-
-            Stop stop = stopLookup[i];
-            double distFromSource = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, stop.lat, stop.lon);
-            if (distFromSource <= MAX_WALK_DISTANCE) {
-                int arrivalTime = startTimeSecondsAfterMidnight + (int)(distFromSource / WALK_SPEED_MPS);
-                arrivalTimesPerRound[i] = arrivalTime;
-                bestArrivalTime[i] = arrivalTime;
-                markedStops.add(i);
-            }
-        }
-
-        for (int round = 1; round < MAX_ROUNDS; round++) {
-            int startIndexPrevRound = (round - 1) * totalStops;
-            int startIndexCurrRound = round * totalStops;
-            System.arraycopy(arrivalTimesPerRound, startIndexPrevRound, arrivalTimesPerRound, startIndexCurrRound, totalStops);
-
-            routesToProcess.clear();
-
-            for (int markedStopId : markedStops) {
-                int startIndexOfStopRoutes = stopsArr[markedStopId * 2];
-                int endIndexOfStopRoutes = stopsArr[(markedStopId + 1) * 2];
-                for (int i = startIndexOfStopRoutes; i < endIndexOfStopRoutes; i++) {
-                    int routeId = stopRoutes[i];
-
-                    if (!routesEnabledArr[routeId]) continue;
-
-                    if (routesToProcess.containsKey(routeId)) {
-                        int existingStopId = routesToProcess.get(routeId);
-                        if (isStopEarlierInRoute(routeId, markedStopId, existingStopId)) {
-                            routesToProcess.put(routeId, markedStopId);
-                        }
-                    } else {
-                        routesToProcess.put(routeId, markedStopId);
-                    }
-                }
-            }
-
-            markedStops.clear();
-
-            for (Map.Entry<Integer, Integer> entry : routesToProcess.entrySet()) {
-                int routeId = entry.getKey();
-                int earliestBoardingStopId = entry.getValue();
-
-                int numTripsInRoute = routesArr[routeId * 4];
-                int numStopsInRoute = routesArr[routeId * 4 + 1];
-                int stopsOffset = routesArr[routeId * 4 + 2];
-                int stopTimesOffset = routesArr[routeId * 4 + 3];
-
-                boolean foundBoardingStop = false;
-                int relativeTripIndex = -1;
-
-                for (int relativeStopIndex = 0; relativeStopIndex < numStopsInRoute; relativeStopIndex++) {
-                    int stopIdInRoute = routeStopsArr[stopsOffset + relativeStopIndex];
-
-                    if (!stopsEnabledArr[stopIdInRoute]) continue;
-
-                    if (stopIdInRoute == earliestBoardingStopId) foundBoardingStop = true;
-
-                    if (foundBoardingStop) {
-                        if (relativeTripIndex != -1) {
-                            int arrivalTimeIndex = stopTimesOffset + (relativeTripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2);
-                            int arrivalTime = stopTimesArr[arrivalTimeIndex];
-
-                            if (arrivalTime < bestArrivalTime[stopIdInRoute]) {
-                                bestArrivalTime[stopIdInRoute] = arrivalTime;
-                                arrivalTimesPerRound[(round * totalStops) + stopIdInRoute] = arrivalTime;
-                                markedStops.add(stopIdInRoute);
-                            }
-                        }
-
-                        int prevRoundArrivalTimeIndex = ((round - 1) * totalStops) + stopIdInRoute;
-                        int prevRoundArrivalTime = arrivalTimesPerRound[prevRoundArrivalTimeIndex];
-                        boolean canCatchEarlierBus = false;
-
-                        if (relativeTripIndex != -1) {
-                            int departureTimeIndex = stopTimesOffset + (relativeTripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2) + 1;
-                            int departureTime = stopTimesArr[departureTimeIndex];
-                            if (prevRoundArrivalTime <= departureTime) {
-                                canCatchEarlierBus = true;
-                            }
-                        }
-
-                        if (relativeTripIndex == -1 || canCatchEarlierBus) {
-                            if (prevRoundArrivalTime != Integer.MAX_VALUE) {
-                                int newRelativeTripIndex = -1;
-
-                                for (int tripIndex = 0; tripIndex < numTripsInRoute; tripIndex++) {
-                                    int departureTimeIndex = stopTimesOffset + (tripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2) + 1;
-                                    int departureTime = stopTimesArr[departureTimeIndex];
-
-                                    if (prevRoundArrivalTime <= departureTime) {
-                                        newRelativeTripIndex = tripIndex;
-                                        break;
-                                    }
-                                }
-
-                                if (newRelativeTripIndex != -1) {
-                                    relativeTripIndex = newRelativeTripIndex;
-                                    earliestBoardingStopId = stopIdInRoute;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Set<Integer> stopsReachedByTransit = new HashSet<>(markedStops);
-            for (Integer stopId : stopsReachedByTransit) {
-                int arrivalTimeAtStopInCurrRound = arrivalTimesPerRound[(round * totalStops) + stopId];
-                int transferOffsetIndexStart = stopsArr[(stopId * 2) + 1];
-                int transferOffsetIndexEnd = stopsArr[(stopId + 1) * 2 + 1];
-
-                for (int transferIndex = transferOffsetIndexStart; transferIndex < transferOffsetIndexEnd; transferIndex += 2) {
-                    int targetStopId = transfersArr[transferIndex];
-                    int walkTimeSeconds = transfersArr[transferIndex + 1];
-                    int arrivalTimeAtTarget = arrivalTimeAtStopInCurrRound + walkTimeSeconds;
-
-                    if (!stopsEnabledArr[targetStopId]) continue;
-
-                    if (arrivalTimeAtTarget < bestArrivalTime[targetStopId]) {
-                        arrivalTimesPerRound[(round * totalStops) + targetStopId] = arrivalTimeAtTarget;
-                        bestArrivalTime[targetStopId] = arrivalTimeAtTarget;
-                        markedStops.add(targetStopId);
-                    }
-                }
-            }
-
-            if (markedStops.isEmpty()) {
-                break;
-            }
-        }
-
-        return bestArrivalTime;
     }
 
     private boolean isStopEarlierInRoute(int routeId, int markedStopId, int existingStopId) {
@@ -811,8 +485,8 @@ public class RaptorAlgorithm implements Router {
             Stop stop = stopLookup[i];
 
             double distFromSouce = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, stop.lat, stop.lon);
-            if (distFromSouce <= MAX_WALK_DISTANCE) {
-                int arrivalTime = startTimeSecondsAfterMidnight + (int) (distFromSouce / WALK_SPEED_MPS);
+            if (distFromSouce <= Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+                int arrivalTime = startTimeSecondsAfterMidnight + (int) (distFromSouce / Config.WALK_SPEED_MPS);
                 arrivalTimesPerRound[i] = arrivalTime;
                 bestArrivalTime[i] = arrivalTime;
 
@@ -820,7 +494,7 @@ public class RaptorAlgorithm implements Router {
             }
         }
 
-        for (int round = 1; round < MAX_ROUNDS; round++) {
+        for (int round = 1; round < Config.MAX_RAPTOR_ROUNDS; round++) {
 
             // Stage 1: Copy results and mark
             //          Copy previous rounds results to set our worst case time for this round
@@ -983,7 +657,7 @@ public class RaptorAlgorithm implements Router {
                 
             }
 
-            // Tiny optimization, basically if we went through the whole network in under MAX_ROUNDS, then we can break out early
+            // Tiny optimization, basically if we went through the whole network in under Config.MAX_RAPTOR_ROUNDS, then we can break out early
             if (markedStopsCount == 0) {
                 break;
             }
@@ -998,8 +672,8 @@ public class RaptorAlgorithm implements Router {
     // Best journeys are ones that depart the latest and arrive the earliest (smallest journey duration)
     // We keep a label for every stop, the departure time for each round
     // Cant use local pruning 
-
-
+    
+    // THE RANGE STUFF IS NOT FINISHED JUST COPY PASTED THE ABOVE STUFF, NEED TO REFACTOR THIS CLASS ANYWAY
     public int[] getBestArrivalTimeToAllStopsInTimeRange(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight, int endTimeSecondsAfterMidnight) {
         
         Arrays.fill(bestArrivalTime, Integer.MAX_VALUE);
@@ -1014,8 +688,8 @@ public class RaptorAlgorithm implements Router {
             Stop stop = stopLookup[i];
 
             double distFromSouce = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, stop.lat, stop.lon);
-            if (distFromSouce <= MAX_WALK_DISTANCE) {
-                int arrivalTime = startTimeSecondsAfterMidnight + (int) (distFromSouce / WALK_SPEED_MPS);
+            if (distFromSouce <= Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+                int arrivalTime = startTimeSecondsAfterMidnight + (int) (distFromSouce / Config.WALK_SPEED_MPS);
                 arrivalTimesPerRound[i] = arrivalTime;
                 bestArrivalTime[i] = arrivalTime;
 
@@ -1023,7 +697,7 @@ public class RaptorAlgorithm implements Router {
             }
         }
 
-        for (int round = 1; round < MAX_ROUNDS; round++) {
+        for (int round = 1; round < Config.MAX_RAPTOR_ROUNDS; round++) {
 
             // Stage 1: Copy results and mark
             //          Copy previous rounds results to set our worst case time for this round
@@ -1186,7 +860,7 @@ public class RaptorAlgorithm implements Router {
                 
             }
 
-            // Tiny optimization, basically if we went through the whole network in under MAX_ROUNDS, then we can break out early
+            // Tiny optimization, basically if we went through the whole network in under Config.MAX_RAPTOR_ROUNDS, then we can break out early
             if (markedStopsCount == 0) {
                 break;
             }

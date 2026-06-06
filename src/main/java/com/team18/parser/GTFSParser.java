@@ -4,19 +4,28 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import com.team18.model.*;
+import com.team18.model.Calendar;
+import com.team18.model.CalendarDates;
+import com.team18.model.Route;
 import com.team18.model.Route.RouteType;
+import com.team18.model.ShapePoint;
+import com.team18.model.Stop;
+import com.team18.model.StopTime;
+import com.team18.model.Trip;
+import com.team18.optimizer.Config;
 import com.team18.parser.CSVParser.Row;
 import com.team18.util.ParsingUtil;
 
@@ -29,7 +38,7 @@ public class GTFSParser {
     public Map<String, Calendar> calendar = new HashMap<>();
     public Map<CalendarDates, String> calendar_dates = new HashMap<>();
     public Map<String, List<ShapePoint>> shapes = new HashMap<>();
-    public Map<LocalDate, List<String>> serviceByCalendar = new HashMap<>();
+    public Map<LocalDate, Set<String>> serviceByCalendar = new HashMap<>();
 
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
@@ -61,15 +70,13 @@ public class GTFSParser {
             parseEntry(zipFile, entryMap.get("routes"), "routes");
             parseEntry(zipFile, entryMap.get("trips"), "trips");
             parseEntry(zipFile, entryMap.get("stop_times"), "stop_times");
-            if (entryMap.containsKey("calendar")) {
-                parseEntry(zipFile, entryMap.get("calendar"), "calendar");
-            }
-            if (entryMap.containsKey("calendar_dates")) {
-                parseEntry(zipFile, entryMap.get("calendar_dates"), "calendar_dates");
-            }
-            if (entryMap.containsKey("shapes")) {
-                parseEntry(zipFile, entryMap.get("shapes"), "shapes");
-            }
+            
+            if (entryMap.containsKey("calendar")) parseEntry(zipFile, entryMap.get("calendar"), "calendar");
+            if (entryMap.containsKey("calendar_dates")) parseEntry(zipFile, entryMap.get("calendar_dates"), "calendar_dates");
+            if (entryMap.containsKey("shapes")) parseEntry(zipFile, entryMap.get("shapes"), "shapes");
+
+            parseServiceIDbyCalendar();
+            calculateRouteCosts();
         }
     }
 
@@ -109,8 +116,6 @@ public class GTFSParser {
                     throw new IOException("Unknown file type: " + type);
             }
         }
-
-        parseServiceIDbyCalendar();
     }
 
     public void parseStops(CSVParser csvp) throws IOException {
@@ -183,7 +188,7 @@ public class GTFSParser {
         if (!csvp.hasAny("route_short_name", "route_long_name")) {
             throw new IOException("Missing both columns: route_short_name and route_long_name. Min. of 1 required");
         }   
-        if(!hasCol(csvp, "route_type")){
+        if(!csvp.hasAll("route_type")){
             throw new IOException("Missing required column route_type in routes.txt");
         }
 
@@ -210,10 +215,10 @@ public class GTFSParser {
 
                 String shortName = row.getCol("route_short_name");
                 String longName = row.getCol("route_long_name");
+                String routeTypeString = row.getCol("route_type");
 
-                String routeTypeString = getCol(row, "route_type");
                 if (routeTypeString.isEmpty()) {
-                    throw new IOException("Missing required route_type for a particular route (id): " + rowValues(row));
+                    throw new IOException("Missing required route_type for a particular route (id): " + row.toString());
                 }
 
                 RouteType routeType;
@@ -256,13 +261,6 @@ public class GTFSParser {
                 if (route == null) {
                     throw new IOException("RouteID not found in routes: " + routeId);
                 }
-
-//                VehicleData vd = VehicleData.forType(route.routeType);
-//                double operationCostPerMin = (vd.operatingCostPerHour.average() / 60.0f);
-//
-//                route.trips.get()
-//
-//                var totalCostPerTrip = ()
 
                 Trip newTrip = new Trip(id, route, serviceId, headSign, shapeId.isEmpty() ? null : shapeId);
                 trips.put(id, newTrip);
@@ -375,7 +373,7 @@ public class GTFSParser {
 
             int durationOfTrip = endOftrip - startOftrip;
 
-            trip.cost = (double)(durationOfTrip * trip.route.vehicleData().operatingCostPerHour.mid / 3600.0f);
+            trip.operatingCostSEK = (double)(durationOfTrip * trip.route.vehicleData().operatingCostPerHour.mid / 3600.0f);
         }
     }
 
@@ -401,12 +399,12 @@ public class GTFSParser {
                 boolean[] week = new boolean[7];
 
                 if(monday.equals("1")) week[0] = true;
-                if(tuesday.equals("1")) week[0] = true;
-                if(wednesday.equals("1")) week[0] = true;
-                if(thursday.equals("1")) week[0] = true;
-                if(friday.equals("1")) week[0] = true;
-                if(saturday.equals("1")) week[0] = true;
-                if(sunday.equals("1")) week[0] = true;
+                if(tuesday.equals("1")) week[1] = true;
+                if(wednesday.equals("1")) week[2] = true;
+                if(thursday.equals("1")) week[3] = true;
+                if(friday.equals("1")) week[4] = true;
+                if(saturday.equals("1")) week[5] = true;
+                if(sunday.equals("1")) week[6] = true;
 
                 if (id.isEmpty()) {
                     throw new IOException("Missing required service id for a particular period: " + row.toString());
@@ -457,7 +455,6 @@ public class GTFSParser {
     }
 
     public void parseServiceIDbyCalendar(){
-        
         for(Calendar calendarDate : calendar.values()){
             LocalDate startDate = parseDate(calendarDate.startDate);
             LocalDate endDate = parseDate(calendarDate.endDate);
@@ -475,9 +472,9 @@ public class GTFSParser {
                         enabled = false;
                     }
                 }
-                List<String> ids = serviceByCalendar.get(i);
+                Set<String> ids = serviceByCalendar.get(i);
                 if(ids == null){
-                    ids = new ArrayList<>();
+                    ids = new HashSet<>();
                 }
                 if(enabled){
                     ids.add(calendarDate.id);
@@ -486,6 +483,18 @@ public class GTFSParser {
             }
         }
 
+        for (Map.Entry<CalendarDates, String> entry : calendar_dates.entrySet()) {
+            CalendarDates exception = entry.getKey();
+            String exceptionType = entry.getValue();
+
+            Set<String> ids = serviceByCalendar.getOrDefault(exception.date, new HashSet<>());
+            if (exceptionType.equals("1")) {
+                ids.add(exception.id);
+            } else if (exceptionType.equals("2")) {
+                ids.remove(exception.id);
+            }
+            serviceByCalendar.put(exception.date, ids);
+        }
     }
 
     private LocalDate parseDate (String date){
@@ -493,6 +502,90 @@ public class GTFSParser {
         DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyyMMdd");
 
         return LocalDate.parse(date, format);
+    }
+
+    public void calculateRouteCosts() {
+        LocalDate represenativeWeekday = findModalServiceDay(true);
+        LocalDate representativeWeekend = findModalServiceDay(false);
+
+        Config.REF_WEEKDAY = represenativeWeekday;
+        Config.REF_WEEKEND = representativeWeekend;
+
+        Set<String> activeServicesWeekday = serviceByCalendar.get(represenativeWeekday);
+        Set<String> activeServicesWeekend = serviceByCalendar.get(representativeWeekend);
+        
+        for (Route route : routes.values()) {
+            double weekdayCost = 0.0;
+            double weekendCost = 0.0;
+
+            for (Trip trip : route.trips) {
+                if (activeServicesWeekday.contains(trip.serviceId)) {
+                    weekdayCost += trip.operatingCostSEK;
+                }
+                if (activeServicesWeekend.contains(trip.serviceId)) {
+                    weekendCost += trip.operatingCostSEK;
+                }
+            }
+            route.weekdayOperatingCostSEK = weekdayCost;
+            route.weekendOperatingCostSEK = weekendCost;    
+        }
+    }
+
+    public LocalDate findModalServiceDay(boolean isWeekday) {
+        Map<Integer, Integer> serviceSizeFrequencyMap = new HashMap<>();
+        Map<Integer, LocalDate> serviceSizeDateMap = new HashMap<>();
+
+        for (Map.Entry<LocalDate, Set<String>> entry : serviceByCalendar.entrySet()) {
+            LocalDate date = entry.getKey();
+            DayOfWeek dayOfWeek = date.getDayOfWeek();
+            int activeServicesSize = entry.getValue().size();
+            if (activeServicesSize == 0) continue;
+
+            boolean isValidDay = false;
+
+            if (isWeekday && dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+                isValidDay = true;
+            } else if (!isWeekday && (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY)) {
+                isValidDay = true;
+            }
+
+            if (isValidDay) {  
+                serviceSizeFrequencyMap.put(activeServicesSize, serviceSizeFrequencyMap.getOrDefault(activeServicesSize, 0) + 1);
+                serviceSizeDateMap.putIfAbsent(activeServicesSize, date);
+            }
+        }
+
+        int highestFrequency = 0;
+        int modalSize = 0; 
+        LocalDate bestRepresentitiveDay = null;
+
+        for (Map.Entry<Integer, Integer> entry : serviceSizeFrequencyMap.entrySet()) {
+            int size = entry.getKey();
+            int frequency = entry.getValue();
+
+
+            if (frequency > highestFrequency) {
+                highestFrequency = frequency;
+                modalSize = size;
+                bestRepresentitiveDay = serviceSizeDateMap.get(size);
+            } else if (frequency == highestFrequency && size > modalSize) {
+                modalSize = size;
+                bestRepresentitiveDay = serviceSizeDateMap.get(size);
+            }
+        }
+
+        // Left here for debugging, can see which days are actually being selected
+        // for (Map.Entry<LocalDate, Set<String>> entry : serviceByCalendar.entrySet()) {
+        //     LocalDate date = entry.getKey();
+        //     int activeServicesSize = entry.getValue().size();
+        //     if (activeServicesSize == modalSize) {
+        //         System.err.println(date);
+        //     }
+        // }
+        // System.err.println("freq: " + highestFrequency);
+        // System.err.println("modal: " + modalSize);
+
+        return bestRepresentitiveDay;
     }
 
 }

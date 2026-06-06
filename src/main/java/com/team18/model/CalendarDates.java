@@ -21,9 +21,7 @@ public class CalendarDates {
         if (this.getClass() != other.getClass()) return false;
 
         CalendarDates otherDate = (CalendarDates) other;
-        if (otherDate.date != this.date || otherDate.id != this.id) return false;
-
-        return true;
+        return (otherDate.date.equals(this.date) && otherDate.id.equals(this.id));
     }
 
     @Override
