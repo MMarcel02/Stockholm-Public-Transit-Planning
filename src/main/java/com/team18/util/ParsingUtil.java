@@ -25,7 +25,10 @@ public class ParsingUtil {
     public static String secondsAfterMidnightToTimeString(int secondsAfterMidnight) {
         int hours = (secondsAfterMidnight / 3600) % 24;
         int minutes = (secondsAfterMidnight % 3600) / 60;
-        return String.format("%02d:%02d", hours, minutes);
+
+        String dayMarker = (secondsAfterMidnight >= 86400) ? " (+1)" : "";
+
+        return String.format("%02d:%02d%s", hours, minutes, dayMarker);
     }
     
 }

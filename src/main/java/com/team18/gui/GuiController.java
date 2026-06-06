@@ -391,9 +391,11 @@ public class GuiController {
 	}
 
 	private String formatAbsoluteTime(int secondsAfterMidnight) {
-		int hours = secondsAfterMidnight / 3600;
+		int hours = (secondsAfterMidnight / 3600) % 24;
 		int minutes = (secondsAfterMidnight % 3600) / 60;
-		return String.format(Locale.US, "%02d:%02d", hours, minutes);
+		String dayMarker = (secondsAfterMidnight >= 86400) ? " (+1)" : "";
+
+		return String.format(Locale.US, "%02d:%02d%s", hours, minutes, dayMarker);
 	}
 
 	public void displayRouteInstructions(List<RouteStep> steps, double startLat, double startLon) {
@@ -450,6 +452,13 @@ public class GuiController {
 			String start = startField.getText();
 			String end = endField.getText();
 			String time = timeField.getText();
+			if (time == null || !time.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")) {
+				routeStepsContainer.getChildren().clear();
+				Label errorLabel = new Label("Invalid time. Please use HH:MM (00:00 - 23:59).");
+				errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+				routeStepsContainer.getChildren().add(errorLabel);
+				return;
+			}
 
 			ResolvedLocation startLocation = resolveLocation(start, selectedStartStop);
 			ResolvedLocation endLocation = resolveLocation(end, selectedEndStop);
@@ -484,8 +493,13 @@ public class GuiController {
 		}
 
 		try {
+			String timeText = timeField.getText();
+			if (timeText == null || !timeText.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")) {
+				showStatus("Invalid time. Please use HH:MM (00:00 - 23:59).", true);
+				return;
+			}
 			ResolvedLocation origin = resolveLocation(startField.getText(), selectedStartStop);
-			int startTimeSeconds = ParsingUtil.timeStringToSecondsAfterMidnight(timeField.getText());
+			int startTimeSeconds = ParsingUtil.timeStringToSecondsAfterMidnight(timeText);
 
 			lastHeatmapOrigin = origin;
 			lastHeatmapStartTimeSeconds = startTimeSeconds;

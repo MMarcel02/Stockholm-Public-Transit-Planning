@@ -9,6 +9,7 @@ public class Trip {
     public final String serviceId;
     public final String headSign;
     public final String shapeId;
+    public double cost;
 
     public List<StopTime> stopTimes = new ArrayList<>();
 
