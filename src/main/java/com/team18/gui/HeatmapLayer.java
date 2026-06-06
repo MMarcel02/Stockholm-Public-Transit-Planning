@@ -31,6 +31,11 @@ public class HeatmapLayer implements Layer {
 
 	boolean differenceMode = false;
 
+	double viewWidth = 0;
+	double viewHeight = 0;
+	double viewX = 0;
+	double viewY = 0;
+
 	public static class Point {
 		public final double lat;
 		public final double lon;
@@ -151,14 +156,28 @@ public class HeatmapLayer implements Layer {
 		this.points = List.of();
 	}
 
-	public void render(double x, double y, double width, double height) {
+	public void shift(double x, double y) {
+		viewX = x;
+		viewY = y;
+
+		update();
+	}
+
+	public void render(double width, double height) {
+		viewWidth = width;
+		viewHeight = height;
+
+		update();
+	}
+
+	void update() {
 		if (points.isEmpty()) return;
 
-		width += Tile.RESOLUTION * 2;
-		height += Tile.RESOLUTION * 2;
+		double width = viewWidth + Tile.RESOLUTION * 2;
+		double height = viewHeight + Tile.RESOLUTION * 2;
 
-		double minX = -x - Tile.RESOLUTION;
-		double minY = -y - Tile.RESOLUTION;
+		double minX = -viewX - Tile.RESOLUTION;
+		double minY = -viewY - Tile.RESOLUTION;
 		double maxX = minX + width;
 		double maxY = minY + height;
 

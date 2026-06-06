@@ -14,10 +14,10 @@ public class LayerStack implements Layer {
 	double groupTranslateX = 0;
 	double groupTranslateY = 0;
 
-	public NavigationLayer navLayer;
 	public MapLayer mapLayer;
 	public HeatmapLayer heatmapLayer;
 	public BoundingBoxLayer bbLayer;
+	public NavigationLayer navLayer;
 	public StopLayer stopLayer;
 
 	ArrayList<Layer> layers = new ArrayList<>();
@@ -40,12 +40,18 @@ public class LayerStack implements Layer {
 		}
 	}
 
-	public void render(double x, double y, double width, double height) {
-		double actualX = group.getTranslateX();
-		double actualY = group.getTranslateY();
+	public void shift(double x, double y) {
+		double localX = group.getTranslateX();
+		double localY = group.getTranslateY();
 
 		for (Layer layer: layers) {
-			layer.render(actualX, actualY, width, height);
+			layer.shift(localX, localY);
+		}
+	}
+
+	public void render(double width, double height) {
+		for (Layer layer: layers) {
+			layer.render(width, height);
 		}
 	}
 
@@ -76,7 +82,8 @@ public class LayerStack implements Layer {
 
 			CoordSystem.setZoomLevel(CoordSystem.getZoomLevel() + delta);
 
-			render(0, 0, group.getScene().getWidth(), group.getScene().getHeight());
+			shift(0, 0);
+			render(group.getScene().getWidth(), group.getScene().getHeight());
 
 			return true;
 		}
@@ -115,6 +122,8 @@ public class LayerStack implements Layer {
 	public boolean mouseDragged(MouseEvent event) {
 		group.setTranslateX(groupTranslateX + (event.getSceneX() - dragStartX));
 		group.setTranslateY(groupTranslateY + (event.getSceneY() - dragStartY));
+
+		shift(0, 0);
 
 		return true;
 	}

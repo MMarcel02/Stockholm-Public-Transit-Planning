@@ -37,6 +37,8 @@ public class StopLayer implements Layer {
 
 	StopHoverCard hoverCard;
 
+	double viewX = 0;
+	double viewY = 0;
 	double viewWidth = 0;
 	double viewHeight = 0;
 
@@ -83,15 +85,20 @@ public class StopLayer implements Layer {
 		buildArrivalMap();
 	}
 
-	public void render(double x, double y, double width, double height) {
+	public void shift(double x, double y) {
+		viewX = x;
+		viewY = y;
+	}
+
+	public void render(double width, double height) {
 		viewWidth = width;
 		viewHeight = height;
 
 		width  += Tile.RESOLUTION * 2;
 		height += Tile.RESOLUTION * 2;
 
-		double minX = -x - Tile.RESOLUTION;
-		double minY = -y - Tile.RESOLUTION;
+		double minX = -viewX - Tile.RESOLUTION;
+		double minY = -viewY - Tile.RESOLUTION;
 		double maxX = minX + width;
 		double maxY = minY + height;
 
@@ -135,8 +142,11 @@ public class StopLayer implements Layer {
 	}
 
 	public boolean mouseClicked(MouseEvent ev) {
+		double x = -viewX + ev.getX();
+		double y = -viewY + ev.getY();
+
 		if (ev.isStillSincePress()) {
-			Stop stop = findNearStop(ev.getX(), ev.getY());
+			Stop stop = findNearStop(x, y);
 
 			String text;
 
@@ -147,7 +157,7 @@ public class StopLayer implements Layer {
 					text = String.format("%.6f, %.6f", stop.lat, stop.lon);
 				}
 			} else {
-				double[] latlon = CoordSystem.getLatLonFromLocal(ev.getX(), ev.getY());
+				double[] latlon = CoordSystem.getLatLonFromLocal(x, y);
 				text = String.format("%.6f, %.6f", latlon[0], latlon[1]);
 			}
 
@@ -168,9 +178,12 @@ public class StopLayer implements Layer {
 	public boolean mouseMoved(MouseEvent ev) {
 		if (hoverCard.hovered()) return true;
 
-		Stop stop = findNearStop(ev.getX(), ev.getY());
+		double x = -viewX + ev.getX();
+		double y = -viewY + ev.getY();
+
+		Stop stop = findNearStop(x, y);
 		if (stop == null) {
-			if (hoverCard.overlaps(ev.getX(), ev.getY())) {
+			if (hoverCard.overlaps(x, y)) {
 				return true;
 			}
 
@@ -179,7 +192,7 @@ public class StopLayer implements Layer {
 		}
 
 		List<String> arrivals = getArrivalStrings(stop);
-		hoverCard.show(stop, arrivals, viewWidth, viewHeight, ev.getX(), ev.getY());
+		hoverCard.show(stop, arrivals, viewWidth, viewHeight, x, y);
 
 		return true;
 	}

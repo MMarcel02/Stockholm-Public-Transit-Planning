@@ -11,16 +11,24 @@ public class BoundingBoxLayer implements Layer {
 	Canvas canvas = new Canvas();
 	Group group = new Group();
 
+	double viewX = 0;
+	double viewY = 0;
+
 	public BoundingBoxLayer() {
 		group.getChildren().add(canvas);
 	}
 
-	public void render(double x, double y, double width, double height) {
+	public void shift(double x, double y) {
+		viewX = x;
+		viewY = y;
+	}
+
+	public void render(double width, double height) {
 		width += Tile.RESOLUTION * 2;
 		height += Tile.RESOLUTION * 2;
 
-		double minX = -x - Tile.RESOLUTION;
-		double minY = -y - Tile.RESOLUTION;
+		double minX = -viewX - Tile.RESOLUTION;
+		double minY = -viewY - Tile.RESOLUTION;
 
 		canvas.setTranslateY(minY);
 		canvas.setTranslateX(minX);

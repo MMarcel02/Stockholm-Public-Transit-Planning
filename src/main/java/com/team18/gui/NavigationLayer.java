@@ -57,7 +57,9 @@ public class NavigationLayer implements Layer {
 		this.steps = steps;
 	}
 
-	public void render(double x, double y, double width, double height) {
+	public void shift(double x, double y) {}
+
+	public void render(double width, double height) {
 		group.getChildren().clear();
 
 		if (steps == null) return;

@@ -4,9 +4,12 @@ import javafx.scene.Group;
 import javafx.scene.input.MouseEvent;
 
 public interface Layer {
+	// Shift lets the layer know that it has shifted its position.
+	public void shift(double x, double y);
+
 	// Render will force the layer to fully re-render its contents,
 	// for example due to a layout change.
-	public void render(double x, double y, double width, double height);
+	public void render(double width, double height);
 
 	// This function should not do any rendering,
 	// and its return value should never change.

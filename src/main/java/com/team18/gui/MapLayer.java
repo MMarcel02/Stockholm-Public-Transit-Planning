@@ -11,6 +11,11 @@ import com.team18.gui.Layer;
 public class MapLayer implements Layer {
 	Group group = new Group();
 
+	double viewX = 0;
+	double viewY = 0;
+	double viewWidth = 0;
+	double viewHeight = 0;
+
 	private LinkedHashMap<Tile.Coord, Tile> tiles =
 		new LinkedHashMap<Tile.Coord, Tile>(1000, 0.75f, true) {
 			@Override
@@ -22,13 +27,27 @@ public class MapLayer implements Layer {
 
 	private ArrayList<Tile> activeTiles = new ArrayList<>();
 
-	public void render(double x, double y, double width, double height) {
-		int xoffset = (int) Math.floor(x/ Tile.RESOLUTION);
-		int yoffset = (int) Math.floor(y/ Tile.RESOLUTION);
+	public void shift(double x, double y) {
+		viewX = x;
+		viewY = y;
+
+		update();
+	}
+
+	public void render(double width, double height) {
+		viewWidth = width;
+		viewHeight = height;
+
+		update();
+	}
+
+	void update() {
+		int xoffset = (int) Math.floor(viewX / Tile.RESOLUTION);
+		int yoffset = (int) Math.floor(viewY / Tile.RESOLUTION);
 
 		ArrayList<Tile> newActives = new ArrayList<>();
-		for (int relX = -1; relX * Tile.RESOLUTION <= width; relX++) {
-			for (int relY = -1; relY * Tile.RESOLUTION <= height; relY++) {
+		for (int relX = -1; relX * Tile.RESOLUTION <= viewWidth; relX++) {
+			for (int relY = -1; relY * Tile.RESOLUTION <= viewHeight; relY++) {
 				int absX = -xoffset + relX;
 				int absY = -yoffset + relY;
 

@@ -65,7 +65,7 @@ public class GuiController {
 			@Override
 			public void changed(ObservableValue<? extends Number> obs,
 					Number oldWidth, Number newWidth) {
-				stack.render(0, 0, mapContainer.getWidth(), mapContainer.getHeight());
+				stack.render(mapContainer.getWidth(), mapContainer.getHeight());
 			}
 		});
 
@@ -73,7 +73,7 @@ public class GuiController {
 			@Override
 			public void changed(ObservableValue<? extends Number> obs,
 					Number oldHeight, Number newHeight) {
-				stack.render(0, 0, mapContainer.getWidth(), mapContainer.getHeight());
+				stack.render(mapContainer.getWidth(), mapContainer.getHeight());
 			}
 		});
 
