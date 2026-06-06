@@ -40,8 +40,7 @@ public class Route {
     public final String longName;
     public final RouteType routeType;
 
-    public double weekdayOperatingCostSEK;
-    public double weekendOperatingCostSEK;
+    public double operatingCostSEK = 0.0; 
 
     public List<Trip> trips = new ArrayList<>();
 
@@ -51,9 +50,6 @@ public class Route {
         this.shortName = shortName;
         this.longName = longName;
         this.routeType = routeType;
-
-        this.weekdayOperatingCostSEK = 0.0;
-        this.weekendOperatingCostSEK = 0.0;
     }
 
     public VehicleData vehicleData() {

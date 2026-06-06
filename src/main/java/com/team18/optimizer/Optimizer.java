@@ -27,7 +27,7 @@ public class Optimizer {
     public int[][] stopsReachableFromDemandPoint; 
     public int[][] walkTimeFromAllStopsToAllDemandPoints;
 
-    public double baselineWeeklyTransitOperationalCost = 0.0;
+    public double baselineTransitOperationalCost = 0.0;
     
     public Optimizer(RaptorNetwork network, double[] demandPointCoordinates, int[][] demandMatrix) {
         this.network = network;
@@ -62,13 +62,13 @@ public class Optimizer {
         }
 
         for (Route route : network.parentRouteLookup.values()) {
-            baselineWeeklyTransitOperationalCost += (5*route.weekdayOperatingCostSEK) + (2*route.weekendOperatingCostSEK);
+            baselineTransitOperationalCost += route.operatingCostSEK;
         }
     }
 
     // Constructor for multithreading so dont need to calc the demand point stops reachable and walktimes for each additional thread
     public Optimizer(RaptorNetwork localNetwork, double[] demandPointCoordinates, int[][] demandMatrix, 
-                      int[][] stopsReachable, int[][] walkTimes, double baselineWeeklyTransitOperationalCost) {
+                      int[][] stopsReachable, int[][] walkTimes, double baselineTransitOperationalCost) {
         
         this.network = localNetwork;
         this.raptor = new RaptorAlgorithm(localNetwork); 
@@ -82,26 +82,19 @@ public class Optimizer {
         this.stopsReachableFromDemandPoint = stopsReachable;
         this.walkTimeFromAllStopsToAllDemandPoints = walkTimes;
 
-        this.baselineWeeklyTransitOperationalCost = baselineWeeklyTransitOperationalCost;
+        this.baselineTransitOperationalCost = baselineTransitOperationalCost;
     }
 
     public void multiThreadedOptimize() {
         Set<String> diasbledParentRoutes = new HashSet<>();
 
-        network.setByCalendar(Config.REF_WEEKDAY);
-        double baseAvgWeekdayPassengerCost = calculateDailyPassengerCost();
-                    
-        network.setByCalendar(Config.REF_WEEKEND);
-        double baseAvgWeekendPassengerCost = calculateDailyPassengerCost();
-        double baselineWeeklyPassengerCost =  (baseAvgWeekdayPassengerCost * 5) + (baseAvgWeekendPassengerCost * 2);
+        double baselinePassengerCost = calculateTimePeriodPassengerCost() * Config.PASSENGER_COST_WEIGHT;
 
-        // If we value operational cost and passenger cost equally 
-        double ratio = baselineWeeklyTransitOperationalCost / baselineWeeklyPassengerCost;
+        double baselineTotalCost = baselineTransitOperationalCost + baselinePassengerCost;
 
-        double baselineTotalCost = baselineWeeklyTransitOperationalCost + ratio*baselineWeeklyPassengerCost;
-
-        System.err.println("Baseline Operation cost: " + baselineWeeklyTransitOperationalCost);
-        System.err.println("Baseline Weekly passenger cost: " + (ratio*baselineWeeklyPassengerCost));
+        System.err.println("Time period (days): " + Config.REFERENCE_PERIOD.length);
+        System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
+        System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
 
         for (int j = 0; j < 3; j++) {
 
@@ -119,23 +112,18 @@ public class Optimizer {
                         this.demandMatrix,
                         this.stopsReachableFromDemandPoint,
                         this.walkTimeFromAllStopsToAllDemandPoints,
-                        this.baselineWeeklyTransitOperationalCost
+                        this.baselineTransitOperationalCost
                     );
 
                     localNetwork.disableParentRouteOptimizer(parentRotueId);
                     Route route = localNetwork.parentRouteLookup.get(parentRotueId);
-                    double weeklyRouteTransitOperationalCost = (5*route.weekdayOperatingCostSEK) + (2*route.weekendOperatingCostSEK);
-                    double newWeeklyOperationalCost = localOptimizer.baselineWeeklyTransitOperationalCost - weeklyRouteTransitOperationalCost;
 
-                    localNetwork.setByCalendar(Config.REF_WEEKDAY);
-                    double avgWeekdayPassengerCost = localOptimizer.calculateDailyPassengerCost();
-                    
-                    localNetwork.setByCalendar(Config.REF_WEEKEND);
-                    double avgWeekendPassengerCost = localOptimizer.calculateDailyPassengerCost();
+                    double weeklyRouteTransitOperationalCost = route.operatingCostSEK;
+                    double newWeeklyOperationalCost = localOptimizer.baselineTransitOperationalCost - weeklyRouteTransitOperationalCost;
 
-                    double newWeeklyPassengerCost = (avgWeekdayPassengerCost * 5) + (avgWeekendPassengerCost * 2);
+                    double newWeeklyPassengerCost = localOptimizer.calculateTimePeriodPassengerCost() * Config.PASSENGER_COST_WEIGHT;
 
-                    double newTotalCost = newWeeklyOperationalCost + ratio*newWeeklyPassengerCost;
+                    double newTotalCost = newWeeklyOperationalCost + newWeeklyPassengerCost;
                     double costDifference = newTotalCost - baselineTotalCostForThisRound;
 
                     return Map.entry(parentRotueId, costDifference);
@@ -149,10 +137,10 @@ public class Optimizer {
                 network.disableParentRouteOptimizer(bestRouteToDisableId);
                 
                 Route disabledRoute = network.parentRouteLookup.get(bestRouteToDisableId);
-                this.baselineWeeklyTransitOperationalCost -= (5 * disabledRoute.weekdayOperatingCostSEK) + (2 * disabledRoute.weekendOperatingCostSEK);
+                this.baselineTransitOperationalCost -= disabledRoute.operatingCostSEK;
                 
                 double costImpact = bestRouteToDisable.getValue();
-                System.err.println("Money saved weekly: " + costImpact);
+                System.err.println("Money saved 4 - weekly: " + costImpact);
                 baselineTotalCost += costImpact;
             }
         }
@@ -163,6 +151,15 @@ public class Optimizer {
             
             System.err.println("id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
         }
+    }
+
+    public double calculateTimePeriodPassengerCost() {
+        double totalWeeklyCost = 0.0;
+        for (int i = 0; i < Config.REFERENCE_PERIOD.length; i++) {
+            network.setByCalendar(Config.REFERENCE_PERIOD[i]);
+            totalWeeklyCost += calculateDailyPassengerCost();
+        }
+        return totalWeeklyCost;
     }
 
     public double calculateDailyPassengerCost() {

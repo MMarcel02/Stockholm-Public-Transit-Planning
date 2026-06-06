@@ -505,32 +505,20 @@ public class GTFSParser {
     }
 
     public void calculateRouteCosts() {
-        LocalDate represenativeWeekday = findModalServiceDay(true);
-        LocalDate representativeWeekend = findModalServiceDay(false);
-
-        Config.REF_WEEKDAY = represenativeWeekday;
-        Config.REF_WEEKEND = representativeWeekend;
-
-        Set<String> activeServicesWeekday = serviceByCalendar.get(represenativeWeekday);
-        Set<String> activeServicesWeekend = serviceByCalendar.get(representativeWeekend);
-        
         for (Route route : routes.values()) {
-            double weekdayCost = 0.0;
-            double weekendCost = 0.0;
-
-            for (Trip trip : route.trips) {
-                if (activeServicesWeekday.contains(trip.serviceId)) {
-                    weekdayCost += trip.operatingCostSEK;
-                }
-                if (activeServicesWeekend.contains(trip.serviceId)) {
-                    weekendCost += trip.operatingCostSEK;
+            for (int i = 0; i < Config.REFERENCE_PERIOD.length; i++) {
+                LocalDate date = Config.REFERENCE_PERIOD[i];
+                Set<String> activeServices = serviceByCalendar.get(date);
+                for (Trip trip : route.trips) {
+                    if (activeServices.contains(trip.serviceId)) {
+                        route.operatingCostSEK += trip.operatingCostSEK;
+                    }
                 }
             }
-            route.weekdayOperatingCostSEK = weekdayCost;
-            route.weekendOperatingCostSEK = weekendCost;    
         }
     }
 
+    // OLD but maybe can refactor this to find better reference week 
     public LocalDate findModalServiceDay(boolean isWeekday) {
         Map<Integer, Integer> serviceSizeFrequencyMap = new HashMap<>();
         Map<Integer, LocalDate> serviceSizeDateMap = new HashMap<>();
