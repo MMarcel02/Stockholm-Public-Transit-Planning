@@ -1,6 +1,7 @@
 package com.team18.gui;
 
 import java.util.List;
+import java.util.ArrayList;
 
 import javafx.scene.Group;
 import javafx.scene.shape.Shape;
@@ -25,10 +26,31 @@ public class NavigationLayer implements Layer {
 	Circle startMarker = null;
 	Circle endMarker = null;
 
-	List<RouteStep> steps = null;
+	List<DrawnRoute> drawnRoutes = new ArrayList<>();
+
+	double viewWidth = 0;
+	double viewHeight = 0;
+
+	public static class DrawnRoute {
+		List<RouteStep> steps;
+
+		public DrawnRoute(List<RouteStep> steps) {
+			this.steps = steps;
+		}
+	};
 
 	public NavigationLayer(GTFSParser parser) {
 		this.parser = parser;
+	}
+
+	public void add(DrawnRoute route) {
+		drawnRoutes.add(route);
+		render(viewWidth, viewHeight);
+	}
+
+	public void remove(DrawnRoute route) {
+		drawnRoutes.remove(route);
+		render(viewWidth, viewHeight);
 	}
 
 	public void setStartMarker(double lat, double lon) {
@@ -53,60 +75,60 @@ public class NavigationLayer implements Layer {
 		endMarker.setCenterY(local[1]);
 	}
 
-	public void navigate(List<RouteStep> steps) {
-		this.steps = steps;
-	}
-
 	public void shift(double x, double y) {}
 
 	public void render(double width, double height) {
+		viewWidth = width;
+		viewHeight = height;
+
 		group.getChildren().clear();
 
-		if (steps == null) return;
+		for (DrawnRoute dr: drawnRoutes) {
+			for (RouteStep step: dr.steps) {
+				Shape segment = null;
 
-		for (RouteStep step: steps) {
-			Shape segment = null;
+				boolean usingTransit = (step.routeStepType == RouteStepType.TRANSIT);
+				boolean shapeAvailable =
+					(step.shapeId != null && parser.shapes != null);
 
-			boolean usingTransit = (step.routeStepType == RouteStepType.TRANSIT);
-			boolean shapeAvailable = (step.shapeId != null && parser.shapes != null);
+				// In this case we can probably use the shapes from gtfs data
+				if (usingTransit && shapeAvailable) {
+					segment = buildPolylineSegment(step);
+				}
 
-			// In this case we can probably use the shapes from gtfs data
-			if (usingTransit && shapeAvailable) {
-				segment = buildPolylineSegment(step);
+				// If it's still null, then either we are walking,
+				// or something went wrong building the polyline.
+				//
+				// Either way, we need a straight line segment.
+				if (segment == null) {
+					Line line = new Line();
+
+					double[] startLocal = CoordSystem.getLocalFromLatLon(
+							step.latFrom, step.lonFrom);
+					line.setStartX(startLocal[0]);
+					line.setStartY(startLocal[1]);
+
+					double[] endLocal = CoordSystem.getLocalFromLatLon(
+							step.latTo, step.lonTo);
+					line.setEndX(endLocal[0]);
+					line.setEndY(endLocal[1]);
+
+					segment = line;
+				}
+
+				segment.setStrokeLineCap(StrokeLineCap.ROUND);
+				segment.setStrokeWidth(4);
+
+				segment.getStyleClass().add("route-segment");
+
+				if (usingTransit) {
+					segment.getStyleClass().add("route-segment-transit");
+				} else {
+					segment.getStyleClass().add("route-segment-walk");
+				}
+
+				group.getChildren().add(segment);
 			}
-
-			// If it's still null, then either we are walking,
-			// or something went wrong building the polyline.
-			//
-			// Either way, we need a straight line segment.
-			if (segment == null) {
-				Line line = new Line();
-
-				double[] startLocal = CoordSystem.getLocalFromLatLon(
-						step.latFrom, step.lonFrom);
-				line.setStartX(startLocal[0]);
-				line.setStartY(startLocal[1]);
-
-				double[] endLocal = CoordSystem.getLocalFromLatLon(
-						step.latTo, step.lonTo);
-				line.setEndX(endLocal[0]);
-				line.setEndY(endLocal[1]);
-
-				segment = line;
-			}
-
-			segment.setStrokeLineCap(StrokeLineCap.ROUND);
-			segment.setStrokeWidth(4);
-
-			segment.getStyleClass().add("route-segment");
-
-			if (usingTransit) {
-				segment.getStyleClass().add("route-segment-transit");
-			} else {
-				segment.getStyleClass().add("route-segment-walk");
-			}
-
-			group.getChildren().add(segment);
 		}
 	}
 

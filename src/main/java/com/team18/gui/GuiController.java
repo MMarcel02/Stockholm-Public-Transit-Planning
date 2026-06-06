@@ -15,6 +15,7 @@ import javafx.scene.layout.VBox;
 
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
+import com.team18.gui.NavigationLayer.DrawnRoute;
 
 import java.util.List;
 
@@ -32,6 +33,8 @@ public class GuiController {
 	JourneyInput journeyInput;
 	LayerStack stack;
 	RouteDisplay routeDisplay;
+
+	DrawnRoute drawnRoute = null;
 
 	@FXML
 	public void initialize() {
@@ -99,10 +102,10 @@ public class GuiController {
 				startTimeSeconds
 			);
 
-			//stack.navLayer.setStartMarker(startLocation.lat, startLocation.lon);
-			//stack.navLayer.setEndMarker(endLocation.lat, endLocation.lon);
+			if (drawnRoute != null) stack.navLayer.remove(drawnRoute);
+			drawnRoute = new DrawnRoute(route);
+			stack.navLayer.add(drawnRoute);
 
-			stack.navLayer.navigate(route);
 			routeDisplay.display(route);
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
@@ -114,8 +117,6 @@ public class GuiController {
 		try {
 			double[] origin = journeyInput.resolveStart();
 			int startTimeSeconds = journeyInput.getTimeInSeconds();
-
-			//navLayer.setStartMarker(origin.lat, origin.lon);
 
 			stack.heatmapLayer.configure(origin[0], origin[1], startTimeSeconds);
 		} catch (Exception e) {
