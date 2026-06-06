@@ -56,7 +56,7 @@ public class RoutingEngine {
                     try {
                         parser.loadFromZip(zipFilePath);
                         RaptorBuilder builder = new RaptorBuilder();
-                        this.raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
+                        this.raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips, parser.serviceByCalendar);
                         sendOk("loaded");
                         continue;
                     } catch (FileNotFoundException | NoSuchFileException e) {

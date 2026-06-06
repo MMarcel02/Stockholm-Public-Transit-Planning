@@ -26,7 +26,7 @@ public class RaptorAlgorithmTest {
             GTFSParser parser = new GTFSParser();
             parser.loadFromZip("data/stockholm/sl_center.zip");
             RaptorBuilder builder = new RaptorBuilder();
-            raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
+            raptorNetwork = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips, parser.serviceByCalendar);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -111,7 +111,7 @@ public class RaptorAlgorithmTest {
             assertTrue(stepsOriginal.size() > 1);
             
             // Disable boarding station forcing new algorithm to take different route
-            RouteStep firstStepOriginal = stepsOriginal.get(0);
+            RouteStep firstStepOriginal = stepsOriginal.get(1);
             raptorRouteToDisable = firstStepOriginal.raptorRoute.id;
             raptorNetwork.toggleRaptorRoute(raptorRouteToDisable);
 
@@ -119,7 +119,7 @@ public class RaptorAlgorithmTest {
 
             assertTrue(stepsAltered.size() > 1);
 
-            RouteStep firstStepAltered = stepsAltered.get(0);
+            RouteStep firstStepAltered = stepsAltered.get(1);
 
             // Check that it actually took a different route
             assertNotEquals(raptorRouteToDisable, firstStepAltered.raptorRoute.id);

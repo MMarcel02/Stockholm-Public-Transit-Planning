@@ -15,12 +15,11 @@ import com.team18.util.StockholmUrbanArea;
 import com.team18.model.Stop;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.optimizer.Config;
 
 public class HeatmapLayer implements Layer {
 	static final int COL_COUNT = 90;
 	static final int ROW_COUNT = 56;
-
-	static final double WALK_SPEED_MPS = 50.0 / 36.0;
 
 	RaptorNetwork network;
 
@@ -141,7 +140,7 @@ public class HeatmapLayer implements Layer {
 		double walkOnlyDistance = GeoCalculator.calculateEquirectangularDistance(
 				originLat, originLon, lat, lon);
 
-		int bestSeconds = (int) Math.round(walkOnlyDistance / WALK_SPEED_MPS);
+		int bestSeconds = (int) Math.round(walkOnlyDistance / Config.WALK_SPEED_MPS);
 
 		for (int i = 0; i < times.length; i++) {
 			if (times[i] == Integer.MAX_VALUE) continue;
@@ -151,7 +150,7 @@ public class HeatmapLayer implements Layer {
 					stop.lat, stop.lon, lat, lon);
 
 			int totalSeconds =
-				times[i] + (int) Math.round(walkDistanceLeft / WALK_SPEED_MPS);
+				times[i] + (int) Math.round(walkDistanceLeft / Config.WALK_SPEED_MPS);
 
 			if (totalSeconds < bestSeconds) {
 				bestSeconds = totalSeconds;

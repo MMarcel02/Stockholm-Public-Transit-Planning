@@ -62,7 +62,7 @@ public class RoutingAlgorithmAnalyzer {
         System.out.println("Building Raptor Network...");
         long startRaptorBuild = System.currentTimeMillis();
         RaptorBuilder raptorBuilder = new RaptorBuilder();
-        RaptorNetwork raptorNetwork = raptorBuilder.build(parser.agencies, parser.stops, parser.routes, parser.trips);
+        RaptorNetwork raptorNetwork = raptorBuilder.build(parser.agencies, parser.stops, parser.routes, parser.trips, parser.serviceByCalendar);
         long raptorBuildTime = System.currentTimeMillis() - startRaptorBuild;
         System.out.printf("Raptor Network Build Time: %,d ms%n", raptorBuildTime);
 
