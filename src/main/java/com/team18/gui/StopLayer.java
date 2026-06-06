@@ -88,14 +88,20 @@ public class StopLayer implements Layer {
 	public void shift(double x, double y) {
 		viewX = x;
 		viewY = y;
+
+		update();
 	}
 
 	public void render(double width, double height) {
 		viewWidth = width;
 		viewHeight = height;
 
-		width  += Tile.RESOLUTION * 2;
-		height += Tile.RESOLUTION * 2;
+		update();
+	}
+
+	void update() {
+		double width = viewWidth + Tile.RESOLUTION * 2;
+		double height = viewHeight + Tile.RESOLUTION * 2;
 
 		double minX = -viewX - Tile.RESOLUTION;
 		double minY = -viewY - Tile.RESOLUTION;
