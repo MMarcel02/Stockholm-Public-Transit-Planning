@@ -530,6 +530,166 @@ public class RaptorAlgorithm implements Router {
         return bestArrivalTime;
     }
 
+    public int[] getTravelTimesToStops(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight) {
+        int[] arrivalTimes = computeBestArrivalTimesToStops(latFrom, lonFrom, startTimeSecondsAfterMidnight);
+        int[] travelTimes = new int[arrivalTimes.length];
+
+        for (int i = 0; i < arrivalTimes.length; i++) {
+            travelTimes[i] = arrivalTimes[i] == Integer.MAX_VALUE
+                    ? Integer.MAX_VALUE
+                    : arrivalTimes[i] - startTimeSecondsAfterMidnight;
+        }
+
+        return travelTimes;
+    }
+
+    private int[] computeBestArrivalTimesToStops(double latFrom, double lonFrom, int startTimeSecondsAfterMidnight) {
+        int totalStops = stopLookup.length;
+        int[] arrivalTimesPerRound = new int[(MAX_ROUNDS + 1) * totalStops];
+        int[] bestArrivalTime = new int[totalStops];
+        Arrays.fill(bestArrivalTime, Integer.MAX_VALUE);
+        Arrays.fill(arrivalTimesPerRound, Integer.MAX_VALUE);
+
+        Set<Integer> markedStops = new HashSet<>();
+        Map<Integer, Integer> routesToProcess = new HashMap<>();
+
+        for (int i = 0; i < totalStops; i++) {
+            if (!stopsEnabledArr[i]) continue;
+
+            Stop stop = stopLookup[i];
+            double distFromSource = GeoCalculator.calculateEquirectangularDistance(latFrom, lonFrom, stop.lat, stop.lon);
+            if (distFromSource <= MAX_WALK_DISTANCE) {
+                int arrivalTime = startTimeSecondsAfterMidnight + (int)(distFromSource / WALK_SPEED_MPS);
+                arrivalTimesPerRound[i] = arrivalTime;
+                bestArrivalTime[i] = arrivalTime;
+                markedStops.add(i);
+            }
+        }
+
+        for (int round = 1; round < MAX_ROUNDS; round++) {
+            int startIndexPrevRound = (round - 1) * totalStops;
+            int startIndexCurrRound = round * totalStops;
+            System.arraycopy(arrivalTimesPerRound, startIndexPrevRound, arrivalTimesPerRound, startIndexCurrRound, totalStops);
+
+            routesToProcess.clear();
+
+            for (int markedStopId : markedStops) {
+                int startIndexOfStopRoutes = stopsArr[markedStopId * 2];
+                int endIndexOfStopRoutes = stopsArr[(markedStopId + 1) * 2];
+                for (int i = startIndexOfStopRoutes; i < endIndexOfStopRoutes; i++) {
+                    int routeId = stopRoutes[i];
+
+                    if (!routesEnabledArr[routeId]) continue;
+
+                    if (routesToProcess.containsKey(routeId)) {
+                        int existingStopId = routesToProcess.get(routeId);
+                        if (isStopEarlierInRoute(routeId, markedStopId, existingStopId)) {
+                            routesToProcess.put(routeId, markedStopId);
+                        }
+                    } else {
+                        routesToProcess.put(routeId, markedStopId);
+                    }
+                }
+            }
+
+            markedStops.clear();
+
+            for (Map.Entry<Integer, Integer> entry : routesToProcess.entrySet()) {
+                int routeId = entry.getKey();
+                int earliestBoardingStopId = entry.getValue();
+
+                int numTripsInRoute = routesArr[routeId * 4];
+                int numStopsInRoute = routesArr[routeId * 4 + 1];
+                int stopsOffset = routesArr[routeId * 4 + 2];
+                int stopTimesOffset = routesArr[routeId * 4 + 3];
+
+                boolean foundBoardingStop = false;
+                int relativeTripIndex = -1;
+
+                for (int relativeStopIndex = 0; relativeStopIndex < numStopsInRoute; relativeStopIndex++) {
+                    int stopIdInRoute = routeStopsArr[stopsOffset + relativeStopIndex];
+
+                    if (!stopsEnabledArr[stopIdInRoute]) continue;
+
+                    if (stopIdInRoute == earliestBoardingStopId) foundBoardingStop = true;
+
+                    if (foundBoardingStop) {
+                        if (relativeTripIndex != -1) {
+                            int arrivalTimeIndex = stopTimesOffset + (relativeTripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2);
+                            int arrivalTime = stopTimesArr[arrivalTimeIndex];
+
+                            if (arrivalTime < bestArrivalTime[stopIdInRoute]) {
+                                bestArrivalTime[stopIdInRoute] = arrivalTime;
+                                arrivalTimesPerRound[(round * totalStops) + stopIdInRoute] = arrivalTime;
+                                markedStops.add(stopIdInRoute);
+                            }
+                        }
+
+                        int prevRoundArrivalTimeIndex = ((round - 1) * totalStops) + stopIdInRoute;
+                        int prevRoundArrivalTime = arrivalTimesPerRound[prevRoundArrivalTimeIndex];
+                        boolean canCatchEarlierBus = false;
+
+                        if (relativeTripIndex != -1) {
+                            int departureTimeIndex = stopTimesOffset + (relativeTripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2) + 1;
+                            int departureTime = stopTimesArr[departureTimeIndex];
+                            if (prevRoundArrivalTime <= departureTime) {
+                                canCatchEarlierBus = true;
+                            }
+                        }
+
+                        if (relativeTripIndex == -1 || canCatchEarlierBus) {
+                            if (prevRoundArrivalTime != Integer.MAX_VALUE) {
+                                int newRelativeTripIndex = -1;
+
+                                for (int tripIndex = 0; tripIndex < numTripsInRoute; tripIndex++) {
+                                    int departureTimeIndex = stopTimesOffset + (tripIndex * numStopsInRoute * 2) + (relativeStopIndex * 2) + 1;
+                                    int departureTime = stopTimesArr[departureTimeIndex];
+
+                                    if (prevRoundArrivalTime <= departureTime) {
+                                        newRelativeTripIndex = tripIndex;
+                                        break;
+                                    }
+                                }
+
+                                if (newRelativeTripIndex != -1) {
+                                    relativeTripIndex = newRelativeTripIndex;
+                                    earliestBoardingStopId = stopIdInRoute;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Set<Integer> stopsReachedByTransit = new HashSet<>(markedStops);
+            for (Integer stopId : stopsReachedByTransit) {
+                int arrivalTimeAtStopInCurrRound = arrivalTimesPerRound[(round * totalStops) + stopId];
+                int transferOffsetIndexStart = stopsArr[(stopId * 2) + 1];
+                int transferOffsetIndexEnd = stopsArr[(stopId + 1) * 2 + 1];
+
+                for (int transferIndex = transferOffsetIndexStart; transferIndex < transferOffsetIndexEnd; transferIndex += 2) {
+                    int targetStopId = transfersArr[transferIndex];
+                    int walkTimeSeconds = transfersArr[transferIndex + 1];
+                    int arrivalTimeAtTarget = arrivalTimeAtStopInCurrRound + walkTimeSeconds;
+
+                    if (!stopsEnabledArr[targetStopId]) continue;
+
+                    if (arrivalTimeAtTarget < bestArrivalTime[targetStopId]) {
+                        arrivalTimesPerRound[(round * totalStops) + targetStopId] = arrivalTimeAtTarget;
+                        bestArrivalTime[targetStopId] = arrivalTimeAtTarget;
+                        markedStops.add(targetStopId);
+                    }
+                }
+            }
+
+            if (markedStops.isEmpty()) {
+                break;
+            }
+        }
+
+        return bestArrivalTime;
+    }
+
     private boolean isStopEarlierInRoute(int routeId, int markedStopId, int existingStopId) {
 
         int numStopsInRoute = routesArr[routeId*4 + 1];
