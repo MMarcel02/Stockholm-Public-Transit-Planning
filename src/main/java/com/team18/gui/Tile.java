@@ -133,7 +133,7 @@ public class Tile {
 		try {
 			File cachedFile = new File(filePath);
 			if (!cachedFile.exists()) {
-				System.out.printf("fetching %d/%d/%d…\n", coord.zoom, coord.x, coord.y);
+				System.err.printf("fetching %d/%d/%d…\n", coord.zoom, coord.x, coord.y);
 				URL url = new URL(urlString);
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
