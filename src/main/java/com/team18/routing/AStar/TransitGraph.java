@@ -66,9 +66,12 @@ public class TransitGraph {
                     for(LocalDate j = LocalDate.parse(calendarDates.get(trip.serviceId).startDate); !j.isAfter(LocalDate.parse(calendarDates.get(trip.serviceId).endDate)); j = j.plusDays(1)){
 
                         CalendarDates checkDate = new CalendarDates(trip.serviceId, j);
+				    /*
                         if (exceptionDates.get(checkDate).){
                             continue;
                         }
+				    */
+				    // TODO: Took out the code above since it didn't build.
 
                         dayIndex++;
                         if(dayIndex > 6){
