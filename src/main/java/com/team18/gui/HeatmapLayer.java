@@ -63,7 +63,7 @@ public class HeatmapLayer implements Layer {
 		}
 
 		int[] times = new RaptorAlgorithm(network)
-				.getTravelTimesToStops(originLat, originLon, startTimeSeconds);
+				.getBestArrivalTimeToAllStops(originLat, originLon, startTimeSeconds);
 
 		// Only used if doing a difference heatmap
 		int[] baselineTimes = null;
@@ -75,7 +75,7 @@ public class HeatmapLayer implements Layer {
 
 			try {
 				Arrays.fill(network.stopsEnabledArr, true);
-				baselineTimes = new RaptorAlgorithm(network).getTravelTimesToStops(
+				baselineTimes = new RaptorAlgorithm(network).getBestArrivalTimeToAllStops(
 						originLat, originLon, startTimeSeconds);
 			} finally {
 				System.arraycopy(oldEnabled, 0, network.stopsEnabledArr, 0,

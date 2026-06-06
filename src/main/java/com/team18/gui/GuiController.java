@@ -46,8 +46,7 @@ public class GuiController {
 
 			System.err.println("Building RAPTOR Network...");
 			RaptorBuilder builder = new RaptorBuilder();
-			network = builder.build(parser.agencies, parser.stops, parser.routes,
-					parser.trips);
+			network = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips, parser.serviceByCalendar);
 
 			System.err.println("Network Ready! Drawing stops on map...");
 		} catch (Exception e) {
