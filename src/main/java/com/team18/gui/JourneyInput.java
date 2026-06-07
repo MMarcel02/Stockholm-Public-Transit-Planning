@@ -176,7 +176,7 @@ public class JourneyInput {
 		}
 	}
 
-	private Stop findStop(String name) {
+	public Stop findStop(String name) {
 		String normalizedName = normalize(name);
 		for (Stop stop: stops) {
 			if (normalize(stop.name).equals(normalizedName)) {

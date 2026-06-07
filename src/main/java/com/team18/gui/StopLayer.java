@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Set;
+import java.util.HashSet;
 
 import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
@@ -138,7 +140,12 @@ public class StopLayer implements Layer {
 		gc.setStroke(Color.WHITE);
 		gc.setLineWidth(1);
 
+		Set<String> alreadyDrawn = new HashSet<>();
+
 		for (Stop stop: parser.stops.values()) {
+			if (alreadyDrawn.contains(stop.name)) continue;
+			alreadyDrawn.add(stop.name);
+
 			int internalID = network.stopStringToIntMap.get(stop.id);
 			if (network.stopsEnabledArr[internalID]) {
 				if (hideEnabled) continue;

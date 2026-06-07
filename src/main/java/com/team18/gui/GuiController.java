@@ -99,7 +99,7 @@ public class GuiController {
 
 		routeDisplay = new RouteDisplay(routeStepsContainer);
 
-		stopHoverCard = new StopHoverCard(journeyInput, network);
+		stopHoverCard = new StopHoverCard(journeyInput, network, parser);
 		stopHoverCard.setOnToggleCallback( () -> {
 			stack.render(mapContainer.getWidth(), mapContainer.getHeight());
 		});

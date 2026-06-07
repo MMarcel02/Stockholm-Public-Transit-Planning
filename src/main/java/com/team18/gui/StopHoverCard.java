@@ -12,6 +12,7 @@ import javafx.scene.control.OverrunStyle;
 
 import com.team18.model.Stop;
 import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.parser.GTFSParser;
 
 public class StopHoverCard {
 	final double CARD_WIDTH = 340;
@@ -21,6 +22,7 @@ public class StopHoverCard {
 	VBox card = new VBox();
 
 	JourneyInput journeyInput;
+	GTFSParser parser;
 
 	RaptorNetwork network;
 	private Runnable onToggleCallback;
@@ -28,7 +30,8 @@ public class StopHoverCard {
 		this.onToggleCallback = callback;
 	}
 
-	public StopHoverCard(JourneyInput journeyInput, RaptorNetwork network) {
+	public StopHoverCard(JourneyInput journeyInput, RaptorNetwork network,
+			GTFSParser parser) {
 		card.getStyleClass().add("stop-hover-card");
 		card.setVisible(false);
 		card.setMouseTransparent(false);
@@ -39,6 +42,7 @@ public class StopHoverCard {
 
 		this.journeyInput = journeyInput;
 		this.network = network;
+		this.parser = parser;
 	}
 
 	public void show(Stop stop, List<String> arrivalStrings,
@@ -126,7 +130,11 @@ public class StopHoverCard {
 		disableButton.setMinWidth(CARD_WIDTH - 28);
 		disableButton.setMinHeight(34);
 		disableButton.setOnAction(ev -> {
-			network.toggleStop(stop.id);
+			for (Stop toToggle: parser.stops.values()) {
+				if (!toToggle.name.equals(stop.name)) continue;
+				network.toggleStop(toToggle.id);
+			}
+
 			hide();
 			if (onToggleCallback != null) {
 				onToggleCallback.run();
