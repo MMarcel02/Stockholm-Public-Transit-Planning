@@ -110,6 +110,10 @@ public class RouteDisplay {
 		}
 	}
 
+	public void clear() {
+		vbox.getChildren().clear();
+	}
+
 	public void displayInvalidInput() {
 		vbox.getChildren().clear();
 

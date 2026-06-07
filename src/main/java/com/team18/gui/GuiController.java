@@ -154,6 +154,7 @@ public class GuiController {
 	public void handleClearJourney() {
 		stack.navLayer.remove(drawnRoute);
 		drawnRoute = null;
+		routeDisplay.clear();
 	}
 
 	@FXML
