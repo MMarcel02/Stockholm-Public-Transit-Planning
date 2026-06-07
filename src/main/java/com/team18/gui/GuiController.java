@@ -41,6 +41,7 @@ public class GuiController {
 	JourneyInput journeyInput;
 	LayerStack stack;
 	RouteDisplay routeDisplay;
+	StopHoverCard stopHoverCard;
 
 	DrawnRoute drawnRoute = null;
 
@@ -77,6 +78,10 @@ public class GuiController {
 		mapContainer.getChildren().add(stack.getGroup());
 
 		routeDisplay = new RouteDisplay(routeStepsContainer);
+
+		stopHoverCard = new StopHoverCard(journeyInput, network);
+		mapContainer.getChildren().add(stopHoverCard.getVBox());
+		stack.stopLayer.setHoverCard(stopHoverCard);
 
 		mapContainer.widthProperty().addListener(new ChangeListener<Number>() {
 			@Override

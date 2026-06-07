@@ -79,10 +79,11 @@ public class StopLayer implements Layer {
 		this.parser = parser;
 		this.journeyInput = journeyInput;
 
-		hoverCard = new StopHoverCard(journeyInput, network);
-		group.getChildren().add(hoverCard.getVBox());
-
 		buildArrivalMap();
+	}
+
+	public void setHoverCard(StopHoverCard card) {
+		hoverCard = card;
 	}
 
 	public void shift(double x, double y) {
@@ -198,7 +199,7 @@ public class StopLayer implements Layer {
 		}
 
 		List<String> arrivals = getArrivalStrings(stop);
-		hoverCard.show(stop, arrivals, viewWidth, viewHeight, x, y);
+		hoverCard.show(stop, arrivals, viewWidth, viewHeight, ev.getX(), ev.getY());
 
 		return true;
 	}
