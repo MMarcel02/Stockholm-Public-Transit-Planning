@@ -23,6 +23,10 @@ public class StopHoverCard {
 	JourneyInput journeyInput;
 
 	RaptorNetwork network;
+	private Runnable onToggleCallback;
+	public void setOnToggleCallback(Runnable callback) {
+		this.onToggleCallback = callback;
+	}
 
 	public StopHoverCard(JourneyInput journeyInput, RaptorNetwork network) {
 		card.getStyleClass().add("stop-hover-card");
@@ -40,6 +44,7 @@ public class StopHoverCard {
 	public void show(Stop stop, List<String> arrivalStrings,
 			double viewWidth, double viewHeight,
 			double mouseX, double mouseY) {
+
 		if (stop == currentStop && card.isVisible()) {
 			position(viewWidth, viewHeight, mouseX, mouseY);
 			return;
@@ -111,15 +116,24 @@ public class StopHoverCard {
 		card.getChildren().add(actionRow);
 
 
-		Button disableButton = new Button("Disable Stop");
+
+		int internalId = network.stopStringToIntMap.get(stop.id);
+		boolean isEnabled = network.stopsEnabledArr[internalId];
+
+		Button disableButton = new Button(isEnabled ? "Disable Stop" : "Enable Stop");
 		disableButton.getStyleClass().add("stop-hover-button-muted");
 		disableButton.setPrefWidth(CARD_WIDTH - 28);
 		disableButton.setMinWidth(CARD_WIDTH - 28);
 		disableButton.setMinHeight(34);
-		disableButton.setOnAction(ev -> network.toggleStop(stop.id));
+		disableButton.setOnAction(ev -> {
+			network.toggleStop(stop.id);
+			hide();
+			if (onToggleCallback != null) {
+				onToggleCallback.run();
+			}
+		});
 
 		card.getChildren().add(disableButton);
-
 		card.setVisible(true);
 		card.toFront();
 		card.applyCss();

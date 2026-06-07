@@ -67,12 +67,12 @@ public class NavigationLayer implements Layer {
 
 			for (RouteStep rs: steps) {
 				Step step = new Step(
-					rs.latFrom,
-					rs.lonFrom,
-					rs.latTo,
-					rs.lonTo,
-					rs.shapeId
-				);
+						rs.latFrom,
+						rs.lonFrom,
+						rs.latTo,
+						rs.lonTo,
+						rs.shapeId
+						);
 
 				step.routeStepType = rs.routeStepType;
 

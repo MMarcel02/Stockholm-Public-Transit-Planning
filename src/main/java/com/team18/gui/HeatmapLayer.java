@@ -115,8 +115,6 @@ public class HeatmapLayer implements Layer {
 					double delayMinutes =
 						Math.max(0.0, (newSeconds - baselineSeconds) / 60.0);
 
-					if (delayMinutes != 0) System.out.println(delayMinutes);
-
 					points.add(new Point(lat, lon, delayMinutes));
 				} else {
 					int seconds = estimator.estimateTravelTimeToPoint(lat, lon);
@@ -226,14 +224,19 @@ public class HeatmapLayer implements Layer {
 
 	private Color pointColor(Point point) {
 		if (differenceMode) {
-			double[] thresholds = {0, 2, 5, 8, 12, 16, 22, 30};
+			if (point.valueMinutes <= 0.05) {
+				return Color.TRANSPARENT;
+			}
+			double[] thresholds = {0, 1, 3, 5, 10, 15, 20, 30};
 
 			String[] colors = {
-				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
-				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
+					"#FDD835", // Yellow (starts here immediately after 0.01)
+					"#FB8C00", // 1 min delay -> Orange
+					"#E53935", // 3 min delay -> Red
+					"#8E0000", // 5+ min delay -> Dark Red
+					"#4A0000", "#300000", "#1A0000", "#000000"
 			};
-
-			return interpolatePalette(point.valueMinutes, thresholds, colors, 0.50);
+			return interpolatePalette(point.valueMinutes, thresholds, colors, 0.65);
 		}
 
 		double[] thresholds = {0, 10, 20, 30, 45, 60, 75, 90};

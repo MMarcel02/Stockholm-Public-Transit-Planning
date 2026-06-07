@@ -93,6 +93,9 @@ public class GuiController {
 		routeDisplay = new RouteDisplay(routeStepsContainer);
 
 		stopHoverCard = new StopHoverCard(journeyInput, network);
+		stopHoverCard.setOnToggleCallback( () -> {
+			stack.render(mapContainer.getWidth(), mapContainer.getHeight());
+		});
 		mapContainer.getChildren().add(stopHoverCard.getVBox());
 		stack.stopLayer.setHoverCard(stopHoverCard);
 
