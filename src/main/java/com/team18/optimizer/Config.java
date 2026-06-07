@@ -1,6 +1,8 @@
 package com.team18.optimizer;
 
 import java.time.LocalDate;
+import java.time.Month;
+import java.util.Set;
 
 import com.team18.util.ParsingUtil;
 
@@ -12,6 +14,15 @@ public class Config {
     // Metros: 7
     // Trains: 4
     // Ferries: 21
+    
+    public static LocalDate REPRESENTATIVE_WEEKDAY; 
+
+    public static final Set<LocalDate> SWEDISH_PUBLIC_HOLIDAYS = Set.of(
+        LocalDate.of(2026, Month.APRIL, 3),   // Good Friday 
+        LocalDate.of(2026, Month.APRIL, 6),   // Easter Monday 
+        LocalDate.of(2026, Month.MAY, 1),     // May Day 
+        LocalDate.of(2026, Month.MAY, 14)     // Ascension Day 
+    );
 
     // TODO: If have time come up with algorithmic way of pickign reference week 
     // Turns out doing all will take too long, better to pick one
@@ -24,6 +35,7 @@ public class Config {
         LocalDate.of(2026, 4, 18), // Saturday
         LocalDate.of(2026, 4, 19)  // Sunday
     };
+
 
     public static final int[] REFERENCE_TIMES = {
         ParsingUtil.timeStringToSecondsAfterMidnight("8:00"),
@@ -46,6 +58,7 @@ public class Config {
     // On page 5, its in swedish so need to translate
     // Also here for the netherlands (could argue its more accurate as have actual city data)
     // https://opendata.cbs.nl/#/CBS/en/dataset/84710ENG/table?dl=942C9
+    // The response rate was 35%, and the final sample included 45,467 respondents making 102,588 trips, of which 31,961 were transit trips.
     public static double TRIPS_PER_DAY_PER_PERSON_STOCKHOLM_COUNTY = 2.7; // used to configure our daily demand matrix
     public static double TRIPS_PER_WEEKDAY_PER_PERSON_STOCKHOLM_COUNTY = 1.9;
     public static double TRIPS_PER_WEEKEND_PER_PERSON_STOCKHOLM_COUNTY = 1.5;
@@ -55,9 +68,12 @@ public class Config {
     // We use this to estimate that trips under 2 km 40 % will use transit
     // and over 2km 70% will use it since we are in the urban area          
     // https://link.springer.com/article/10.1186/s12544-021-00488-0#Sec6
+    // also here https://www.sciencedirect.com/science/article/pii/S0966692319304016#s0030
     public static double PERCENTAGE_OF_TRIPS_USING_TRANSIT = 0.6;
     public static double PERCENTAGE_OF_TRIPS_USING_TRANSIT_UNDER_THRESHOLD = 0.4;
     public static double FRICTION_FACTOR = 2.5; // relatively high, to model most ppl travelling to city and back
+
+    public static double OPERATOR_CONTRACT_OVERHEAD = 1.12; // how much operators charge sl over pure vehicle operating costs
 
     public static double WALK_SPEED_MPS = 5.0 / 3.6;    // 5km/h 
     public static double CAR_SPEED_MPS = 30.0 / 3.6;    // 30 km/h (assuming stockholm rush hour) 

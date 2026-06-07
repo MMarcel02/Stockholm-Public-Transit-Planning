@@ -59,11 +59,11 @@ public class WalkingMethodAnalyzer {
                 double avgError = totalErrorPercent / count;
                 double speedup = (double) totalTimeHaversineNs / totalTimeEquiNs;
                 
-                System.out.println("Successfully processed " + count + " routes");
-                System.out.printf("Average Error Percent: %.8f%%%n", avgError);
-                System.out.printf("Average Speedup: %.2fx%n", speedup);
+                System.err.println("Successfully processed " + count + " routes");
+                System.err.printf("Average Error Percent: %.8f%%%n", avgError);
+                System.err.printf("Average Speedup: %.2fx%n", speedup);
             } else {
-                System.out.println("No valid coordinate data found in the file.");
+                System.err.println("No valid coordinate data found in the file.");
             }
             
         } catch (IOException e) {

@@ -1,9 +1,11 @@
 package com.team18.optimizer;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.team18.model.Route;
 import com.team18.model.Stop;
@@ -86,10 +88,10 @@ public class Optimizer {
     public void multiThreadedOptimize() {
         Set<String> diasbledParentRoutes = new HashSet<>();
                 
-        double baselinePassengerCost = calculateTimePeriodPassengerCost(network) * Config.PASSENGER_COST_WEIGHT;
+        network.setByCalendar(Config.REPRESENTATIVE_WEEKDAY);
+        double baselinePassengerCost = calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
         double baselineTotalCost = baselineTransitOperationalCost + baselinePassengerCost;
 
-        System.err.println("Time period (days): " + Config.REFERENCE_PERIOD.length);
         System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
         System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
 
@@ -116,10 +118,12 @@ public class Optimizer {
 
                     localNetwork.disableParentRouteOptimizer(route.id);
 
-                    double newWeeklyOperationalCost = this.baselineTransitOperationalCost - route.operatingCostSEK;
-                    double newWeeklyPassengerCost = localOptimizer.calculateTimePeriodPassengerCost(localNetwork) * Config.PASSENGER_COST_WEIGHT;
+                    double newDailyOperationalCost = this.baselineTransitOperationalCost - route.operatingCostSEK;
 
-                    double newTotalCost = newWeeklyOperationalCost + newWeeklyPassengerCost;
+                    localNetwork.setByCalendar(Config.REPRESENTATIVE_WEEKDAY);
+                    double newDailyPassengerCost = localOptimizer.calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
+
+                    double newTotalCost = newDailyOperationalCost + newDailyPassengerCost;
                     double costDifference = newTotalCost - baselineTotalCostForThisRound;
 
                     return Map.entry(route.id, costDifference);
@@ -149,13 +153,53 @@ public class Optimizer {
         }
     }
 
+    // Can call this in the GUI to get value for each route
+    // should probably use the representative day in the gui but could also technically use any 
+    public Map<String, Double> getRouteRemovedToCostImpact (LocalDate onDate) {
+        network.setByCalendar(onDate);
+        double baselinePassengerCost = calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
+        double baselineTotalCost = baselineTransitOperationalCost + baselinePassengerCost;
+
+        System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
+        System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
+
+        return network.parentRouteLookup.values().parallelStream()
+            .map(route -> {
+
+                RaptorNetwork localNetwork = network.copyForMultithreading();
+
+                Optimizer localOptimizer = new Optimizer(
+                    localNetwork, 
+                    this.demandPointCoordinates, 
+                    this.demandMatrix,
+                    this.stopsReachableFromDemandPoint,
+                    this.walkTimeFromAllStopsToAllDemandPoints,
+                    this.baselineTransitOperationalCost
+                );
+
+                localNetwork.disableParentRouteOptimizer(route.id);
+
+                double newDailyOperationalCost = this.baselineTransitOperationalCost - route.operatingCostSEK;
+
+                localNetwork.setByCalendar(onDate);
+                double newDailyPassengerCost = localOptimizer.calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
+
+                double newTotalCost = newDailyOperationalCost + newDailyPassengerCost;
+                double costDifference = newTotalCost - baselineTotalCost;
+
+                return Map.entry(route.id, costDifference);
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    // Old, still leaving it here for now in case we use more than one day for evaluation
     public double calculateTimePeriodPassengerCost(RaptorNetwork localNetwork) {
-        double totalWeeklyCost = 0.0;
-        for (int i = 0; i < 1; i++) {
-            localNetwork.setByCalendar(Config.REFERENCE_PERIOD[2]);
-            totalWeeklyCost += calculateDailyPassengerCost();
+        double totalPeriodCost = 0.0;
+        for (int i = 0; i < Config.REFERENCE_PERIOD.length; i++) { // 
+            localNetwork.setByCalendar(Config.REFERENCE_PERIOD[i]);
+            totalPeriodCost += calculateDailyPassengerCost();
         }
-        return totalWeeklyCost;
+        return totalPeriodCost;
     }
 
     public double calculateDailyPassengerCost() {
