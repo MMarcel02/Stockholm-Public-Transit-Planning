@@ -133,7 +133,8 @@ public class HeatmapLayer implements Layer {
 	}
 
 	public void clear() {
-		this.points = List.of();
+		points = List.of();
+		update();
 	}
 
 	public void shift(double x, double y) {
@@ -151,7 +152,14 @@ public class HeatmapLayer implements Layer {
 	}
 
 	void update() {
-		if (points.isEmpty()) return;
+		GraphicsContext gc = canvas.getGraphicsContext2D();
+
+		if (points.isEmpty()) {
+			canvas.setWidth(1);
+			canvas.setHeight(1);
+			gc.clearRect(0, 0, 1, 1);
+			return;
+		}
 
 		double width = viewWidth + Tile.RESOLUTION * 2;
 		double height = viewHeight + Tile.RESOLUTION * 2;
@@ -166,7 +174,6 @@ public class HeatmapLayer implements Layer {
 		canvas.setWidth(width);
 		canvas.setHeight(height);
 
-		GraphicsContext gc = canvas.getGraphicsContext2D();
 		gc.clearRect(0, 0, width, height);
 
 		double radius = 22;

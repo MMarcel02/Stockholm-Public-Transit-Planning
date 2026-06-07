@@ -58,6 +58,8 @@ public class GuiController {
 
 	DrawnRoute drawnRoute = null;
 
+	List<DrawnRoute> optimizerRoutes = new ArrayList<>();
+
 	@FXML
 	public void initialize() {
 		GTFSParser parser = null;
@@ -149,6 +151,12 @@ public class GuiController {
 	}
 
 	@FXML
+	public void handleClearJourney() {
+		stack.navLayer.remove(drawnRoute);
+		drawnRoute = null;
+	}
+
+	@FXML
 	public void handleGenerateHeatmap() {
 		try {
 			double[] origin = journeyInput.resolveStart();
@@ -165,7 +173,20 @@ public class GuiController {
 	}
 
 	@FXML
+	public void handleHideHeatmap() {
+		stack.heatmapLayer.clear();
+		stack.render(mapContainer.getWidth(), mapContainer.getHeight());
+	}
+
+
+	@FXML
 	public void handleRemovalCosts() {
+		for (DrawnRoute dr: optimizerRoutes) {
+			stack.navLayer.remove(dr);
+		}
+
+		optimizerRoutes.clear();
+
 		try {
 			PopdistParser popd = new PopdistParser();
 			popd.loadFromCsv("data/stockholm/population.csv");
@@ -211,13 +232,24 @@ public class GuiController {
 					Color color =
 						interpolatePalette(costs.get(routeId), thresholds, colors, 0.48);
 
-					stack.navLayer.add(new DrawnRoute(steps, color));
+					DrawnRoute dr = new DrawnRoute(steps, color);
+					optimizerRoutes.add(dr);
+					stack.navLayer.add(dr);
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+
+	@FXML
+	public void handleHideRemovalCosts() {
+		for (DrawnRoute dr: optimizerRoutes) {
+			stack.navLayer.remove(dr);
+		}
+
+		optimizerRoutes.clear();
 	}
 
 	private Color interpolatePalette(double value, double[] thresholds,
