@@ -75,4 +75,6 @@ public class Config {
     public static int MAX_WALK_DISTANCE_TRANSFERS_METRES = 500;            // how much a passenger is willing to transfer
     public static int MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES = 1500;   // how much a passenger is willing to walk before/after transit 
     public static int TRANSFER_PENALTY = 30;                               // time in seconds added to each transfer
+
+    public static final double EARTH_RADIUS_METERS = 6371000.0;
 }

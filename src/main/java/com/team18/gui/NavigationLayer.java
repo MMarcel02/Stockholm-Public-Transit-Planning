@@ -31,15 +31,56 @@ public class NavigationLayer implements Layer {
 	double viewWidth = 0;
 	double viewHeight = 0;
 
+	public static class Step {
+		public String shapeId = null;
+
+		public double latFrom;
+		public double lonFrom;
+		public double latTo;
+		public double lonTo;
+
+		public RouteStepType routeStepType = null;
+
+		public Step(double latFrom, double lonFrom, double latTo, double lonTo,
+				String shapeId) {
+			this.latFrom = latFrom;
+			this.lonFrom = lonFrom;
+			this.latTo = latTo;
+			this.lonTo = lonTo;
+			this.shapeId = shapeId;
+		}
+
+		public Step(double latFrom, double lonFrom, double latTo, double lonTo) {
+			this.latFrom = latFrom;
+			this.lonFrom = lonFrom;
+			this.latTo = latTo;
+			this.lonTo = lonTo;
+		}
+	}
+
 	public static class DrawnRoute {
-		List<RouteStep> steps;
+		List<Step> steps;
 		Color color = null;
 
 		public DrawnRoute(List<RouteStep> steps) {
-			this.steps = steps;
+			this.steps = new ArrayList<>();
+
+			for (RouteStep rs: steps) {
+				Step step = new Step(
+					rs.latFrom,
+					rs.lonFrom,
+					rs.latTo,
+					rs.lonTo,
+					rs.shapeId
+				);
+
+				step.routeStepType = rs.routeStepType;
+
+				this.steps.add(step);
+			}
 		}
 
-		public DrawnRoute(List<RouteStep> steps, Color color) {
+		public DrawnRoute(List<Step> steps, Color color) {
 			this.steps = steps;
 			this.color = color;
 		}
@@ -90,7 +131,7 @@ public class NavigationLayer implements Layer {
 		group.getChildren().clear();
 
 		for (DrawnRoute dr: drawnRoutes) {
-			for (RouteStep step: dr.steps) {
+			for (Step step: dr.steps) {
 				Shape segment = null;
 
 				boolean usingTransit = (step.routeStepType == RouteStepType.TRANSIT);
@@ -144,7 +185,7 @@ public class NavigationLayer implements Layer {
 		return group;
 	}
 
-	private Polyline buildPolylineSegment(RouteStep step) {
+	private Polyline buildPolylineSegment(Step step) {
 		List<ShapePoint> points = parser.shapes.get(step.shapeId);
 		if (points == null || points.size() < 2) return null;
 
