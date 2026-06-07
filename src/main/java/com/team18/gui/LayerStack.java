@@ -22,6 +22,9 @@ public class LayerStack implements Layer {
 
 	ArrayList<Layer> layers = new ArrayList<>();
 
+	double viewWidth = 0;
+	double viewHeight = 0;
+
 	Group group = new Group();
 
 	public LayerStack(GTFSParser parser, RaptorNetwork network,
@@ -50,6 +53,9 @@ public class LayerStack implements Layer {
 	}
 
 	public void render(double width, double height) {
+		viewWidth = width;
+		viewHeight = height;
+
 		for (Layer layer: layers) {
 			layer.render(width, height);
 		}
@@ -57,6 +63,23 @@ public class LayerStack implements Layer {
 
 	public Group getGroup() {
 		return group;
+	}
+
+	public void zoom(int direction) {
+		if (direction == 0) return;
+		if (direction > 1 || direction < -1) return;
+
+		double factor = Math.pow(2, direction);
+		if (factor < 0) factor = 1 / (-factor);
+
+		group.setTranslateX(group.getTranslateX() * factor);
+		group.setTranslateY(group.getTranslateY() * factor);
+
+		CoordSystem.setZoomLevel(CoordSystem.getZoomLevel() + direction);
+
+		shift(0, 0);
+		render(viewWidth, viewHeight);
+
 	}
 
 	public boolean mousePressed(MouseEvent event) {
@@ -73,18 +96,7 @@ public class LayerStack implements Layer {
 		}
 
 		if (delta != 0) {
-			double factor = Math.pow(2, delta);
-			if (factor < 0) factor = 1 / (-factor);
-
-			// so that zoom is centered in the middle. (??)
-			group.setTranslateX(group.getTranslateX() * factor);
-			group.setTranslateY(group.getTranslateY() * factor);
-
-			CoordSystem.setZoomLevel(CoordSystem.getZoomLevel() + delta);
-
-			shift(0, 0);
-			render(group.getScene().getWidth(), group.getScene().getHeight());
-
+			zoom(delta);
 			return true;
 		}
 

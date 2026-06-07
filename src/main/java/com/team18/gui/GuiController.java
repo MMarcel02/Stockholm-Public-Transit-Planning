@@ -147,5 +147,15 @@ public class GuiController {
 			routeDisplay.displayInvalidInput();
 		}
 	}
+
+	@FXML
+	public void zoomIn() {
+		stack.zoom(1);
+	}
+
+	@FXML
+	public void zoomOut() {
+		stack.zoom(-1);
+	}
 }
 
