@@ -506,13 +506,11 @@ public class GTFSParser {
 
     public void calculateRouteCosts() {
         for (Route route : routes.values()) {
-            for (int i = 0; i < Config.REFERENCE_PERIOD.length; i++) {
-                LocalDate date = Config.REFERENCE_PERIOD[i];
-                Set<String> activeServices = serviceByCalendar.get(date);
-                for (Trip trip : route.trips) {
-                    if (activeServices.contains(trip.serviceId)) {
-                        route.operatingCostSEK += trip.operatingCostSEK;
-                    }
+            LocalDate date = Config.REFERENCE_PERIOD[2]; // just gonna use wednesday since using whole week takes too long
+            Set<String> activeServices = serviceByCalendar.get(date);
+            for (Trip trip : route.trips) {
+                if (activeServices.contains(trip.serviceId)) {
+                    route.operatingCostSEK += trip.operatingCostSEK;
                 }
             }
         }
@@ -574,6 +572,40 @@ public class GTFSParser {
         // System.err.println("modal: " + modalSize);
 
         return bestRepresentitiveDay;
+    }
+
+    public void printRouteTypeCounts() {
+                int metro = 0;
+        int train = 0;
+        int tram = 0;
+        int bus = 0;
+        int ferry = 0;
+
+        for (Route route : routes.values()) {
+            switch (route.routeType) {
+                case METRO:
+                    metro++;
+                    break;
+                case TRAIN:
+                    train++;
+                    break;
+                case TRAM:
+                    tram++;
+                    break;
+                case BUS:
+                    bus++;
+                    break;
+                case FERRY:
+                    ferry++;
+                    break;
+            }
+        }
+
+        System.out.println("Buses: " + bus);
+        System.out.println("Trams: " + tram);
+        System.out.println("Metros: " + metro);
+        System.out.println("Trains: " + train);
+        System.out.println("Ferries: " + ferry);
     }
 
 }

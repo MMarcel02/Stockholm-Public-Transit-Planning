@@ -18,8 +18,8 @@ import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.optimizer.Config;
 
 public class HeatmapLayer implements Layer {
-	static final int COL_COUNT = 90;
-	static final int ROW_COUNT = 56;
+	static final int COL_COUNT = 90*2;
+	static final int ROW_COUNT = 56*2;
 
 	RaptorNetwork network;
 

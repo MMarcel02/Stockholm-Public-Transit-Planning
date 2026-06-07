@@ -75,8 +75,8 @@ public class PopdistParser {
 			int x = (int) Math.floor(width * ((pt.lon - minLon) / (maxLon - minLon)));
 			int y = (int) Math.floor(height * ((pt.lat - minLat) / (maxLat - minLat)));
 			grid[x+aw*y] = pt.population;
-			demandPointCoordinates[x+aw*y*2] = pt.lat;
-			demandPointCoordinates[x+aw*y*2 + 1] = pt.lon;
+			demandPointCoordinates[(x + aw * y) * 2] = pt.lat;
+    		demandPointCoordinates[(x + aw * y) * 2 + 1] = pt.lon;
 		}
 
 		demand = new int[aw*ah][aw*ah];
@@ -122,10 +122,10 @@ public class PopdistParser {
 								Math.pow((ix - jx), 2)
 								+ Math.pow((iy - jy), 2));
 
-						double k = 2;
+						double k = Config.FRICTION_FACTOR;
 						
 						double percentagePeopleTakingPublicTransit = Config.PERCENTAGE_OF_TRIPS_USING_TRANSIT;
-						if (distance < Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+						if (distance * 1000 < Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
 							percentagePeopleTakingPublicTransit = Config.PERCENTAGE_OF_TRIPS_USING_TRANSIT_UNDER_THRESHOLD;
 						}
 
@@ -135,6 +135,9 @@ public class PopdistParser {
 				}
 			}
 		}
+		
+		System.err.println("Percentage share using public transit (aim for about 35%): " + 
+		totalDemand / (Config.TRIPS_PER_DAY_PER_PERSON_STOCKHOLM_COUNTY * totalPopulation));
 
 		System.err.println("Total public transit trips a day: " + totalDemand);
 	}

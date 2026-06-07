@@ -19,7 +19,6 @@ public class Optimizer {
     public double[] demandPointCoordinates;
     public int[][] demandMatrix;
     
-    public int startTime = ParsingUtil.timeStringToSecondsAfterMidnight("14:00"); // and this to make better optimizer, maybe with rraptor
     public int totalDemandPoints;
     public int totalStops;
     public int[] bestArrivalTimeForEachStop;
@@ -86,9 +85,8 @@ public class Optimizer {
 
     public void multiThreadedOptimize() {
         Set<String> diasbledParentRoutes = new HashSet<>();
-
-        double baselinePassengerCost = calculateTimePeriodPassengerCost() * Config.PASSENGER_COST_WEIGHT;
-
+                
+        double baselinePassengerCost = calculateTimePeriodPassengerCost(network) * Config.PASSENGER_COST_WEIGHT;
         double baselineTotalCost = baselineTransitOperationalCost + baselinePassengerCost;
 
         System.err.println("Time period (days): " + Config.REFERENCE_PERIOD.length);
@@ -99,9 +97,11 @@ public class Optimizer {
 
             double baselineTotalCostForThisRound = baselineTotalCost;
 
-            Map.Entry<String, Double> bestRouteToDisable = network.parentRouteToRaptorRoutesMap.keySet().parallelStream()
-                .filter(parentRotueId -> !diasbledParentRoutes.contains(parentRotueId))
-                .map(parentRotueId -> {
+            Map.Entry<String, Double> bestRouteToDisable = network.parentRouteLookup.values().parallelStream()
+                .filter(route -> !diasbledParentRoutes.contains(route.id)
+                && route.routeType == Route.RouteType.BUS
+                )
+                .map(route -> {
 
                     RaptorNetwork localNetwork = network.copyForMultithreading();
 
@@ -114,18 +114,15 @@ public class Optimizer {
                         this.baselineTransitOperationalCost
                     );
 
-                    localNetwork.disableParentRouteOptimizer(parentRotueId);
-                    Route route = localNetwork.parentRouteLookup.get(parentRotueId);
+                    localNetwork.disableParentRouteOptimizer(route.id);
 
-                    double weeklyRouteTransitOperationalCost = route.operatingCostSEK;
-                    double newWeeklyOperationalCost = localOptimizer.baselineTransitOperationalCost - weeklyRouteTransitOperationalCost;
-
-                    double newWeeklyPassengerCost = localOptimizer.calculateTimePeriodPassengerCost() * Config.PASSENGER_COST_WEIGHT;
+                    double newWeeklyOperationalCost = this.baselineTransitOperationalCost - route.operatingCostSEK;
+                    double newWeeklyPassengerCost = localOptimizer.calculateTimePeriodPassengerCost(localNetwork) * Config.PASSENGER_COST_WEIGHT;
 
                     double newTotalCost = newWeeklyOperationalCost + newWeeklyPassengerCost;
                     double costDifference = newTotalCost - baselineTotalCostForThisRound;
 
-                    return Map.entry(parentRotueId, costDifference);
+                    return Map.entry(route.id, costDifference);
                 })   
                 .min(Map.Entry.comparingByValue())
                 .orElse(null);
@@ -139,7 +136,7 @@ public class Optimizer {
                 this.baselineTransitOperationalCost -= disabledRoute.operatingCostSEK;
                 
                 double costImpact = bestRouteToDisable.getValue();
-                System.err.println("Money saved 4 - weekly: " + costImpact);
+                System.err.println("Money saved: " + costImpact);
                 baselineTotalCost += costImpact;
             }
         }
@@ -152,10 +149,10 @@ public class Optimizer {
         }
     }
 
-    public double calculateTimePeriodPassengerCost() {
+    public double calculateTimePeriodPassengerCost(RaptorNetwork localNetwork) {
         double totalWeeklyCost = 0.0;
-        for (int i = 0; i < Config.REFERENCE_PERIOD.length; i++) {
-            network.setByCalendar(Config.REFERENCE_PERIOD[i]);
+        for (int i = 0; i < 1; i++) {
+            localNetwork.setByCalendar(Config.REFERENCE_PERIOD[2]);
             totalWeeklyCost += calculateDailyPassengerCost();
         }
         return totalWeeklyCost;
@@ -164,46 +161,51 @@ public class Optimizer {
     public double calculateDailyPassengerCost() {
         double totalDailyCost = 0.0;
 
-        for (int i = 0; i < totalDemandPoints; i++) {
-            bestArrivalTimeForEachStop = raptor.getBestArrivalTimeToAllStops(demandPointCoordinates[i*2], demandPointCoordinates[i*2+1], startTime);
-
-            for (int j = 0; j < totalDemandPoints; j++) {
-                if (i == j || demandMatrix[i][j] == 0) {
-                    continue;
-                }
-
-                int bestArrivalTimeAtDemandPoint = Integer.MAX_VALUE;
-                int[] stopsReachable = stopsReachableFromDemandPoint[j];
-                int[] walkTimes = walkTimeFromAllStopsToAllDemandPoints[j];
-                
-                for (int k = 0; k < stopsReachable.length; k++) {
-                    int stopId = stopsReachable[k];
-                    int arrivalTimeAtStop =  bestArrivalTimeForEachStop[stopId]; 
-                    int walkTime = walkTimes[stopId];
-
-                    if (arrivalTimeAtStop != Integer.MAX_VALUE && walkTime != Integer.MAX_VALUE) {
-                        int arrivalTime = arrivalTimeAtStop + walkTime;
-                        if (arrivalTime < bestArrivalTimeAtDemandPoint) {
-                            bestArrivalTimeAtDemandPoint = arrivalTime;
-                        }  
+        for (int t = 0; t < Config.REFERENCE_TIMES.length; t++) {
+            int startTime = Config.REFERENCE_TIMES[t];
+            double weight = Config.REFERENCE_WEIGHTS[t];
+            for (int i = 0; i < totalDemandPoints; i++) {
+                bestArrivalTimeForEachStop = raptor.getBestArrivalTimeToAllStops(demandPointCoordinates[i*2], demandPointCoordinates[i*2+1], startTime);
+    
+                for (int j = 0; j < totalDemandPoints; j++) {
+                    if (i == j || demandMatrix[i][j] == 0) {
+                        continue;
                     }
-                }
-                
-                double distToDestination = GeoCalculator.calculateEquirectangularDistance(demandPointCoordinates[i*2], demandPointCoordinates[i*2+1], demandPointCoordinates[j*2], demandPointCoordinates[j*2+1]);
-                double cost = 0;
-
-                if (bestArrivalTimeAtDemandPoint != Integer.MAX_VALUE && (bestArrivalTimeAtDemandPoint - startTime) <= Config.MAX_TRANSIT_TIME_SECONDS) {
-                    cost = (bestArrivalTimeAtDemandPoint - startTime) * Config.VOT;
-                } else if (distToDestination < Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
-                    cost = (distToDestination / Config.WALK_SPEED_MPS) * Config.VOT;
-                } else {
+    
+                    int bestArrivalTimeAtDemandPoint = Integer.MAX_VALUE;
+                    int[] stopsReachable = stopsReachableFromDemandPoint[j];
+                    int[] walkTimes = walkTimeFromAllStopsToAllDemandPoints[j];
+                    
+                    for (int k = 0; k < stopsReachable.length; k++) {
+                        int stopId = stopsReachable[k];
+                        int arrivalTimeAtStop =  bestArrivalTimeForEachStop[stopId]; 
+                        int walkTime = walkTimes[stopId];
+    
+                        if (arrivalTimeAtStop != Integer.MAX_VALUE && walkTime != Integer.MAX_VALUE) {
+                            int arrivalTime = arrivalTimeAtStop + walkTime;
+                            if (arrivalTime < bestArrivalTimeAtDemandPoint) {
+                                bestArrivalTimeAtDemandPoint = arrivalTime;
+                            }  
+                        }
+                    }
+                    
+                    double distToDestination = GeoCalculator.calculateEquirectangularDistance(demandPointCoordinates[i*2], demandPointCoordinates[i*2+1], demandPointCoordinates[j*2], demandPointCoordinates[j*2+1]);
+                    double cost = 0;
+    
+                    if (bestArrivalTimeAtDemandPoint != Integer.MAX_VALUE && (bestArrivalTimeAtDemandPoint - startTime) <= Config.MAX_TRANSIT_TIME_SECONDS) {
+                        cost = (bestArrivalTimeAtDemandPoint - startTime) * Config.VOT;
+                    } else if (distToDestination < Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
+                        cost = (distToDestination / Config.WALK_SPEED_MPS) * Config.VOT;
+                    } else {
+                        cost = (distToDestination / Config.WALK_SPEED_MPS) * Config.VOT;
                         double carTimeSecs = distToDestination * Config.CAR_DISTANCE_MULTIPLIER / Config.CAR_SPEED_MPS;
                         double timeCost = carTimeSecs * Config.VOT;
                         double carCost = distToDestination * Config.CAR_COST_PER_METRE + Config.FLAT_CAR_PENALTY;
                         cost = timeCost + carCost;
+                    }
+    
+                    totalDailyCost += cost * demandMatrix[i][j] * weight;                
                 }
-
-                totalDailyCost += cost * demandMatrix[i][j];                
             }
         }
         return totalDailyCost;
