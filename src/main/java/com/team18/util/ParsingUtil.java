@@ -23,12 +23,12 @@ public class ParsingUtil {
     }
 
     public static String secondsAfterMidnightToTimeString(int secondsAfterMidnight) {
-        int hours = (secondsAfterMidnight / 3600) % 24;
-        int minutes = (secondsAfterMidnight % 3600) / 60;
+        int totalMinutes = (int) Math.round(secondsAfterMidnight / 60.0);
 
-        String dayMarker = (secondsAfterMidnight >= 86400) ? " (+1)" : "";
+        int hours = (totalMinutes / 60) % 24;
+        int minutes = totalMinutes % 60;
 
-        return String.format("%02d:%02d%s", hours, minutes, dayMarker);
+        return String.format("%02d:%02d", hours, minutes);
     }
     
 }

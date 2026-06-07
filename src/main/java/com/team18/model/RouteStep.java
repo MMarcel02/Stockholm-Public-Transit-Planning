@@ -7,7 +7,8 @@ import java.util.Map;
 
 public class RouteStep {
     public final RouteStepType routeStepType;
-    public final double durationMinutes;
+    public final int waitTimeSecs;
+    public final int tripTimeSecs;
     public final int startTimeSecondsAfterMidnight;
     
     public final Stop fromStop;
@@ -18,16 +19,18 @@ public class RouteStep {
 
     public final double latFrom;
     public final double lonFrom;
-    
+
     public final Route route;
     public final RaptorRoute raptorRoute;
     public final String shapeId; 
     public final String headSign; 
+    
 
     // Walking constructor from Starting coordinates -> Initial Stop
-    public RouteStep(double latFrom, double lonFrom, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight) {
+    public RouteStep(double latFrom, double lonFrom, Stop toStop, int tripTimeSecs, int startTimeSecondsAfterMidnight) {
         this.routeStepType = RouteStepType.WALK_TO_STOP;
-        this.durationMinutes = durationMinutes;
+        this.waitTimeSecs = 0;
+        this.tripTimeSecs = tripTimeSecs;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         
         this.fromStop = null;
@@ -46,9 +49,10 @@ public class RouteStep {
     }
 
     // Walking constructor from Stop to Stop 
-    public RouteStep(Stop fromStop, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight) {
+    public RouteStep(Stop fromStop, Stop toStop, int tripTimeSecs, int startTimeSecondsAfterMidnight) {
         this.routeStepType = RouteStepType.TRANSFER;
-        this.durationMinutes = durationMinutes;
+        this.waitTimeSecs = 0;
+        this.tripTimeSecs = tripTimeSecs;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         
         this.fromStop = fromStop;
@@ -67,9 +71,10 @@ public class RouteStep {
     }
 
     // Walking constructor from Final Stop -> Destination coordinates
-    public RouteStep(Stop fromStop, double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight) {
+    public RouteStep(Stop fromStop, double latTo, double lonTo, int tripTimeSecs, int startTimeSecondsAfterMidnight) {
         this.routeStepType = RouteStepType.WALK_TO_DEST;
-        this.durationMinutes = durationMinutes;
+        this.waitTimeSecs = 0;
+        this.tripTimeSecs = tripTimeSecs;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         
         this.fromStop = fromStop;
@@ -88,9 +93,10 @@ public class RouteStep {
     }
 
     // Walking constructor from Starting coordinates -> Destination coordinates (no transfer case)
-    public RouteStep(double latFrom, double lonFrom, double latTo, double lonTo, double durationMinutes, int startTimeSecondsAfterMidnight) {
+    public RouteStep(double latFrom, double lonFrom, double latTo, double lonTo, int tripTimeSecs, int startTimeSecondsAfterMidnight) {
         this.routeStepType = RouteStepType.DIRECT_WALK;
-        this.durationMinutes = durationMinutes;
+        this.waitTimeSecs = 0;
+        this.tripTimeSecs = tripTimeSecs;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         
         this.fromStop = null;
@@ -109,9 +115,10 @@ public class RouteStep {
     }
 
     // Public transit constructor RAPTOR
-    public RouteStep(Stop fromStop, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight, RaptorRoute raptorRoute) {
+    public RouteStep(Stop fromStop, Stop toStop, int waitTimeSecs, int tripTimeSecs, int startTimeSecondsAfterMidnight, RaptorRoute raptorRoute) {
         this.routeStepType = RouteStepType.TRANSIT;
-        this.durationMinutes = durationMinutes;
+        this.waitTimeSecs = waitTimeSecs;
+        this.tripTimeSecs = tripTimeSecs;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
         
         this.fromStop = fromStop;
@@ -130,9 +137,10 @@ public class RouteStep {
     }
 
     // Public transit constructor for A* (which has the underlying Route/Trip instead of a RaptorRoute)
-    public RouteStep(Stop fromStop, Stop toStop, double durationMinutes, int startTimeSecondsAfterMidnight, Route route, String shapeId, String headSign) {
+    public RouteStep(Stop fromStop, Stop toStop, int tripTimeSecs, int startTimeSecondsAfterMidnight, Route route, String shapeId, String headSign) {
         this.routeStepType = RouteStepType.TRANSIT;
-        this.durationMinutes = durationMinutes;
+        this.waitTimeSecs = 0;
+        this.tripTimeSecs = tripTimeSecs;
         this.startTimeSecondsAfterMidnight = startTimeSecondsAfterMidnight;
 
         this.fromStop = fromStop;
@@ -161,7 +169,9 @@ public class RouteStep {
         point.put("lon", this.lonTo);
         stepMap.put("to", point);
 
-        stepMap.put("duration", durationMinutes);
+        double duration = (waitTimeSecs + tripTimeSecs) / 60.0;
+
+        stepMap.put("duration", duration);
         stepMap.put("startTime", ParsingUtil.secondsAfterMidnightToTimeString(startTimeSecondsAfterMidnight));
 
         if (routeStepType == RouteStepType.TRANSIT) {

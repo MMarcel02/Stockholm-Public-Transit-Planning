@@ -6,6 +6,8 @@ import java.util.List;
 
 import com.team18.model.RouteStep;
 import com.team18.model.Stop;
+import com.team18.model.StopTime;
+import com.team18.model.Trip;
 import com.team18.optimizer.Config;
 import com.team18.routing.Router;
 import com.team18.util.GeoCalculator;
@@ -242,7 +244,7 @@ public class RaptorAlgorithm implements Router {
                             if (arrivalTime < bestArrivalTime[stopIdInRoute] && arrivalTime < bestTimeAtDestination) {
                                 bestArrivalTime[stopIdInRoute] = arrivalTime;
                                 arrivalTimesPerRound[(round * totalStops) + stopIdInRoute] = arrivalTime;
-                                markStop(stopIdInRoute);;
+                                markStop(stopIdInRoute);
 
                                 priorStopPerRound[(round * totalStops) + stopIdInRoute] = earliestBoardingStopId;
                                 routeTakenPerRound[(round * totalStops) + stopIdInRoute] = routeId;
@@ -409,14 +411,14 @@ public class RaptorAlgorithm implements Router {
 
         // This is the walking case (walking from source to destination is the fastest journey)
         if (lastStopId == -2) {
-            double durationMinutes = (bestTime - startTimeSecondsAfterMidnight) / 60.0;
-            routeSteps.add(new RouteStep(latFrom, lonFrom, latTo, lonTo, durationMinutes, startTimeSecondsAfterMidnight));
+            int durationSecs = (bestTime - startTimeSecondsAfterMidnight);
+            routeSteps.add(new RouteStep(latFrom, lonFrom, latTo, lonTo, durationSecs, startTimeSecondsAfterMidnight));
             return routeSteps;
         }
 
         // RouteStep for final walk
         int arrivalAtLastStop = arrivalTimesPerRound[(bestRound * totalStops) + lastStopId];
-        double finalWalkDuration = (bestTime - arrivalAtLastStop) / 60.0;
+        int finalWalkDuration = (bestTime - arrivalAtLastStop);
         Stop finalStop = stopLookup[lastStopId];
         routeSteps.add(new RouteStep(finalStop, latTo, lonTo, finalWalkDuration, arrivalAtLastStop));
 
@@ -441,17 +443,36 @@ public class RaptorAlgorithm implements Router {
             if (routeTakenId == -1) {
                 int startTime = arrivalTimesPerRound[(currentRound * totalStops) + fromStopId];
                 int endTime = arrivalTimesPerRound[fromStopIndex];
-                double durationMinutes = (endTime - startTime) / 60.0;
+                int durationSecs = (endTime - startTime);
 
-                step = new RouteStep(fromStop, toStop, durationMinutes, startTime);
+                step = new RouteStep(fromStop, toStop, durationSecs, startTime);
             } else {
                 int startTime = arrivalTimesPerRound[((currentRound - 1) * totalStops) + fromStopId];
                 int endTime = arrivalTimesPerRound[fromStopIndex];
-                double durationMinutes = (endTime - startTime) / 60.0;
 
                 RaptorRoute raptorRoute = raptorRouteLookup[routeTakenId];
 
-                step = new RouteStep(fromStop, toStop, durationMinutes, startTime, raptorRoute);
+                // really inefficient but im lazy and we only use it in the gui so i think its fine
+                int boardTime = startTime;
+                for (Trip trip : raptorRoute.trips) {
+                    int tripDep = -1;
+                    int tripArr = -1;
+                    for (StopTime st : trip.stopTimes) {
+                        if (st.stop.id.equals(fromStop.id)) tripDep = st.departureTime;
+                        if (st.stop.id.equals(toStop.id)) tripArr = st.arrivalTime;
+                    }
+
+                    // looking for the trip that matches what we found 
+                    if (tripDep >= startTime && tripArr == endTime) {
+                        boardTime = tripDep;
+                        break;
+                    }
+                }
+
+                int waitTimeSecs = boardTime - startTime;
+                int tripTimeSecs = endTime - boardTime;
+
+                step = new RouteStep(fromStop, toStop, waitTimeSecs, tripTimeSecs, startTime, raptorRoute);
             }
             routeSteps.add(0, step);
             currentStopId = fromStopId;
@@ -463,7 +484,7 @@ public class RaptorAlgorithm implements Router {
 
         // Make routeStep for initial walk
         if (currentStopId >= 0) {
-            double initialWalkDuration = (arrivalTimesPerRound[currentStopId] - startTimeSecondsAfterMidnight) / 60.0;
+            int initialWalkDuration = (arrivalTimesPerRound[currentStopId] - startTimeSecondsAfterMidnight);
             Stop firstStop = stopLookup[currentStopId];
             routeSteps.add(0, new RouteStep(latFrom, lonFrom, firstStop, initialWalkDuration, startTimeSecondsAfterMidnight));
         }

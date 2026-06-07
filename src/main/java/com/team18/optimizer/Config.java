@@ -43,6 +43,7 @@ public class Config {
 
     public static int MAX_TRANSIT_TIME_SECONDS = 2*60*60;     // 2 hrs (if goes over this we assume passenger would rather take car)
     
-    public static int MAX_WALK_DISTANCE_TRANSFERS_METRES = 500;           // how much a passenger is willing to transfer
+    public static int MAX_WALK_DISTANCE_TRANSFERS_METRES = 500;            // how much a passenger is willing to transfer
     public static int MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES = 1500;   // how much a passenger is willing to walk before/after transit 
+    public static int TRANSFER_PENALTY = 30;                               // time in seconds added to each transfer
 }

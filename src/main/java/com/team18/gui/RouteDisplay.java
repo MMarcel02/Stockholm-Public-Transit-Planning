@@ -9,6 +9,7 @@ import java.util.Locale;
 import com.team18.model.RouteStep;
 import com.team18.model.RouteStepType;
 import com.team18.util.GeoCalculator;
+import com.team18.util.ParsingUtil;
 
 public class RouteDisplay {
 	VBox vbox;
@@ -38,40 +39,74 @@ public class RouteDisplay {
 				"-fx-border-radius: 5;"
 			);
 
-			String modeText;
-			if (step.routeStepType == RouteStepType.TRANSIT) {
-				modeText =
-					step.route.longName + " " +
-					step.route.shortName + " " +
-					step.headSign;
-			} else {
-				modeText = "WALK";
-			}
+			String startTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(step.startTimeSecondsAfterMidnight);
+            int waitMins = (int) Math.round(step.waitTimeSecs / 60.0);
+            int tripMins = (int) Math.round(step.tripTimeSecs / 60.0);
 
-			Label modeLabel = new Label(modeText);
-			modeLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #2196F3;");
+            String detailStyle = "-fx-padding: 0 0 0 15; -fx-text-fill: #5f6368;";
 
-			String destText;
-			if (step.routeStepType == RouteStepType.DIRECT_WALK
-					|| step.routeStepType == RouteStepType.WALK_TO_DEST) {
-				destText = "To destination";
-			} else {
-				destText = "To " + step.toStop.name;
-			}
+            if (step.routeStepType == RouteStepType.TRANSIT) {
+                
+                // waiting
+                if (waitMins > 0) {
+                    Label waitTitle = new Label(startTimeStr + " | Wait");
+                    waitTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #0d4b9c;");
+                    
+                    Label waitDuration = new Label(waitMins + " min");
+                    waitDuration.setStyle(detailStyle + " -fx-padding: 0 0 8 15;");
+                    
+                    stepCard.getChildren().addAll(waitTitle, waitDuration);
+                }
 
-			int duration = (int) Math.round(step.durationMinutes);
-			Label detailsLabel;
+                // Riding
+                int rideStartSecs = step.startTimeSecondsAfterMidnight + step.waitTimeSecs;
+                String rideStartStr = ParsingUtil.secondsAfterMidnightToTimeString(rideStartSecs);
 
-			if (duration == 0) {
-				detailsLabel = new Label(destText + " ( <1 min)");
-			} else {
-				detailsLabel = new Label(destText + " (" + duration + " mins)");
-			}
+                String vehicleName = step.route.routeType.name() + " " + step.route.shortName;
+                Label rideTitle = new Label(rideStartStr + " | " + vehicleName);
+                rideTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #0d4b9c;");
+                stepCard.getChildren().add(rideTitle);
 
-			detailsLabel.setWrapText(true);
+                if (step.route.longName != null && !step.route.longName.isEmpty()) {
+                    Label longNameLabel = new Label(step.route.longName);
+                    longNameLabel.setStyle(detailStyle);
+                    longNameLabel.setWrapText(true);
+                    stepCard.getChildren().add(longNameLabel);
+                }
 
-			stepCard.getChildren().addAll(modeLabel, detailsLabel);
-			vbox.getChildren().add(stepCard);
+                Label rideDuration = new Label(tripMins + " min");
+                rideDuration.setStyle(detailStyle);
+                
+                Label destLabel = new Label("To " + step.toStop.name);
+                destLabel.setStyle(detailStyle);
+                destLabel.setWrapText(true);
+
+                stepCard.getChildren().addAll(rideDuration, destLabel);
+
+            } else {
+                // walking
+                Label walkTitle = new Label(startTimeStr + " | Walk");
+                walkTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #0d4b9c;");
+                
+                String durationTxt = tripMins == 0 ? "<1 min" : tripMins + " min";
+                Label walkDuration = new Label(durationTxt);
+                walkDuration.setStyle(detailStyle);
+                
+                String destText;
+                if (step.routeStepType == RouteStepType.DIRECT_WALK || step.routeStepType == RouteStepType.WALK_TO_DEST) {
+                    destText = "To destination";
+                } else {
+                    destText = "To " + step.toStop.name;
+                }
+                
+                Label walkDest = new Label(destText);
+                walkDest.setStyle(detailStyle);
+                walkDest.setWrapText(true);
+                
+                stepCard.getChildren().addAll(walkTitle, walkDuration, walkDest);
+            }
+
+            vbox.getChildren().add(stepCard);
 		}
 	}
 
@@ -86,16 +121,24 @@ public class RouteDisplay {
 	}
 
 	VBox buildSummary(List<RouteStep> steps) {
-		double totalMinutes = 0.0;
+		int totalSecs = 0;
 		double totalMeters = 0.0;
-
+		
 		for (RouteStep step : steps) {
-			totalMinutes += step.durationMinutes;
+			totalSecs += (step.waitTimeSecs + step.tripTimeSecs);
 			totalMeters += GeoCalculator.calculateEquirectangularDistance(
-					step.latFrom, step.lonFrom,
-					step.latTo, step.lonTo
+				step.latFrom, step.lonFrom,
+				step.latTo, step.lonTo
 			);
 		}
+
+		RouteStep firstStep = steps.get(0);
+        String startTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(firstStep.startTimeSecondsAfterMidnight);
+
+		RouteStep lastStep = steps.get(steps.size() - 1);
+        String arrivalTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(lastStep.startTimeSecondsAfterMidnight + lastStep.waitTimeSecs + lastStep.tripTimeSecs);
+		
+		double totalMinutes = totalSecs / 60.0;
 
 		VBox summary = new VBox(4);
 		summary.getStyleClass().add("route-summary-card");
@@ -109,7 +152,10 @@ public class RouteDisplay {
 
 		totals.getStyleClass().add("route-summary-value");
 
-		summary.getChildren().addAll(title, totals);
+		Label scheduleLabel = new Label(startTimeStr + " : " + arrivalTimeStr);
+        scheduleLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #0d4b9c; -fx-font-weight: bold;");
+
+		summary.getChildren().addAll(title, scheduleLabel, totals);
 
 		return summary;
 	}

@@ -1,5 +1,9 @@
 package com.team18.gui;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.Router;
@@ -10,8 +14,10 @@ import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.util.converter.LocalDateStringConverter;
 
 import com.team18.parser.GTFSParser;
 import com.team18.model.RouteStep;
@@ -26,9 +32,11 @@ public class GuiController {
 	@FXML TextField startField;
 	@FXML TextField endField;
 	@FXML TextField timeField;
+	@FXML DatePicker datePicker;
 	@FXML VBox routeStepsContainer;
 
 	RaptorNetwork network;
+	RaptorAlgorithm raptorAlgorithm;
 
 	JourneyInput journeyInput;
 	LayerStack stack;
@@ -47,6 +55,7 @@ public class GuiController {
 			System.err.println("Building RAPTOR Network...");
 			RaptorBuilder builder = new RaptorBuilder();
 			network = builder.build(parser.agencies, parser.stops, parser.routes, parser.trips, parser.serviceByCalendar);
+			raptorAlgorithm = new RaptorAlgorithm(network);
 
 			System.err.println("Network Ready! Drawing stops on map...");
 		} catch (Exception e) {
@@ -56,7 +65,13 @@ public class GuiController {
 			System.exit(1);
 		}
 
-		journeyInput = new JourneyInput(parser, startField, endField, timeField);
+		datePicker.setValue(LocalDate.now());
+
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+		datePicker.setConverter(new LocalDateStringConverter(dateFormatter, dateFormatter));
+
+        timeField.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
+		journeyInput = new JourneyInput(parser, startField, endField, timeField, datePicker);
 
 		stack = new LayerStack(parser, network, journeyInput);
 		mapContainer.getChildren().add(stack.getGroup());
@@ -91,9 +106,10 @@ public class GuiController {
 		try {
 			double[] startLocation = journeyInput.resolveStart();
 			double[] endLocation = journeyInput.resolveEnd();
-			int startTimeSeconds = journeyInput.getTimeInSeconds();
+			int startTimeSeconds = journeyInput.getEffectiveTimeInSeconds();
+			LocalDate selectedDate = journeyInput.getEffectiveDate();
 
-			Router raptorAlgorithm = new RaptorAlgorithm(network);
+			network.setByCalendar(selectedDate);
 
 			List<RouteStep> route = raptorAlgorithm.getFastestTrip(
 				startLocation[0], startLocation[1],
@@ -115,7 +131,10 @@ public class GuiController {
 	public void handleGenerateHeatmap() {
 		try {
 			double[] origin = journeyInput.resolveStart();
-			int startTimeSeconds = journeyInput.getTimeInSeconds();
+			int startTimeSeconds = journeyInput.getEffectiveTimeInSeconds();
+			LocalDate selectedDate = journeyInput.getEffectiveDate();
+
+			network.setByCalendar(selectedDate);
 
 			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
 					startTimeSeconds);

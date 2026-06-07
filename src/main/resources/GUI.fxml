@@ -14,6 +14,7 @@
             <TextField fx:id="startField" promptText="Start Location" styleClass="input-field"/>
             <TextField fx:id="endField" promptText="End Location" styleClass="input-field"/>
             <TextField fx:id="timeField" promptText="Start Time (HH:MM)" styleClass="input-field"/>
+            <DatePicker fx:id="datePicker" promptText="Select Date" styleClass="input-field" maxWidth="Infinity"/>
 
             <Button text="Plan Journey" onAction="#handlePlanJourney" styleClass="primary-button" maxWidth="Infinity"/>
 

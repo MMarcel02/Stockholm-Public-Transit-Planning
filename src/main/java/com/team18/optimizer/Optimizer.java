@@ -11,7 +11,6 @@ import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.util.GeoCalculator;
 import com.team18.util.ParsingUtil;
-import com.team18.optimizer.Config;
 
 public class Optimizer {
 
@@ -49,7 +48,7 @@ public class Optimizer {
                 double distToDestination = GeoCalculator.calculateEquirectangularDistance(stop.lat, stop.lon, demandPointCoordinates[i*2], demandPointCoordinates[i*2+1]);
                 
                 if (distToDestination <= Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
-                    walkTimeFromAllStopsToAllDemandPoints[i][j] = (int) Math.round(distToDestination / Config.WALK_SPEED_MPS);
+                    walkTimeFromAllStopsToAllDemandPoints[i][j] = (int) (distToDestination / Config.WALK_SPEED_MPS);
                     tempReachable.add(j);
                 }
             }
@@ -198,8 +197,8 @@ public class Optimizer {
                 } else if (distToDestination < Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
                     cost = (distToDestination / Config.WALK_SPEED_MPS) * Config.VOT;
                 } else {
-                        double carTime = distToDestination * Config.CAR_DISTANCE_MULTIPLIER / Config.CAR_SPEED_MPS;
-                        double timeCost = carTime * Config.VOT;
+                        double carTimeSecs = distToDestination * Config.CAR_DISTANCE_MULTIPLIER / Config.CAR_SPEED_MPS;
+                        double timeCost = carTimeSecs * Config.VOT;
                         double carCost = distToDestination * Config.CAR_COST_PER_METRE + Config.FLAT_CAR_PENALTY;
                         cost = timeCost + carCost;
                 }

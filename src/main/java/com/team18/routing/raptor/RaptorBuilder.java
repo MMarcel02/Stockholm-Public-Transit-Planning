@@ -119,7 +119,7 @@ public class RaptorBuilder {
                 double distanceBetweenStops = GeoCalculator.calculateEquirectangularDistance(initialStop.lat, initialStop.lon, targetStop.lat, targetStop.lon);
 
                 if (distanceBetweenStops <= Config.MAX_WALK_DISTANCE_TRANSFERS_METRES) {
-                    int walkTimeSeconds = (int) (distanceBetweenStops / Config.WALK_SPEED_MPS);
+                    int walkTimeSeconds = (int) (distanceBetweenStops / Config.WALK_SPEED_MPS) + Config.TRANSFER_PENALTY;
                     tempTransfers.get(i).add(new int[]{j, walkTimeSeconds});
                     totalTransferCount++;
                 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.io.IOException;
+import java.time.LocalDate;
 
 import javafx.geometry.Side;
 import javafx.scene.control.ContextMenu;
@@ -17,12 +18,15 @@ import com.team18.parser.GTFSParser;
 import com.team18.util.ParsingUtil;
 import com.team18.model.Stop;
 
+import javafx.scene.control.DatePicker;
+
 public class JourneyInput {
 	static final int MAX_SUGGESTIONS = 10;
 
 	TextField startField;
 	TextField endField;
 	TextField timeField;
+	DatePicker datePicker;
 
 	// True when it's being set through code.
 	boolean fieldsLocked = false;
@@ -30,10 +34,11 @@ public class JourneyInput {
 	List<Stop> stops = new ArrayList<>();
 
 	public JourneyInput(GTFSParser parser,
-			TextField startField, TextField endField, TextField timeField) {
+			TextField startField, TextField endField, TextField timeField, DatePicker datePicker) {
 		this.startField = startField;
 		this.endField = endField;
 		this.timeField = timeField;
+		this.datePicker = datePicker;
 
 		stops = new ArrayList<>(parser.stops.values());
 		stops.sort(Comparator.comparing(stop -> stop.name.toLowerCase()));
@@ -191,5 +196,27 @@ public class JourneyInput {
 		field.positionCaret(text.length());
 		fieldsLocked = false;
 	}
+
+	// use schedule from previous day for journeys starting between midnight and 4am
+	public LocalDate getEffectiveDate() throws IOException {
+		LocalDate date = datePicker.getValue();
+		if (date == null) date = LocalDate.now();
+		
+		int time = getTimeInSeconds();
+		if (time >= 0 && time < 4 * 3600) {
+			return date.minusDays(1);
+		}
+		return date;
+	}
+
+	// since we are taking the one from prev day, we need to format it as something like 25:00 for gtfs 
+	public int getEffectiveTimeInSeconds() throws IOException {
+		int time = getTimeInSeconds();
+		if (time >= 0 && time < 4 * 3600) {
+			return time + 86400;
+		}
+		return time;
+	}
+
 }
 
