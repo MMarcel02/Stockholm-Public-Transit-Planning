@@ -135,6 +135,7 @@ public class StopLayer implements Layer {
 
 		double radius = 4.5;
 		if (CoordSystem.getZoomLevel() >= 15) radius = 6;
+		if (CoordSystem.getZoomLevel() <= 12) return;
 
 
 		gc.setStroke(Color.WHITE);
