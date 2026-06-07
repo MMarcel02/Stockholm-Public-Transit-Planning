@@ -34,6 +34,7 @@ public class StopLayer implements Layer {
 
 	GTFSParser parser;
 	JourneyInput journeyInput;
+	RaptorNetwork network;
 
 	StopHoverCard hoverCard;
 
@@ -75,7 +76,7 @@ public class StopLayer implements Layer {
 	public StopLayer(GTFSParser parser, RaptorNetwork network,
 			JourneyInput journeyInput) {
 		group.getChildren().add(canvas);
-
+		this.network = network;
 		this.parser = parser;
 		this.journeyInput = journeyInput;
 
@@ -120,11 +121,17 @@ public class StopLayer implements Layer {
 		double radius = 3.5;
 		if (CoordSystem.getZoomLevel() >= 15) radius = 4.5;
 
-		gc.setFill(Color.web("#E91E63", 0.8));
+
 		gc.setStroke(Color.WHITE);
 		gc.setLineWidth(1);
 
 		for (Stop stop: parser.stops.values()) {
+			int internalID = network.stopStringToIntMap.get(stop.id);
+			if (network.stopsEnabledArr[internalID]) {
+				gc.setFill(Color.web("#E91E63", 0.8)); // pink if active
+			} else {
+				gc.setFill(Color.web("#808080", 0.8)); // else gray
+			}
 			double[] local = CoordSystem.getLocalFromLatLon(stop.lat, stop.lon);
 
 			if (local[0] < minX
