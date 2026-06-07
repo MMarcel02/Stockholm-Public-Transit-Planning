@@ -4,29 +4,48 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.team18.gui.GuiController" stylesheets="@styles.css">
 
-    <center>
-        <Pane fx:id="mapContainer" style="-fx-background-color: #aad3df;"/>
-    </center>
+	<center>
+		<Pane fx:id="mapContainer" style="-fx-background-color: #aad3df;"/>
+	</center>
 
-    <left>
-        <VBox id="sidebar" spacing="15" prefWidth="300">
-            <Label text="Navigation" styleClass="header-label"/>
-            <TextField fx:id="startField" promptText="Start Location" styleClass="input-field"/>
-            <TextField fx:id="endField" promptText="End Location" styleClass="input-field"/>
-            <TextField fx:id="timeField" promptText="Start Time (HH:MM)" styleClass="input-field"/>
-            <DatePicker fx:id="datePicker" promptText="Select Date" styleClass="input-field" maxWidth="Infinity"/>
+	<left>
+		<VBox id="sidebar" spacing="15" prefWidth="300">
+			<Label text="Navigation" styleClass="header-label"/>
+			<TextField fx:id="startField" promptText="Start Location" styleClass="input-field"/>
+			<TextField fx:id="endField" promptText="End Location" styleClass="input-field"/>
+			<TextField fx:id="timeField" promptText="Start Time (HH:MM)" styleClass="input-field"/>
+			<DatePicker fx:id="datePicker" promptText="Select Date" styleClass="input-field" maxWidth="Infinity"/>
 
-            <Button text="Plan Journey" onAction="#handlePlanJourney" styleClass="primary-button" maxWidth="Infinity"/>
+			<Button text="Plan Journey" onAction="#handlePlanJourney" styleClass="primary-button" maxWidth="Infinity"/>
+			<Button text="Clear Journey" onAction="#handleClearJourney" styleClass="secondary-button" maxWidth="Infinity"/>
 
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
-                <VBox fx:id="routeStepsContainer" spacing="10" style="-fx-padding: 5;"/>
-            </ScrollPane>
+			<ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
+				<VBox fx:id="routeStepsContainer" spacing="10" style="-fx-padding: 5;"/>
+			</ScrollPane>
 
-            <Separator/>
+			<Separator/>
 
-            <Label text="Analysis" styleClass="header-label"/>
-            <Button text="Generate Heatmap" onAction="#handleGenerateHeatmap" styleClass="secondary-button" maxWidth="Infinity"/>
-        </VBox>
-    </left>
+			<Label text="Analysis" styleClass="header-label"/>
+
+			<HBox maxWidth="Infinity">
+				<Button text="Generate Heatmap" onAction="#handleGenerateHeatmap" styleClass="secondary-button" maxWidth="Infinity"/>
+				<Region HBox.hgrow="ALWAYS"></Region>
+				<Button text="Hide" onAction="#handleHideHeatmap" styleClass="secondary-button" maxWidth="Infinity"/>
+			</HBox>
+
+			<HBox maxWidth="Infinity">
+				<Button text="Calculate Removal Costs" onAction="#handleRemovalCosts" styleClass="secondary-button" maxWidth="Infinity"/>
+				<Region HBox.hgrow="ALWAYS"></Region>
+				<Button text="Hide" onAction="#handleHideRemovalCosts" styleClass="secondary-button" maxWidth="Infinity"/>
+			</HBox>
+
+			<Label text="Map" styleClass="header-label"/>
+			<HBox maxWidth="Infinity">
+				<Button text="Zoom In" onAction="#zoomIn" styleClass="secondary-button"/>
+				<Region HBox.hgrow="ALWAYS"></Region>
+				<Button text="Zoom Out" onAction="#zoomOut" styleClass="secondary-button"/>
+			</HBox>
+		</VBox>
+	</left>
 
 </BorderPane>
