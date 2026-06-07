@@ -33,9 +33,15 @@ public class NavigationLayer implements Layer {
 
 	public static class DrawnRoute {
 		List<RouteStep> steps;
+		Color color = null;
 
 		public DrawnRoute(List<RouteStep> steps) {
 			this.steps = steps;
+		}
+
+		public DrawnRoute(List<RouteStep> steps, Color color) {
+			this.steps = steps;
+			this.color = color;
 		}
 	};
 
@@ -119,12 +125,14 @@ public class NavigationLayer implements Layer {
 				segment.setStrokeLineCap(StrokeLineCap.ROUND);
 				segment.setStrokeWidth(4);
 
-				segment.getStyleClass().add("route-segment");
+				segment.getStyleClass().add("route-line");
 
-				if (usingTransit) {
-					segment.getStyleClass().add("route-segment-transit");
+				if (dr.color != null) {
+					segment.setStroke(dr.color);
+				} else if (usingTransit) {
+					segment.getStyleClass().add("route-line-transit");
 				} else {
-					segment.getStyleClass().add("route-segment-walk");
+					segment.getStyleClass().add("route-line-walk");
 				}
 
 				group.getChildren().add(segment);
