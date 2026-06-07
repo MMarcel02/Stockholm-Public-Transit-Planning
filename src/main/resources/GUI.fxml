@@ -27,6 +27,8 @@
 
 			<Label text="Analysis" styleClass="header-label"/>
 
+			<CheckBox text="Difference mode" fx:id="differenceMode" />
+
 			<HBox maxWidth="Infinity">
 				<Button text="Generate Heatmap" onAction="#handleGenerateHeatmap" styleClass="secondary-button" maxWidth="Infinity"/>
 				<Region HBox.hgrow="ALWAYS"></Region>
@@ -40,6 +42,10 @@
 			</HBox>
 
 			<Label text="Map" styleClass="header-label"/>
+
+			<CheckBox text="Hide disabled stops" fx:id="hideDisabled" />
+			<CheckBox text="Hide enabled stops" fx:id="hideEnabled" />
+
 			<HBox maxWidth="Infinity">
 				<Button text="Zoom In" onAction="#zoomIn" styleClass="secondary-button"/>
 				<Region HBox.hgrow="ALWAYS"></Region>

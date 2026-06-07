@@ -20,6 +20,7 @@ import javafx.stage.Stage;
 import javafx.scene.layout.Pane;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
+import javafx.scene.control.CheckBox;
 import javafx.scene.layout.VBox;
 import javafx.util.converter.LocalDateStringConverter;
 import javafx.scene.paint.Color;
@@ -47,6 +48,10 @@ public class GuiController {
 	@FXML TextField timeField;
 	@FXML DatePicker datePicker;
 	@FXML VBox routeStepsContainer;
+
+	@FXML CheckBox hideDisabled;
+	@FXML CheckBox hideEnabled;
+	@FXML CheckBox differenceMode;
 
 	RaptorNetwork network;
 	RaptorAlgorithm raptorAlgorithm;
@@ -122,6 +127,11 @@ public class GuiController {
 		mapContainer.setOnMouseMoved(ev -> stack.mouseMoved(ev));
 		mapContainer.setOnMouseExited(ev -> stack.mouseExited(ev));
 		mapContainer.setOnMouseDragged(ev -> stack.mouseDragged(ev));
+
+		hideDisabled.setOnAction(ev ->
+				stack.stopLayer.setHideDisabled(hideDisabled.isSelected()));
+		hideEnabled.setOnAction(ev ->
+				stack.stopLayer.setHideEnabled(hideEnabled.isSelected()));
 	}
 
 	@FXML
@@ -167,7 +177,7 @@ public class GuiController {
 			network.setByCalendar(selectedDate);
 
 			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
-					startTimeSeconds);
+					startTimeSeconds, differenceMode.isSelected());
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}

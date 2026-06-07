@@ -57,11 +57,8 @@ public class HeatmapLayer implements Layer {
 	}
 
 	public void configureDelayMode(double originLat, double originLon,
-			int startTimeSeconds) {
-		differenceMode = false;
-		for (boolean enabled: network.stopsEnabledArr) {
-			if (!enabled) differenceMode = true;
-		}
+			int startTimeSeconds, boolean differenceMode) {
+		this.differenceMode = differenceMode;
 
 		int[] times = new RaptorAlgorithm(network)
 				.getBestArrivalTimeToAllStops(originLat, originLon, startTimeSeconds);

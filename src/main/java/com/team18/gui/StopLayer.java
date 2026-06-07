@@ -45,6 +45,9 @@ public class StopLayer implements Layer {
 
 	Map<String, List<Arrival>> arrivalMap = new HashMap<>();
 
+	boolean hideDisabled = false;
+	boolean hideEnabled = false;
+
 	static class Arrival {
 		final int timeSeconds;
 		final String shortName;
@@ -87,6 +90,16 @@ public class StopLayer implements Layer {
 		hoverCard = card;
 	}
 
+	public void setHideDisabled(boolean disabled) {
+		hideDisabled = disabled;
+		update();
+	}
+
+	public void setHideEnabled(boolean enabled) {
+		hideEnabled = enabled;
+		update();
+	}
+
 	public void shift(double x, double y) {
 		viewX = x;
 		viewY = y;
@@ -118,8 +131,8 @@ public class StopLayer implements Layer {
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 		gc.clearRect(0, 0, width, height);
 
-		double radius = 3.5;
-		if (CoordSystem.getZoomLevel() >= 15) radius = 4.5;
+		double radius = 4.5;
+		if (CoordSystem.getZoomLevel() >= 15) radius = 6;
 
 
 		gc.setStroke(Color.WHITE);
@@ -128,9 +141,11 @@ public class StopLayer implements Layer {
 		for (Stop stop: parser.stops.values()) {
 			int internalID = network.stopStringToIntMap.get(stop.id);
 			if (network.stopsEnabledArr[internalID]) {
-				gc.setFill(Color.web("#E91E63", 0.8)); // pink if active
+				if (hideEnabled) continue;
+				gc.setFill(Color.web("#09dbd1", 0.8)); // cyan if active
 			} else {
-				gc.setFill(Color.web("#808080", 0.8)); // else gray
+				if (hideDisabled) continue;
+				gc.setFill(Color.web("#e31c0e", 0.8)); // else red
 			}
 			double[] local = CoordSystem.getLocalFromLatLon(stop.lat, stop.lon);
 
