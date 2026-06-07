@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -505,77 +506,115 @@ public class GTFSParser {
     }
 
     public void calculateRouteCosts() {
+        LocalDate representativeDay = findRepresenativeDay();
+        Set<String> activeServicesRepDay = serviceByCalendar.get(representativeDay);
         for (Route route : routes.values()) {
-            LocalDate date = Config.REFERENCE_PERIOD[2]; // just gonna use wednesday since using whole week takes too long
-            Set<String> activeServices = serviceByCalendar.get(date);
             for (Trip trip : route.trips) {
-                if (activeServices.contains(trip.serviceId)) {
-                    route.operatingCostSEK += trip.operatingCostSEK;
+                if (activeServicesRepDay.contains(trip.serviceId)) {
+                    route.operatingCostSEK += (trip.operatingCostSEK * Config.OPERATOR_CONTRACT_OVERHEAD);
                 }
             }
         }
     }
 
-    // OLD but maybe can refactor this to find better reference week 
-    public LocalDate findModalServiceDay(boolean isWeekday) {
-        Map<Integer, Integer> serviceSizeFrequencyMap = new HashMap<>();
-        Map<Integer, LocalDate> serviceSizeDateMap = new HashMap<>();
+    public LocalDate findRepresenativeDay() {
+        LocalDate startDate = LocalDate.of(2026, Month.MARCH, 1);
+        LocalDate endDate = LocalDate.of(2026, Month.JULY, 1);
+        
+        Map<LocalDate, Double> dailyOperationalCosts = new HashMap<>();
 
         for (Map.Entry<LocalDate, Set<String>> entry : serviceByCalendar.entrySet()) {
             LocalDate date = entry.getKey();
             DayOfWeek dayOfWeek = date.getDayOfWeek();
-            int activeServicesSize = entry.getValue().size();
-            if (activeServicesSize == 0) continue;
-
-            boolean isValidDay = false;
-
-            if (isWeekday && dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
-                isValidDay = true;
-            } else if (!isWeekday && (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY)) {
-                isValidDay = true;
+            Set<String> activeServices = entry.getValue();
+            
+            if (activeServices.isEmpty()) continue;
+            if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) continue;
+            if (Config.SWEDISH_PUBLIC_HOLIDAYS.contains(date)) continue;
+            if (date.isBefore(startDate) || date.isAfter(endDate)) continue;
+            
+            double dailyOperationalCost = 0;
+            for (Route route : routes.values()) {
+                for (Trip trip : route.trips) {
+                    if (activeServices.contains(trip.serviceId)) {
+                        dailyOperationalCost += trip.operatingCostSEK;
+                    }
+                }
             }
+            dailyOperationalCosts.put(date, (dailyOperationalCost * Config.OPERATOR_CONTRACT_OVERHEAD));
+        }
 
-            if (isValidDay) {  
-                serviceSizeFrequencyMap.put(activeServicesSize, serviceSizeFrequencyMap.getOrDefault(activeServicesSize, 0) + 1);
-                serviceSizeDateMap.putIfAbsent(activeServicesSize, date);
+        LocalDate minDay = null;
+        LocalDate maxDay = null;
+        double minCost = Double.MAX_VALUE;
+        double maxCost = Double.MIN_VALUE;
+        double sumCost = 0;
+
+        for (Map.Entry<LocalDate, Double> entry : dailyOperationalCosts.entrySet()) {
+            double cost = entry.getValue();
+            LocalDate date = entry.getKey();
+
+            if (cost < minCost) {
+                minCost = cost;
+                minDay = date;
+            }
+            if (cost > maxCost) {
+                maxCost = cost;
+                maxDay = date;
+            }
+            sumCost += cost;
+        }
+
+        double averageCost = sumCost / dailyOperationalCosts.size();
+
+        double varianceSum = 0;
+        for (double cost : dailyOperationalCosts.values()) {
+            varianceSum += Math.pow(cost - averageCost, 2);
+        }
+
+        double standardDeviation = Math.sqrt(varianceSum / dailyOperationalCosts.size());
+
+        LocalDate representativeDay = null;
+        double smallestDifference = Double.MAX_VALUE;
+
+        for (Map.Entry<LocalDate, Double> entry : dailyOperationalCosts.entrySet()) {
+            double diff = Math.abs(entry.getValue() - averageCost);
+            if (diff < smallestDifference) {
+                smallestDifference = diff;
+                representativeDay = entry.getKey();
             }
         }
 
-        int highestFrequency = 0;
-        int modalSize = 0; 
-        LocalDate bestRepresentitiveDay = null;
-
-        for (Map.Entry<Integer, Integer> entry : serviceSizeFrequencyMap.entrySet()) {
-            int size = entry.getKey();
-            int frequency = entry.getValue();
-
-
-            if (frequency > highestFrequency) {
-                highestFrequency = frequency;
-                modalSize = size;
-                bestRepresentitiveDay = serviceSizeDateMap.get(size);
-            } else if (frequency == highestFrequency && size > modalSize) {
-                modalSize = size;
-                bestRepresentitiveDay = serviceSizeDateMap.get(size);
+        Set<String> activeServicesRepDay = serviceByCalendar.get(representativeDay);
+        int totalTripsOnRepDay = 0;
+        for (Route route : routes.values()) {
+            for (Trip trip : route.trips) {
+                if (activeServicesRepDay.contains(trip.serviceId)) {
+                    totalTripsOnRepDay++;
+                }
             }
         }
 
-        // Left here for debugging, can see which days are actually being selected
-        // for (Map.Entry<LocalDate, Set<String>> entry : serviceByCalendar.entrySet()) {
-        //     LocalDate date = entry.getKey();
-        //     int activeServicesSize = entry.getValue().size();
-        //     if (activeServicesSize == modalSize) {
-        //         System.err.println(date);
-        //     }
-        // }
-        // System.err.println("freq: " + highestFrequency);
-        // System.err.println("modal: " + modalSize);
+        // ref for actual avg per year: https://www.regionstockholm.se/49ae8f/contentassets/c4853f1d3efe4d4ebac340a1d7fa56b3/arsredovisning-2025-for-region-stockholm2.pdf
+        // search for Köpt trafik
+        // divide by 365 and multiply by 1.15 to account for weekdays
+        // get about 33 million a day
+        
+        System.err.println("Lowest cost day: " + minDay + " (" + minCost + ")");
+        System.err.println("Highest cost day: " + maxDay + " (" + maxCost + ")");
+        System.err.println("Average cost: " + averageCost);
+        System.err.println("Standard Deviation: " + standardDeviation);
+        System.err.println("Selected Representative Day: " + representativeDay);
+        System.err.println("Cost on Represenative Day: " + dailyOperationalCosts.get(representativeDay));
+        System.err.println("Trips running on Representative Day: " + totalTripsOnRepDay);
 
-        return bestRepresentitiveDay;
+        Config.REPRESENTATIVE_WEEKDAY = representativeDay;
+
+        return representativeDay;
     }
 
     public void printRouteTypeCounts() {
-                int metro = 0;
+        int metro = 0;
         int train = 0;
         int tram = 0;
         int bus = 0;
@@ -601,11 +640,11 @@ public class GTFSParser {
             }
         }
 
-        System.out.println("Buses: " + bus);
-        System.out.println("Trams: " + tram);
-        System.out.println("Metros: " + metro);
-        System.out.println("Trains: " + train);
-        System.out.println("Ferries: " + ferry);
+        System.err.println("Buses: " + bus);
+        System.err.println("Trams: " + tram);
+        System.err.println("Metros: " + metro);
+        System.err.println("Trains: " + train);
+        System.err.println("Ferries: " + ferry);
     }
 
 }

@@ -69,7 +69,7 @@ public class StockholmRandomRouteGenerator {
                 
                 writer.write(jsonLine);
             }
-            System.out.println("Successfully generated " + area.numRoutes + " routes for " + area.areaName + " in '" + area.filename);
+            System.err.println("Successfully generated " + area.numRoutes + " routes for " + area.areaName + " in '" + area.filename);
         } catch (IOException e) {
             System.err.println("An error occurred while writing the file for " + area.areaName);
             e.printStackTrace();

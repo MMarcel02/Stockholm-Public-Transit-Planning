@@ -45,9 +45,9 @@ public class RoutingAlgorithmAnalyzer {
             return;
         }
 
-        System.out.println("Loaded " + requests.size() + " route requests into memory\n");
+        System.err.println("Loaded " + requests.size() + " route requests into memory\n");
 
-        System.out.println("Parsing GTFS Zip...");
+        System.err.println("Parsing GTFS Zip...");
         long startParse = System.currentTimeMillis();
         GTFSParser parser = new GTFSParser();
         try {
@@ -57,29 +57,29 @@ public class RoutingAlgorithmAnalyzer {
             return;
         }
         long parseTime = System.currentTimeMillis() - startParse;
-        System.out.printf("GTFS Parsing Time: %,d ms%n%n", parseTime);
+        System.err.printf("GTFS Parsing Time: %,d ms%n%n", parseTime);
 
-        System.out.println("Building Raptor Network...");
+        System.err.println("Building Raptor Network...");
         long startRaptorBuild = System.currentTimeMillis();
         RaptorBuilder raptorBuilder = new RaptorBuilder();
         RaptorNetwork raptorNetwork = raptorBuilder.build(parser.agencies, parser.stops, parser.routes, parser.trips, parser.serviceByCalendar);
         long raptorBuildTime = System.currentTimeMillis() - startRaptorBuild;
-        System.out.printf("Raptor Network Build Time: %,d ms%n", raptorBuildTime);
+        System.err.printf("Raptor Network Build Time: %,d ms%n", raptorBuildTime);
 
         Router raptorRouter = new RaptorAlgorithm(raptorNetwork);
-        System.out.println("Analyzing all trips with RAPTOR...");
+        System.err.println("Analyzing all trips with RAPTOR...");
         Report raptorReport = timeRouting(raptorRouter, requests);
         raptorReport.printReport();
 
-        // System.out.println("Building A* adjacency list...");
+        // System.err.println("Building A* adjacency list...");
         // long startAStarBuild = System.currentTimeMillis();
         // TransitGraph graph = new TransitGraph();
         // graph.build(parser);
         // long aStarBuildTime = System.currentTimeMillis() - startAStarBuild;
-        // System.out.printf("A* Build Time: %,d ms%n", aStarBuildTime);
+        // System.err.printf("A* Build Time: %,d ms%n", aStarBuildTime);
 
         // Router aStarRouter = new AStarRouter(parser);
-        // System.out.println("Analyzing all trips with A*...");
+        // System.err.println("Analyzing all trips with A*...");
         // Report aStarReport = timeRouting(aStarRouter, requests);
         // aStarReport.printReport();
         // raptorReport.printComparison(aStarReport);
@@ -180,19 +180,19 @@ public class RoutingAlgorithmAnalyzer {
         public void printReport() {
             long totalTimeNs = totalSuccessTimeNs + totalExhaustionFailTimeNs + totalInitFailTimeNs;
 
-            System.out.printf("Report:\n");
-            System.out.printf("Total Requests: %d (Success: %d, Exhaustion Fails: %d, Init Fails: %d)\n", 
+            System.err.printf("Report:\n");
+            System.err.printf("Total Requests: %d (Success: %d, Exhaustion Fails: %d, Init Fails: %d)\n", 
                               totalRequests, successCount, exhaustionFailCount, initFailCount);
             
-            System.out.printf("Overall Avg Time: %.2f ms\n", (totalTimeNs / 1_000_000.0) / totalRequests);
-            System.out.printf("Success Avg Time: %.2f ms\n", (totalSuccessTimeNs / 1_000_000.0) / successCount);
-            System.out.printf("Exhaustion Fail Avg Time: %.2f ms\n", (totalExhaustionFailTimeNs / 1_000_000.0) / exhaustionFailCount);
-            System.out.printf("Init Fail Avg Time: %.2f ms\n", (totalInitFailTimeNs / 1_000_000.0) / initFailCount);
-            System.out.println();
+            System.err.printf("Overall Avg Time: %.2f ms\n", (totalTimeNs / 1_000_000.0) / totalRequests);
+            System.err.printf("Success Avg Time: %.2f ms\n", (totalSuccessTimeNs / 1_000_000.0) / successCount);
+            System.err.printf("Exhaustion Fail Avg Time: %.2f ms\n", (totalExhaustionFailTimeNs / 1_000_000.0) / exhaustionFailCount);
+            System.err.printf("Init Fail Avg Time: %.2f ms\n", (totalInitFailTimeNs / 1_000_000.0) / initFailCount);
+            System.err.println();
         }
 
         public void printComparison(Report aStar) {
-            System.out.println("Comparison: RAPTOR vs A*");
+            System.err.println("Comparison: RAPTOR vs A*");
 
             double raptorSuccessPct = (double) this.successCount / this.totalRequests * 100;
             double aStarSuccessPct = (double) aStar.successCount / aStar.totalRequests * 100;
@@ -203,9 +203,9 @@ public class RoutingAlgorithmAnalyzer {
             double raptorInitPct = (double) this.initFailCount / this.totalRequests * 100;
             double aStarInitPct = (double) aStar.initFailCount / aStar.totalRequests * 100;
 
-            System.out.printf("Success Rate: RAPTOR %.2f%% | A* %.2f%% | Diff: %+.2f%%\n", raptorSuccessPct, aStarSuccessPct, (raptorSuccessPct - aStarSuccessPct));
-            System.out.printf("Exhaustion Fails: RAPTOR %.2f%% | A* %.2f%% | Diff: %+.2f%%\n", raptorExhaustionPct, aStarExhaustionPct, (raptorExhaustionPct - aStarExhaustionPct));
-            System.out.printf("Initial Fails: RAPTOR %.2f%% | A* %.2f%% | Diff: %+.2f%%\n\n", raptorInitPct, aStarInitPct, (raptorInitPct - aStarInitPct));
+            System.err.printf("Success Rate: RAPTOR %.2f%% | A* %.2f%% | Diff: %+.2f%%\n", raptorSuccessPct, aStarSuccessPct, (raptorSuccessPct - aStarSuccessPct));
+            System.err.printf("Exhaustion Fails: RAPTOR %.2f%% | A* %.2f%% | Diff: %+.2f%%\n", raptorExhaustionPct, aStarExhaustionPct, (raptorExhaustionPct - aStarExhaustionPct));
+            System.err.printf("Initial Fails: RAPTOR %.2f%% | A* %.2f%% | Diff: %+.2f%%\n\n", raptorInitPct, aStarInitPct, (raptorInitPct - aStarInitPct));
 
             long raptorTotalTimeNs = this.totalSuccessTimeNs + this.totalExhaustionFailTimeNs + this.totalInitFailTimeNs;
             long aStarTotalTimeNs = aStar.totalSuccessTimeNs + aStar.totalExhaustionFailTimeNs + aStar.totalInitFailTimeNs;
@@ -225,13 +225,13 @@ public class RoutingAlgorithmAnalyzer {
             double raptorInitAvg = (this.totalInitFailTimeNs / 1_000_000.0) / this.initFailCount;
             double aStarInitAvg = (aStar.totalInitFailTimeNs / 1_000_000.0) / aStar.initFailCount;
             printSpeedComparison("Init Avg Time", raptorInitAvg, aStarInitAvg);
-            System.out.println();
+            System.err.println();
         }
 
         private void printSpeedComparison(String metricName, double raptorTime, double aStarTime) {
             double speedup = aStarTime / raptorTime;
             
-            System.out.printf("%s: RAPTOR %.2f ms | A* %.2f ms -> Speedup: %.2fx\n", 
+            System.err.printf("%s: RAPTOR %.2f ms | A* %.2f ms -> Speedup: %.2fx\n", 
                               metricName, raptorTime, aStarTime, speedup);
         }
     }
