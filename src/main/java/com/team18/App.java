@@ -1,5 +1,9 @@
 package com.team18;
 
+import java.io.FileWriter;
+import java.util.Map;
+
+import com.team18.optimizer.Config;
 import com.team18.optimizer.Optimizer;
 import com.team18.parser.GTFSParser;
 import com.team18.parser.PopdistParser;
@@ -25,20 +29,20 @@ public class App
 			Optimizer optimizer = new Optimizer(network, parser.demandPointCoordinates, parser.demand);
 
 			long curr = System.currentTimeMillis();
-			optimizer.multiThreadedOptimize();
-			// Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
+			// optimizer.multiThreadedOptimize();
+			Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
 			long end = System.currentTimeMillis();
 			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
-			// FileWriter wr = new FileWriter("data/costs/run6.csv");
+			FileWriter wr = new FileWriter("data/costs/run6.csv");
 
-			// wr.write("routeId,cost\n");
-			// for (String routeId : routeToCostImpact.keySet()) {
-			// 	wr.write(String.format("%s,%f\n", routeId,
-			// 				routeToCostImpact.get(routeId)));
-			// }
+			wr.write("routeId,cost\n");
+			for (String routeId : routeToCostImpact.keySet()) {
+				wr.write(String.format("%s,%f\n", routeId,
+							routeToCostImpact.get(routeId)));
+			}
 
-			// wr.close();
+			wr.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
