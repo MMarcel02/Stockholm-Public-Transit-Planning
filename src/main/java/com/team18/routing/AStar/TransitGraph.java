@@ -94,7 +94,7 @@ public class TransitGraph {
     }
 
     private void buildWalkingEdges(GTFSParser parser){
-        List<Stop> stops = new ArrayList<>(parser.stops.values());
+        List<Stop> stops = new ArrayList<>(parser.orderedStops);
 
         for(int i = 0; i < stops.size(); ++i){
             Stop from = stops.get(i);

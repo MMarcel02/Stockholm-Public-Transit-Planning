@@ -40,7 +40,7 @@ public class JourneyInput {
 		this.timeField = timeField;
 		this.datePicker = datePicker;
 
-		stops = new ArrayList<>(parser.stops.values());
+		stops = new ArrayList<>(parser.orderedStops);
 		stops.sort(Comparator.comparing(stop -> stop.name.toLowerCase()));
 
 		setupAutocomplete(startField);

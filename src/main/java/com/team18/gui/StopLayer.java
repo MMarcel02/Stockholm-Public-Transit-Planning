@@ -144,7 +144,7 @@ public class StopLayer implements Layer {
 		gc.setLineWidth(1);
 
 		alreadyDrawn.clear();
-		for (Stop stop: parser.stops.values()) {
+		for (Stop stop: parser.orderedStops) {
 			if (alreadyDrawn.contains(stop.name)) continue;
 			alreadyDrawn.add(stop.name);
 
@@ -229,7 +229,7 @@ public class StopLayer implements Layer {
 
 		Set<String> alreadySeen = new HashSet<>();
 
-		for (Stop stop: parser.stops.values()) {
+		for (Stop stop: parser.orderedStops) {
 			if (alreadySeen.contains(stop.name)) continue;
 			alreadySeen.add(stop.name);
 
@@ -278,7 +278,7 @@ public class StopLayer implements Layer {
 	    Set<String> activeServices = network.serviceByCalendar.get(activeDate);
 
 	    List<Arrival> arrivals = new ArrayList<>();
-	    for (Stop otherStop: parser.stops.values()) {
+	    for (Stop otherStop: parser.orderedStops) {
 		    if (stop.name.equals(otherStop.name)) {
 			    arrivals.addAll(arrivalMap.get(otherStop.id));
 		    }

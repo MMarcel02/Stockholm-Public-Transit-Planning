@@ -170,7 +170,7 @@ public class AStarRouter implements Router {
         Stop nearest = null;
         double best = Double.MAX_VALUE;
 
-        for (Stop stop : parser.stops.values()) {
+        for (Stop stop : parser.orderedStops) {
             double dist = GeoCalculator.calculateEquirectangularDistance(lat, lon, stop.lat, stop.lon);
             if (dist < best) {
                 best = dist;

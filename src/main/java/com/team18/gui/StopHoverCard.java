@@ -151,7 +151,7 @@ public class StopHoverCard {
 	    disableButton.setMaxWidth(Double.MAX_VALUE);
 	    disableButton.setMinHeight(34);
 	    disableButton.setOnAction(ev -> {
-		    for (Stop toToggle: parser.stops.values()) {
+		    for (Stop toToggle: parser.orderedStops) {
 			    if (!toToggle.name.equals(stop.name)) continue;
 			    network.toggleStop(toToggle.id);
 		    }

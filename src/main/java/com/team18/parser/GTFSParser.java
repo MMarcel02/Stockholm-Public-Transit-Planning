@@ -41,6 +41,8 @@ public class GTFSParser {
     public Map<String, List<ShapePoint>> shapes = new HashMap<>();
     public Map<LocalDate, Set<String>> serviceByCalendar = new HashMap<>();
 
+    public List<Stop> orderedStops = new ArrayList<>();
+
     public void loadFromZip(String zipFilePath) throws IOException {
         try (ZipFile zipFile = new ZipFile(zipFilePath)) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -149,7 +151,10 @@ public class GTFSParser {
                     throw new IOException("Out of valid range for stop" + id);
                 }
 
-                stops.put(id, new Stop(id, name, lat, lon));
+			 Stop stop = new Stop(id, name, lat, lon);
+
+                stops.put(id, stop);
+			 orderedStops.add(stop);
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {

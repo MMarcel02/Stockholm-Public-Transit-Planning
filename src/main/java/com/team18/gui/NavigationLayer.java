@@ -75,7 +75,7 @@ public class NavigationLayer implements Layer {
 				double latFrom = rs.latFrom;
 				double lonFrom = rs.lonFrom;
 				if (rs.fromStop != null) {
-					for (Stop stop: parser.stops.values()) {
+					for (Stop stop: parser.orderedStops) {
 						if (stop.name.equals(rs.fromStop.name)) {
 							latFrom = stop.lat;
 							lonFrom = stop.lon;
@@ -87,7 +87,7 @@ public class NavigationLayer implements Layer {
 				double latTo = rs.latTo;
 				double lonTo = rs.lonTo;
 				if (rs.toStop != null) {
-					for (Stop stop: parser.stops.values()) {
+					for (Stop stop: parser.orderedStops) {
 						if (stop.name.equals(rs.toStop.name)) {
 							latTo = stop.lat;
 							lonTo = stop.lon;
