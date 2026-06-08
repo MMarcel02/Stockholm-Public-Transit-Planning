@@ -4,12 +4,14 @@ import java.util.List;
 import java.util.ArrayList;
 
 import javafx.scene.Group;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.Polyline;
+import javafx.scene.canvas.GraphicsContext;
 
 import com.team18.gui.Layer;
 import com.team18.gui.CoordSystem;
@@ -22,12 +24,15 @@ import com.team18.util.GeoCalculator;
 public class NavigationLayer implements Layer {
 	GTFSParser parser;
 	Group group = new Group();
+	Canvas canvas = new Canvas();
 
 	Circle startMarker = null;
 	Circle endMarker = null;
 
 	List<DrawnRoute> drawnRoutes = new ArrayList<>();
 
+	double viewX = 0;
+	double viewY = 0;
 	double viewWidth = 0;
 	double viewHeight = 0;
 
@@ -87,6 +92,7 @@ public class NavigationLayer implements Layer {
 	};
 
 	public NavigationLayer(GTFSParser parser) {
+		group.getChildren().add(canvas);
 		this.parser = parser;
 	}
 
@@ -122,61 +128,69 @@ public class NavigationLayer implements Layer {
 		endMarker.setCenterY(local[1]);
 	}
 
-	public void shift(double x, double y) {}
+	public void shift(double x, double y) {
+		viewX = x;
+		viewY = y;
+		render(viewWidth, viewHeight);
+	}
 
 	public void render(double width, double height) {
 		viewWidth = width;
 		viewHeight = height;
 
-		group.getChildren().clear();
+		double canvasWidth = viewWidth + Tile.RESOLUTION * 2;
+		double canvasHeight = viewHeight + Tile.RESOLUTION * 2;
+
+		double minX = -viewX - Tile.RESOLUTION;
+		double minY = -viewY - Tile.RESOLUTION;
+		double maxX = minX + canvasWidth;
+		double maxY = minY + canvasHeight;
+
+		canvas.setTranslateX(minX);
+		canvas.setTranslateY(minY);
+		canvas.setWidth(canvasWidth);
+		canvas.setHeight(canvasHeight);
+
+		GraphicsContext gc = canvas.getGraphicsContext2D();
+		gc.clearRect(0, 0, canvasWidth, canvasHeight);
 
 		for (DrawnRoute dr: drawnRoutes) {
 			for (Step step: dr.steps) {
-				Shape segment = null;
-
 				boolean usingTransit = (step.routeStepType == RouteStepType.TRANSIT);
 				boolean shapeAvailable =
 					(step.shapeId != null && parser.shapes != null);
 
-				// In this case we can probably use the shapes from gtfs data
-				if (shapeAvailable) {
-					segment = buildPolylineSegment(step);
+				if (dr.color != null) {
+					gc.setStroke(dr.color);
+				} else if (usingTransit) {
+					gc.setStroke(Color.web("#004a59"));
+				} else {
+					gc.setStroke(Color.web("#988d10"));
 				}
 
-				// If it's still null, then either we are walking,
-				// or something went wrong building the polyline.
+				gc.setLineWidth(3);
+
+				boolean okay = false;
+
+				// In this case we can probably use the shapes from gtfs data
+				if (shapeAvailable) {
+					okay = buildPolylineSegment(step, gc, minX, minY);
+				}
+
+				// If okay is false, then either we are walking,
+				// or something went wrong with the shapes.
 				//
 				// Either way, we need a straight line segment.
-				if (segment == null) {
-					Line line = new Line();
-
+				if (!okay) {
 					double[] startLocal = CoordSystem.getLocalFromLatLon(
 							step.latFrom, step.lonFrom);
-					line.setStartX(startLocal[0]);
-					line.setStartY(startLocal[1]);
 
 					double[] endLocal = CoordSystem.getLocalFromLatLon(
 							step.latTo, step.lonTo);
-					line.setEndX(endLocal[0]);
-					line.setEndY(endLocal[1]);
 
-					segment = line;
+					gc.strokeLine(startLocal[0]-minX, startLocal[1]-minY,
+							endLocal[0]-minX, endLocal[1]-minY);
 				}
-
-				segment.setStrokeLineCap(StrokeLineCap.ROUND);
-				segment.setStrokeWidth(4);
-
-				segment.getStyleClass().add("route-line");
-
-				if (dr.color != null) {
-					segment.setStroke(dr.color);
-				} else if (usingTransit) {
-					segment.getStyleClass().add("route-line-transit");
-				} else {
-					segment.getStyleClass().add("route-line-walk");
-				}
-
-				group.getChildren().add(segment);
 			}
 		}
 	}
@@ -185,45 +199,44 @@ public class NavigationLayer implements Layer {
 		return group;
 	}
 
-	private Polyline buildPolylineSegment(Step step) {
+	boolean buildPolylineSegment(Step step, GraphicsContext gc,
+			double minX, double minY) {
 		List<ShapePoint> points = parser.shapes.get(step.shapeId);
-		if (points == null || points.size() < 2) return null;
+		if (points == null || points.size() < 2) return false;
 
 		int startIdx = findNearestShapePointIndex(points, step.latFrom, step.lonFrom);
-		if (startIdx < 0) return null;
+		if (startIdx < 0) return false;
 
 		int endIdx = findNearestShapePointIndex(points, step.latTo, step.lonTo);
-		if (endIdx < 0) return null;
-
-		Polyline poly = new Polyline();
+		if (endIdx < 0) return false;
 
 		double[] startLocal = CoordSystem.getLocalFromLatLon(step.latFrom, step.lonFrom);
-		poly.getPoints().addAll(startLocal[0], startLocal[1]);
 
 		if (startIdx <= endIdx) {
 			for (int i = startIdx; i <= endIdx; i++) {
 				ShapePoint point = points.get(i);
-
 				double[] local = CoordSystem.getLocalFromLatLon(point.lat, point.lon);
-				poly.getPoints().addAll(local[0], local[1]);
+
+				gc.strokeLine(startLocal[0]-minX, startLocal[1]-minY,
+						local[0]-minX, local[1]-minY);
+				startLocal = local;
 			}
 		} else {
 			for (int i = startIdx; i >= endIdx; i--) {
 				ShapePoint point = points.get(i);
-
 				double[] local = CoordSystem.getLocalFromLatLon(point.lat, point.lon);
-				poly.getPoints().addAll(local[0], local[1]);
+
+				gc.strokeLine(startLocal[0]-minX, startLocal[1]-minY,
+						local[0]-minX, local[1]-minY);
+				startLocal = local;
 			}
 		}
 
 
 		double[] endLocal = CoordSystem.getLocalFromLatLon(step.latTo, step.lonTo);
-		poly.getPoints().addAll(endLocal[0], endLocal[1]);
+		gc.strokeLine(startLocal[0], startLocal[1], endLocal[0], endLocal[1]);
 
-		// Need at least 2 points (4 pairs) for a polyline.
-		if (poly.getPoints().size() < 4) return null;
-
-		return poly;
+		return true;
 	}
 
 	private int findNearestShapePointIndex(List<ShapePoint> points,

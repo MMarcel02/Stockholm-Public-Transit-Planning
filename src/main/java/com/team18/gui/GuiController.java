@@ -66,6 +66,8 @@ public class GuiController {
 	@FXML CheckBox hideEnabled;
 	@FXML CheckBox differenceMode;
 
+	@FXML TextField removalCutoff;
+
 	RaptorNetwork network;
 	RaptorAlgorithm raptorAlgorithm;
 
@@ -266,8 +268,15 @@ public class GuiController {
 			entries.addAll(entrySet);
 			entries.sort(Comparator.comparingDouble(e -> e.getValue()));
 
+			int maxEntries = entries.size();
+
+			if (!removalCutoff.getText().isBlank()) {
+				int cutoff = Integer.parseInt(removalCutoff.getText());
+				if (cutoff != 0) maxEntries = Math.min(cutoff, maxEntries);
+			}
+
 			for (int entryIndex = 0;
-					entryIndex <= Math.min(3, entries.size());
+					entryIndex <= maxEntries;
 					entryIndex++) {
 				Map.Entry<String, Double> entry = entries.get(entryIndex);
 				String routeId = entry.getKey();
