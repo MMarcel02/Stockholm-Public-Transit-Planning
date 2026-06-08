@@ -275,7 +275,7 @@ public class GuiController {
 			}
 
 			for (int entryIndex = 0;
-					entryIndex <= maxEntries;
+					entryIndex < maxEntries;
 					entryIndex++) {
 				Map.Entry<String, Double> entry = entries.get(entryIndex);
 				String routeId = entry.getKey();
