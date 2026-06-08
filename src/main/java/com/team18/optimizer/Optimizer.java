@@ -2,9 +2,8 @@ package com.team18.optimizer;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.team18.model.Route;
@@ -84,8 +83,8 @@ public class Optimizer {
         this.baselineTransitOperationalCost = baselineTransitOperationalCost;
     }
 
-    public void multiThreadedOptimize() {
-        Set<String> diasbledParentRoutes = new HashSet<>();
+    public Map<String, Double> multiThreadedOptimize() {
+        Map<String, Double> diasbledParentRoutes = new HashMap<>();
                 
         network.setByCalendar(Config.REPRESENTATIVE_WEEKDAY);
         double baselinePassengerCost = calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
@@ -94,12 +93,12 @@ public class Optimizer {
         System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
         System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
 
-        for (int j = 0; j < 1; j++) {
+        for (int j = 0; j < 3; j++) {
 
             double baselineTotalCostForThisRound = baselineTotalCost;
 
             Map.Entry<String, Double> bestRouteToDisable = network.parentRouteLookup.values().parallelStream()
-                .filter(route -> !diasbledParentRoutes.contains(route.id)
+                .filter(route -> !diasbledParentRoutes.keySet().contains(route.id)
                 && route.routeType == Route.RouteType.BUS
                 && !Config.CRITICAL_BUS_ROUTES.contains(route.shortName)
                 )
@@ -133,7 +132,7 @@ public class Optimizer {
 
             if (bestRouteToDisable != null) {
                 String bestRouteToDisableId = bestRouteToDisable.getKey();
-                diasbledParentRoutes.add(bestRouteToDisableId);
+                diasbledParentRoutes.put(bestRouteToDisableId, bestRouteToDisable.getValue());
                 network.disableParentRouteOptimizer(bestRouteToDisableId);
                 
                 Route disabledRoute = network.parentRouteLookup.get(bestRouteToDisableId);
@@ -145,6 +144,7 @@ public class Optimizer {
                 baselineTotalCost += costImpact;
             }
         }
+        return diasbledParentRoutes;
     }
 
     // Can call this in the GUI to get value for each route
