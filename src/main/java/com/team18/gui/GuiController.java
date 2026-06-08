@@ -266,9 +266,9 @@ public class GuiController {
 			entries.addAll(entrySet);
 			entries.sort(Comparator.comparingDouble(e -> e.getValue()));
 
-			for (int entryIndex = entries.size()-1;
-					entryIndex >= entries.size()-3 && entryIndex >= 0;
-					entryIndex--) {
+			for (int entryIndex = 0;
+					entryIndex <= Math.min(3, entries.size());
+					entryIndex++) {
 				Map.Entry<String, Double> entry = entries.get(entryIndex);
 				String routeId = entry.getKey();
 				Route route = network.parentRouteLookup.get(routeId);
