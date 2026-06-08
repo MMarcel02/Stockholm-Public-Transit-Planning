@@ -57,11 +57,18 @@ public class HeatmapLayer implements Layer {
 	}
 
 	public void configureDelayMode(double originLat, double originLon,
-			int startTimeSeconds, boolean differenceMode) {
+								   int startTimeSeconds, boolean differenceMode) {
 		this.differenceMode = differenceMode;
 
 		int[] times = new RaptorAlgorithm(network)
 				.getBestArrivalTimeToAllStops(originLat, originLon, startTimeSeconds);
+
+		// Convert absolute arrival times into relative travel durations
+		for (int i = 0; i < times.length; i++) {
+			if (times[i] != Integer.MAX_VALUE) {
+				times[i] -= startTimeSeconds;
+			}
+		}
 
 		// Only used if doing a difference heatmap
 		int[] baselineTimes = null;
@@ -74,8 +81,15 @@ public class HeatmapLayer implements Layer {
 			try {
 				Arrays.fill(network.stopsEnabledArr, true);
 				baselineTimes = new RaptorAlgorithm(network)
-					.getBestArrivalTimeToAllStops(
-						originLat, originLon, startTimeSeconds);
+						.getBestArrivalTimeToAllStops(
+								originLat, originLon, startTimeSeconds);
+
+				// Convert baseline absolute arrival times into relative travel durations
+				for (int i = 0; i < baselineTimes.length; i++) {
+					if (baselineTimes[i] != Integer.MAX_VALUE) {
+						baselineTimes[i] -= startTimeSeconds;
+					}
+				}
 			} finally {
 				System.arraycopy(oldEnabled, 0, network.stopsEnabledArr, 0,
 						oldEnabled.length);
@@ -96,21 +110,20 @@ public class HeatmapLayer implements Layer {
 				new double[] {originLat, originLon},
 				baselineTimes, network.stopLookup);
 
-
 		for (int row = 0; row < ROW_COUNT; row++) {
 			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * latSize);
 
 			for (int col = 0; col < COL_COUNT; col++) {
 				double lon =
-					StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * lonSize);
+						StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * lonSize);
 
 				if (differenceMode) {
 					int newSeconds = estimator.estimateTravelTimeToPoint(lat, lon);
-					int baselineSeconds =
-						estimator.estimateTravelTimeToPoint(lat, lon);
+					// Use the baselineEstimator instead of estimator
+					int baselineSeconds = baselineEstimator.estimateTravelTimeToPoint(lat, lon);
 
 					double delayMinutes =
-						Math.max(0.0, (newSeconds - baselineSeconds) / 60.0);
+							Math.max(0.0, (newSeconds - baselineSeconds) / 60.0);
 
 					points.add(new Point(lat, lon, delayMinutes));
 				} else {
