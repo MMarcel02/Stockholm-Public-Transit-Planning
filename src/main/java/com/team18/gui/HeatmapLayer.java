@@ -19,8 +19,6 @@ import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.optimizer.Config;
 
 public class HeatmapLayer implements Layer {
-	static final int COL_COUNT = 90*3;
-	static final int ROW_COUNT = 56*3;
 	static final int KD_LEAF_SIZE = 16;
 
 	RaptorNetwork network;
@@ -36,6 +34,9 @@ public class HeatmapLayer implements Layer {
 	double viewHeight = 0;
 	double viewX = 0;
 	double viewY = 0;
+
+	double cellLatSize = 0;
+	double cellLonSize = 0;
 
 	public static class Point {
 		public final double lat;
@@ -60,6 +61,14 @@ public class HeatmapLayer implements Layer {
 			int startTimeSeconds, boolean differenceMode) {
 		this.differenceMode = differenceMode;
 
+		cellLatSize =
+			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
+			/ 90*3;
+
+		cellLonSize =
+			(StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON)
+			/ 56*3;
+
 		int[] times = new RaptorAlgorithm(network)
 				.getBestArrivalTimeToAllStops(originLat, originLon, startTimeSeconds);
 
@@ -82,8 +91,8 @@ public class HeatmapLayer implements Layer {
 			}
 		}
 
-		double latSize = getCellLatSize();
-		double lonSize = getCellLonSize();
+		double latSize = cellLatSize;
+		double lonSize = cellLonSize;
 
 		points = new ArrayList<>();
 
@@ -97,10 +106,10 @@ public class HeatmapLayer implements Layer {
 				baselineTimes, network.stopLookup);
 
 
-		for (int row = 0; row < ROW_COUNT; row++) {
+		for (int row = 0; row < getRowCount(); row++) {
 			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * latSize);
 
-			for (int col = 0; col < COL_COUNT; col++) {
+			for (int col = 0; col < getColCount(); col++) {
 				double lon =
 					StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * lonSize);
 
@@ -123,9 +132,12 @@ public class HeatmapLayer implements Layer {
 		update();
 	}
 
-	public void configureManual(List<Point> points) {
+	public void configureManual(List<Point> points,
+			double cellLatSize, double cellLonSize) {
 		this.points = points;
 		this.differenceMode = false;
+		this.cellLatSize = cellLatSize;
+		this.cellLonSize = cellLonSize;
 		update();
 	}
 
@@ -180,15 +192,15 @@ public class HeatmapLayer implements Layer {
 		for (Point point: points) {
 			gc.setFill(pointColor(point));
 
-			if (getCellLatSize() > 0 && getCellLonSize() > 0) {
+			if (cellLatSize > 0 && cellLonSize > 0) {
 				double[] topLeft = CoordSystem.getLocalFromLatLon(
-						point.lat + (getCellLatSize() / 2.0),
-						point.lon - (getCellLonSize() / 2.0)
+						point.lat + (cellLatSize / 2.0),
+						point.lon - (cellLonSize / 2.0)
 				);
 
 				double[] bottomRight = CoordSystem.getLocalFromLatLon(
-						point.lat - (getCellLatSize() / 2.0),
-						point.lon + (getCellLonSize() / 2.0)
+						point.lat - (cellLatSize / 2.0),
+						point.lon + (cellLonSize / 2.0)
 				);
 
 				if (bottomRight[0] < minX
@@ -274,14 +286,16 @@ public class HeatmapLayer implements Layer {
 		return Color.web(colors[colors.length - 1], opacity);
 	}
 
-	private double getCellLatSize() {
-		return (StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
-			/ ROW_COUNT;
+	private double getRowCount() {
+		return
+			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
+			/ cellLatSize;
 	}
 
-	private double getCellLonSize() {
-		return (StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON)
-			/ COL_COUNT;
+	private double getColCount() {
+		return
+			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
+			/ cellLonSize;
 	}
 
 	public Group getGroup() {

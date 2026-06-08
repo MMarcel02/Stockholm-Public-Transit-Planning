@@ -39,6 +39,7 @@ import com.team18.parser.CSVParser;
 import com.team18.parser.CSVParser.Row;
 import com.team18.model.RouteStep;
 import com.team18.gui.NavigationLayer.DrawnRoute;
+import com.team18.gui.HeatmapLayer;
 import com.team18.model.RouteStep;
 import com.team18.model.Route;
 import com.team18.model.Trip;
@@ -190,6 +191,35 @@ public class GuiController {
 
 			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
 					startTimeSeconds, differenceMode.isSelected());
+		} catch (Exception e) {
+			routeDisplay.displayInvalidInput();
+		}
+	}
+
+	@FXML
+	public void handleGeneratePopHeatmap() {
+		try {
+			FileReader reader = new FileReader("data/stockholm/population.csv");
+			CSVParser csvp = new CSVParser(new BufferedReader(reader));
+
+			List<HeatmapLayer.Point> points = new ArrayList<>();
+
+			Row row;
+			while ((row = csvp.nextRow()) != null) {
+				double lat = Double.parseDouble(row.getCol("lat"));
+				double lon = Double.parseDouble(row.getCol("lon"));
+				double pop = Double.parseDouble(row.getCol("population"));
+
+				points.add(new HeatmapLayer.Point(
+					lat + PopdistParser.CELL_SIZE_LAT/2,
+					lon - PopdistParser.CELL_SIZE_LON/2,
+					pop / 10
+				));
+			}
+
+			stack.heatmapLayer.configureManual(points,
+					PopdistParser.CELL_SIZE_LAT,
+					PopdistParser.CELL_SIZE_LON);
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}
