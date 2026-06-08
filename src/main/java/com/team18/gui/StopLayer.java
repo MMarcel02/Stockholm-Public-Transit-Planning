@@ -224,7 +224,7 @@ public class StopLayer implements Layer {
     }
 
 	Stop findNearStop(double localX, double localY) {
-		double bestSqDistance = Math.pow(stopRadius() + 1, 2);
+		double bestSqDistance = Math.pow(stopRadius() + 3, 2);
 		Stop best = null;
 
 		Set<String> alreadySeen = new HashSet<>();
