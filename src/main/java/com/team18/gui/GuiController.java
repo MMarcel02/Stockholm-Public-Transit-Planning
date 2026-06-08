@@ -80,9 +80,10 @@ public class GuiController {
 
 	List<DrawnRoute> optimizerRoutes = new ArrayList<>();
 
+	GTFSParser parser;
+
 	@FXML
 	public void initialize() {
-		GTFSParser parser = null;
 		try {
 			System.err.println("Loading GTFS data...");
 			parser = new GTFSParser();
@@ -171,7 +172,7 @@ public class GuiController {
 			);
 
 			if (drawnRoute != null) stack.navLayer.remove(drawnRoute);
-			drawnRoute = new DrawnRoute(route);
+			drawnRoute = new DrawnRoute(route, parser);
 			stack.navLayer.add(drawnRoute);
 
 			routeDisplay.display(route);

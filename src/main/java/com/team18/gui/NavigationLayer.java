@@ -16,6 +16,7 @@ import javafx.scene.canvas.GraphicsContext;
 import com.team18.gui.Layer;
 import com.team18.gui.CoordSystem;
 import com.team18.model.RouteStep;
+import com.team18.model.Stop;
 import com.team18.model.RouteStepType;
 import com.team18.model.ShapePoint;
 import com.team18.parser.GTFSParser;
@@ -67,17 +68,41 @@ public class NavigationLayer implements Layer {
 		List<Step> steps;
 		Color color = null;
 
-		public DrawnRoute(List<RouteStep> steps) {
+		public DrawnRoute(List<RouteStep> steps, GTFSParser parser) {
 			this.steps = new ArrayList<>();
 
 			for (RouteStep rs: steps) {
+				double latFrom = rs.latFrom;
+				double lonFrom = rs.lonFrom;
+				if (rs.fromStop != null) {
+					for (Stop stop: parser.stops.values()) {
+						if (stop.name.equals(rs.fromStop.name)) {
+							latFrom = stop.lat;
+							lonFrom = stop.lon;
+							break;
+						}
+					}
+				}
+
+				double latTo = rs.latTo;
+				double lonTo = rs.lonTo;
+				if (rs.toStop != null) {
+					for (Stop stop: parser.stops.values()) {
+						if (stop.name.equals(rs.toStop.name)) {
+							latTo = stop.lat;
+							lonTo = stop.lon;
+							break;
+						}
+					}
+				}
+
 				Step step = new Step(
-						rs.latFrom,
-						rs.lonFrom,
-						rs.latTo,
-						rs.lonTo,
-						rs.shapeId
-						);
+					latFrom,
+					lonFrom,
+					latTo,
+					lonTo,
+					rs.shapeId
+				);
 
 				step.routeStepType = rs.routeStepType;
 
