@@ -121,9 +121,6 @@
     -fx-border-radius: 4;
     -fx-border-width: 1;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.26), 18, 0.12, 0, 5);
-    -fx-min-width: 340px;
-    -fx-pref-width: 340px;
-    -fx-max-width: 340px;
 }
 
 .stop-hover-title {
@@ -160,6 +157,30 @@
 
 .stop-hover-arrivals .list-cell:filled:hover {
     -fx-background-color: rgba(1, 175, 209, 0.1);
+}
+
+.stop-hover-arrivals .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 8px; 
+}
+
+.stop-hover-arrivals .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.stop-hover-arrivals .scroll-bar:vertical .thumb {
+    -fx-background-color: #01afd1;
+    -fx-background-radius: 4px;
+}
+
+.stop-hover-arrivals .scroll-bar:vertical .increment-button,
+.stop-hover-arrivals .scroll-bar:vertical .decrement-button,
+.stop-hover-arrivals .scroll-bar:vertical .increment-arrow,
+.stop-hover-arrivals .scroll-bar:vertical .decrement-arrow {
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-shape: null; 
 }
 
 .route-line {

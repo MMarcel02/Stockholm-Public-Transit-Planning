@@ -48,6 +48,7 @@ public class GuiController {
 	@FXML TextField timeField;
 	@FXML DatePicker datePicker;
 	@FXML VBox routeStepsContainer;
+	@FXML VBox stopCardPlaceholder;
 
 	@FXML CheckBox hideDisabled;
 	@FXML CheckBox hideEnabled;
@@ -103,7 +104,7 @@ public class GuiController {
 		stopHoverCard.setOnToggleCallback( () -> {
 			stack.render(mapContainer.getWidth(), mapContainer.getHeight());
 		});
-		mapContainer.getChildren().add(stopHoverCard.getVBox());
+		stopCardPlaceholder.getChildren().add(stopHoverCard.getVBox());
 		stack.stopLayer.setHoverCard(stopHoverCard);
 
 		mapContainer.widthProperty().addListener(new ChangeListener<Number>() {

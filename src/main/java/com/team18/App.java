@@ -16,34 +16,34 @@ public class App
 {
 	public static void main( String[] args )
 	{	
-		// GuiApp.main(args);
-		try {
+		GuiApp.main(args);
+		// try {
 			
-			GTFSParser gparser = new GTFSParser();
-            gparser.loadFromZip("data/stockholm/sl_center.zip");
+		// 	GTFSParser gparser = new GTFSParser();
+        //     gparser.loadFromZip("data/stockholm/sl_center.zip");
 			
-			RaptorBuilder builder = new RaptorBuilder();
-			RaptorNetwork network = builder.build(gparser.agencies, gparser.stops, gparser.routes, gparser.trips, gparser.serviceByCalendar);
+		// 	RaptorBuilder builder = new RaptorBuilder();
+		// 	RaptorNetwork network = builder.build(gparser.agencies, gparser.stops, gparser.routes, gparser.trips, gparser.serviceByCalendar);
 
-			PopdistParser parser = new PopdistParser();
-			parser.loadFromCsv("data/stockholm/population.csv");
+		// 	PopdistParser parser = new PopdistParser();
+		// 	parser.loadFromCsv("data/stockholm/population.csv");
 			
-			Optimizer optimizer = new Optimizer(network, parser.demandPointCoordinates, parser.demand);
+		// 	Optimizer optimizer = new Optimizer(network, parser.demandPointCoordinates, parser.demand);
 
-			long curr = System.currentTimeMillis();
-			// optimizer.multiThreadedOptimize();
-			Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
-			long end = System.currentTimeMillis();
-			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
+		// 	long curr = System.currentTimeMillis();
+		// 	// optimizer.multiThreadedOptimize();
+		// 	Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
+		// 	long end = System.currentTimeMillis();
+		// 	System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
-			for (String routeId : routeToCostImpact.keySet()) {
-				Route route = network.parentRouteLookup.get(routeId);
-				System.err.println(route.routeType + " id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
-				System.err.println("Cost impact: " + routeToCostImpact.get(routeId));
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		// 	for (String routeId : routeToCostImpact.keySet()) {
+		// 		Route route = network.parentRouteLookup.get(routeId);
+		// 		System.err.println(route.routeType + " id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
+		// 		System.err.println("Cost impact: " + routeToCostImpact.get(routeId));
+		// 	}
+		// } catch (Exception e) {
+		// 	e.printStackTrace();
+		// }
 	}
 }
 

@@ -21,13 +21,11 @@ import com.team18.model.Trip;
 import com.team18.model.StopTime;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.util.GeoCalculator;
+import javafx.scene.Cursor;
 import com.team18.util.ParsingUtil;
 
 public class StopLayer implements Layer {
 	static final double CLICK_RADIUS = 10;
-
-	static final double HOVER_CARD_WIDTH = 340;
-	static final double HOVER_CARD_HEIGHT = 390;
 
 	boolean settingStart = true;
 
@@ -50,19 +48,22 @@ public class StopLayer implements Layer {
 	boolean hideDisabled = false;
 	boolean hideEnabled = false;
 
-	static class Arrival {
-		final int timeSeconds;
-		final String shortName;
-		final String longName;
-		final String headSign;
+	public static class Arrival {
+        public final int timeSeconds;
+        public final String shortName;
+        public final String longName;
+        public final String headSign;
+        public final Trip trip;
 
-		Arrival(int timeSeconds, String shortName, String longName, String headSign) {
-			this.timeSeconds = timeSeconds;
-			this.shortName = shortName;
-			this.longName = longName;
-			this.headSign = headSign;
-		}
+        public Arrival(int timeSeconds, String shortName, String longName, String headSign, Trip trip) {
+            this.timeSeconds = timeSeconds;
+            this.shortName = shortName;
+            this.longName = longName;
+            this.headSign = headSign;
+            this.trip = trip;
+        }
 
+		@Override
 		public String toString() {
 			String route = shortName;
 			if (route.isBlank()) route = longName;
@@ -74,7 +75,7 @@ public class StopLayer implements Layer {
 			int hours = timeSeconds / 3600;
 			int mins = (timeSeconds % 3600) / 60;
 
-			return String.format(Locale.US, "%02d:%02d", hours, mins);
+			return String.format(Locale.US, "%02d:%02d | %s%s", hours, mins, route, direction);
 		}
 	}
 
@@ -178,69 +179,43 @@ public class StopLayer implements Layer {
 		return group;
 	}
 
+	@Override
 	public boolean mouseClicked(MouseEvent ev) {
-		double x = -viewX + ev.getX();
-		double y = -viewY + ev.getY();
+        double x = -viewX + ev.getX();
+        double y = -viewY + ev.getY();
 
-		if (ev.isStillSincePress()) {
-			Stop stop = findNearStop(x, y);
+        if (ev.isStillSincePress()) {
+            Stop stop = findNearStop(x, y);
 
-			String text;
+            if (stop != null) {
+                // show the card on click 
+                List<Arrival> arrivals = getArrivals(stop);
+                hoverCard.show(stop, arrivals);
+                return true;
+            } else {
+                // hide if click out of hover card
+                if (hoverCard.isVisible()) {
+                    hoverCard.hide();
+                    return true;
+                }
 
-			if (stop != null) {
-				if (stop.name != null && !stop.name.isBlank()) {
-					text = stop.name;
-				} else {
-					text = String.format("%.6f, %.6f", stop.lat, stop.lon);
-				}
-			} else {
-				double[] latlon = CoordSystem.getLatLonFromLocal(x, y);
-				text = String.format("%.6f, %.6f", latlon[0], latlon[1]);
-			}
+                // keep looking if no card
+                double[] latlon = CoordSystem.getLatLonFromLocal(x, y);
+                String text = String.format(Locale.US, "%.6f, %.6f", latlon[0], latlon[1]);
 
-			if (settingStart) {
-				journeyInput.setStart(text);
-			} else {
-				journeyInput.setEnd(text);
-			}
+                if (settingStart) {
+                    journeyInput.setStart(text);
+                } else {
+                    journeyInput.setEnd(text);
+                }
+                settingStart = !settingStart;
 
-			settingStart = !settingStart;
+                return true;
+            }
+        }
 
-			return true;
-		}
-
-		return false;
-	}
-
-	public boolean mouseMoved(MouseEvent ev) {
-		if (hoverCard.hovered()) return true;
-
-		double x = -viewX + ev.getX();
-		double y = -viewY + ev.getY();
-
-		Stop stop = findNearStop(x, y);
-		if (stop == null) {
-			if (hoverCard.overlaps(x, y)) {
-				return true;
-			}
-
-			hoverCard.hide();
-			return false;
-		}
-
-		List<String> arrivals = getArrivalStrings(stop);
-		hoverCard.show(stop, arrivals, viewWidth, viewHeight, ev.getX(), ev.getY());
-
-		return true;
-	}
-
-	public boolean mouseExited(MouseEvent ev) {
-		if (!hoverCard.hovered()) {
-			hoverCard.hide();
-		}
-
-		return false;
-	}
+        return false;
+    }
 
 	Stop findNearStop(double localX, double localY) {
 		double bestSqDistance = CLICK_RADIUS * CLICK_RADIUS;
@@ -264,58 +239,58 @@ public class StopLayer implements Layer {
 	}
 
 	void buildArrivalMap() {
-		arrivalMap.clear();
+        arrivalMap.clear();
 
-		for (Trip trip: parser.trips.values()) {
-			for (StopTime time: trip.stopTimes) {
-				Arrival arrival = new Arrival(
-					time.arrivalTime,
-					trip.route.shortName,
-					trip.route.longName,
-					trip.headSign
-				);
+        for (Trip trip: parser.trips.values()) {
+            for (StopTime time: trip.stopTimes) {
+                Arrival arrival = new Arrival(
+                    time.arrivalTime,
+                    trip.route.shortName,
+                    trip.route.longName,
+                    trip.headSign,
+                    trip
+                );
 
-				arrivalMap
-					.computeIfAbsent(time.stop.id, x -> new ArrayList<>())
-					.add(arrival);
-			}
-		}
+                arrivalMap
+                    .computeIfAbsent(time.stop.id, x -> new ArrayList<>())
+                    .add(arrival);
+            }
+        }
 
-		for (List<Arrival> arrivals: arrivalMap.values()) {
-			arrivals.sort(Comparator.comparingInt(arrival -> arrival.timeSeconds));
-		}
-	}
+        for (List<Arrival> arrivals: arrivalMap.values()) {
+            arrivals.sort(Comparator.comparingInt(arrival -> arrival.timeSeconds));
+        }
+    }
 
-	List<String> getArrivalStrings(Stop stop) {
-		List<Arrival> arrivals = arrivalMap.get(stop.id);
-		if (arrivals == null || arrivals.isEmpty()) {
-			return List.of("No scheduled rides");
-		}
+	List<Arrival> getArrivals(Stop stop) {
+        List<Arrival> arrivals = arrivalMap.get(stop.id);
+        if (arrivals == null || arrivals.isEmpty()) {
+            return List.of(new Arrival(-1, "", "No scheduled rides", "", null));
+        }
 
-		int earliest = 0;
+        int earliest = 0;
+        List<Arrival> rows = new ArrayList<>();
 
-		List<String> rows = new ArrayList<>();
+        try {
+            if (!journeyInput.getTime().isBlank()) {
+                earliest = ParsingUtil.timeStringToSecondsAfterMidnight(
+                        journeyInput.getTime());
+            }
+        } catch (Exception ex) {}
 
-		try {
-			if (!journeyInput.getTime().isBlank()) {
-				earliest = ParsingUtil.timeStringToSecondsAfterMidnight(
-						journeyInput.getTime());
-			}
-		} catch (Exception ex) {}
+        for (Arrival arrival: arrivals) {
+            if (arrival.timeSeconds < earliest) {
+                continue;
+            }
 
-		for (Arrival arrival: arrivals) {
-			if (arrival.timeSeconds < earliest) {
-				continue;
-			}
+            rows.add(arrival);
+        }
 
-			rows.add(arrival.toString());
-		}
+        if (rows.isEmpty()) {
+            rows.add(new Arrival(-1, "", "No later rides today", "", null));
+        }
 
-		if (rows.isEmpty()) {
-			rows.add("No later rides today");
-		}
-
-		return rows;
-	}
+        return rows;
+    }
 }
 

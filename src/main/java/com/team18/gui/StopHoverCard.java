@@ -15,11 +15,11 @@ import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.parser.GTFSParser;
 
 public class StopHoverCard {
-	final double CARD_WIDTH = 340;
+	final double CARD_WIDTH = 268;
 	final double CARD_HEIGHT = 390;
 
 	Stop currentStop = null;
-	VBox card = new VBox();
+	VBox card = new VBox(5);
 
 	JourneyInput journeyInput;
 	GTFSParser parser;
@@ -38,24 +38,24 @@ public class StopHoverCard {
 		card.setPrefWidth(CARD_WIDTH);
 		card.setMinWidth(CARD_WIDTH);
 		card.setMaxWidth(CARD_WIDTH);
-		card.setOnMouseExited(ev -> hide());
 
 		this.journeyInput = journeyInput;
 		this.network = network;
 		this.parser = parser;
 	}
 
-	public void show(Stop stop, List<String> arrivalStrings,
-			double viewWidth, double viewHeight,
-			double mouseX, double mouseY) {
+	public boolean isVisible() {
+        return card.isVisible();
+    }
+
+	public void show(Stop stop, List<StopLayer.Arrival> arrivals) {
 
 		if (stop == currentStop && card.isVisible()) {
-			position(viewWidth, viewHeight, mouseX, mouseY);
-			return;
-		}
+            return; 
+        }
 
-		currentStop = stop;
-		card.getChildren().clear();
+        currentStop = stop;
+        card.getChildren().clear();
 
 
 		Label name = new Label(stop.name);
@@ -76,58 +76,57 @@ public class StopHoverCard {
 		card.getChildren().add(coordinates);
 
 
-		Label arrivals = new Label("Rides through this stop");
-		arrivals.getStyleClass().add("stop-hover-section-title");
-		card.getChildren().add(arrivals);
+		Label arrivalsLabel = new Label("Rides through this stop");
+		arrivalsLabel.getStyleClass().add("stop-hover-section-title");
+		card.getChildren().add(arrivalsLabel);
 
 
-		ListView<String> arrivalsList = new ListView<>();
+		ListView<StopLayer.Arrival> arrivalsList = new ListView<>();
 		arrivalsList.getStyleClass().add("stop-hover-arrivals");
 		arrivalsList.setPrefWidth(CARD_WIDTH - 24);
 		arrivalsList.setMinWidth(CARD_WIDTH - 24);
 		arrivalsList.setPrefHeight(145);
 		arrivalsList.setMinHeight(145);
-		arrivalsList.getItems().addAll(arrivalStrings);
+		arrivalsList.getItems().addAll(arrivals);
 
 		card.getChildren().add(arrivalsList);
 
 
-		Button startButton = new Button("Start");
-		startButton.getStyleClass().add("stop-hover-button");
-		startButton.setPrefWidth(122);
-		startButton.setMinWidth(122);
+		Button startButton = new Button("Origin");
+		startButton.getStyleClass().add("primary-button-with-border");
+		startButton.setMaxWidth(Double.MAX_VALUE);
+		startButton.setPrefWidth(0);
 		startButton.setMinHeight(34);
+		HBox.setHgrow(startButton, javafx.scene.layout.Priority.ALWAYS);
 		startButton.setOnAction(ev -> {
 			journeyInput.setStart(stop.name);
 			hide();
 		});
 
 		Button endButton = new Button("Destination");
-		endButton.getStyleClass().add("stop-hover-button");
-		endButton.setPrefWidth(122);
-		endButton.setMinWidth(122);
+		endButton.getStyleClass().add("primary-button-with-border");
+		endButton.setMaxWidth(Double.MAX_VALUE);
+		endButton.setPrefWidth(0);
 		endButton.setMinHeight(34);
+		HBox.setHgrow(endButton, javafx.scene.layout.Priority.ALWAYS);
 		endButton.setOnAction(ev -> {
 			journeyInput.setEnd(stop.name);
 			hide();
 		});
 
-		HBox actionRow = new HBox(8);
+		HBox actionRow = new HBox(5);
 		actionRow.setPrefWidth(CARD_WIDTH - 28);
 		actionRow.setMinWidth(CARD_WIDTH - 28);
 		actionRow.getChildren().addAll(startButton, endButton);
 
 		card.getChildren().add(actionRow);
 
-
-
 		int internalId = network.stopStringToIntMap.get(stop.id);
 		boolean isEnabled = network.stopsEnabledArr[internalId];
 
 		Button disableButton = new Button(isEnabled ? "Disable Stop" : "Enable Stop");
-		disableButton.getStyleClass().add("stop-hover-button-muted");
-		disableButton.setPrefWidth(CARD_WIDTH - 28);
-		disableButton.setMinWidth(CARD_WIDTH - 28);
+		disableButton.getStyleClass().add("outline-button");
+		disableButton.setMaxWidth(Double.MAX_VALUE);
 		disableButton.setMinHeight(34);
 		disableButton.setOnAction(ev -> {
 			for (Stop toToggle: parser.stops.values()) {
@@ -148,7 +147,7 @@ public class StopHoverCard {
 		card.autosize();
 		card.layout();
 
-		position(viewWidth, viewHeight, mouseX, mouseY);
+		// position(viewWidth, viewHeight, mouseX, mouseY);
 	}
 
 	public void hide() {
@@ -175,17 +174,21 @@ public class StopHoverCard {
 
 
 	void position(double viewWidth, double viewHeight, double mouseX, double mouseY) {
-		double width = Math.max(card.getWidth(), CARD_WIDTH);
-		double height = Math.max(card.getHeight(), CARD_HEIGHT);
-		double margin = 8;
+        double width = Math.max(card.getWidth(), CARD_WIDTH);
+        
+        // Fixed margins to position it on the top right
+        double marginRight = 20; 
+        
+        // Adjust this value so it sits perfectly below your map settings menu!
+        // 80 to 100 is usually a good starting point for a standard top-bar menu.
+        double marginTop = 80; 
 
-		double maxX = Math.max(margin, viewWidth - width - margin);
-		double maxY = Math.max(margin, viewHeight - height - margin);
-		double x = Math.min(Math.max(mouseX, margin), maxX);
-		double y = Math.min(Math.max(mouseY, margin), maxY);
+        // Calculate the fixed X and Y coordinates
+        double x = viewWidth - width - marginRight;
+        double y = marginTop;
 
-		card.relocate(x, y);
-	}
+        card.relocate(x, y);
+    }
 
 
 	public VBox getVBox() {
