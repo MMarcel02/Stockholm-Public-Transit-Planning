@@ -16,12 +16,12 @@ public class GuiApp extends Application {
 		controller.stage = stage;
 
 		stage.setTitle("Stockholm Public Transport Router");
-		Scene scene = new Scene(root, 1024, 768);
+		Scene scene = new Scene(root, 1024, 760);
 		scene.getStylesheets().add(
 				getClass().getResource("/styles.css").toExternalForm());
 		stage.setScene(scene);
 		stage.show();
-		//stage.setFullScreen(false);
+		//stage.setFullScreen(true);
 		//stage.setMaximized(true);
 	}
 

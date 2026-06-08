@@ -20,9 +20,7 @@ public class App
 	{	
 		//GuiApp.main(args);
 		try {
-			if (args.length != 1) {
-				throw new IOException("need 1 argument for csv output :)");
-			}
+
 
 			GTFSParser gparser = new GTFSParser();
 			gparser.loadFromZip("data/stockholm/sl_center.zip");
@@ -41,7 +39,7 @@ public class App
 			long end = System.currentTimeMillis();
 			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
-			FileWriter wr = new FileWriter(args[0]);
+			FileWriter wr = new FileWriter("data/costs/run3.csv");
 
 			wr.write("routeId,cost\n");
 			for (String routeId : routeToCostImpact.keySet()) {
