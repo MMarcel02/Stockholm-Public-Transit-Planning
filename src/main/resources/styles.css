@@ -270,7 +270,7 @@
 }
 
 .error-label {
-    -fx-text-fill: red;
+    -fx-text-fill: rgb(255, 255, 255);
     -fx-font-weight: bold;
 }
 

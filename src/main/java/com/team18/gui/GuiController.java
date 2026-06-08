@@ -92,6 +92,11 @@ public class GuiController {
 		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 		datePicker.setConverter(new LocalDateStringConverter(dateFormatter, dateFormatter));
 
+		datePicker.valueProperty().addListener((obs, oldDate, newDate) -> {
+    		network.setByCalendar(newDate);
+			stack.stopLayer.update(); 
+		});
+
         timeField.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
 		journeyInput = new JourneyInput(parser, startField, endField, timeField, datePicker);
 
@@ -143,8 +148,6 @@ public class GuiController {
 			int startTimeSeconds = journeyInput.getEffectiveTimeInSeconds();
 			LocalDate selectedDate = journeyInput.getEffectiveDate();
 
-			network.setByCalendar(selectedDate);
-
 			List<RouteStep> route = raptorAlgorithm.getFastestTrip(
 				startLocation[0], startLocation[1],
 				endLocation[0], endLocation[1],
@@ -173,9 +176,6 @@ public class GuiController {
 		try {
 			double[] origin = journeyInput.resolveStart();
 			int startTimeSeconds = journeyInput.getEffectiveTimeInSeconds();
-			LocalDate selectedDate = journeyInput.getEffectiveDate();
-
-			network.setByCalendar(selectedDate);
 
 			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
 					startTimeSeconds, differenceMode.isSelected());

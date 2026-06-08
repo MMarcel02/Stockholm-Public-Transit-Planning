@@ -1,6 +1,7 @@
 package com.team18.gui;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -263,6 +264,9 @@ public class StopLayer implements Layer {
     }
 
 	List<Arrival> getArrivals(Stop stop) {
+		LocalDate activeDate = journeyInput.getEffectiveDate();
+    	Set<String> activeServices = network.serviceByCalendar.get(activeDate);
+		
         List<Arrival> arrivals = arrivalMap.get(stop.id);
         if (arrivals == null || arrivals.isEmpty()) {
             return List.of(new Arrival(-1, "", "No scheduled rides", "", null));
@@ -279,11 +283,11 @@ public class StopLayer implements Layer {
         } catch (Exception ex) {}
 
         for (Arrival arrival: arrivals) {
-            if (arrival.timeSeconds < earliest) {
-                continue;
-            }
-
-            rows.add(arrival);
+            if (activeServices.contains(arrival.trip.serviceId)) {
+				if (arrival.timeSeconds >= earliest) {
+					rows.add(arrival);
+				}
+        	}
         }
 
         if (rows.isEmpty()) {
