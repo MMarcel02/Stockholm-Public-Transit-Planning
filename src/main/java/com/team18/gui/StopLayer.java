@@ -24,7 +24,7 @@ import com.team18.util.GeoCalculator;
 import com.team18.util.ParsingUtil;
 
 public class StopLayer implements Layer {
-	static final double CLICK_RADIUS = 10;
+	static final double CLICK_RADIUS = 5;
 
 	static final double HOVER_CARD_WIDTH = 340;
 	static final double HOVER_CARD_HEIGHT = 390;
@@ -49,6 +49,8 @@ public class StopLayer implements Layer {
 
 	boolean hideDisabled = false;
 	boolean hideEnabled = false;
+
+	Set<String> alreadyDrawn = new HashSet<>();
 
 	static class Arrival {
 		final int timeSeconds;
@@ -133,16 +135,13 @@ public class StopLayer implements Layer {
 		GraphicsContext gc = canvas.getGraphicsContext2D();
 		gc.clearRect(0, 0, width, height);
 
-		double radius = 4.5;
-		if (CoordSystem.getZoomLevel() >= 15) radius = 6;
 		if (CoordSystem.getZoomLevel() <= 12) return;
 
 
 		gc.setStroke(Color.WHITE);
 		gc.setLineWidth(1);
 
-		Set<String> alreadyDrawn = new HashSet<>();
-
+		alreadyDrawn.clear();
 		for (Stop stop: parser.stops.values()) {
 			if (alreadyDrawn.contains(stop.name)) continue;
 			alreadyDrawn.add(stop.name);
@@ -167,11 +166,17 @@ public class StopLayer implements Layer {
 			double canvasX = local[0] - minX;
 			double canvasY = local[1] - minY;
 
+			double radius = stopRadius();
 			double diameter = radius * 2;
 
 			gc.fillOval(canvasX - radius, canvasY - radius, diameter, diameter);
 			gc.strokeOval(canvasX - radius, canvasY - radius, diameter, diameter);
 		}
+	}
+
+	double stopRadius() {
+		if (CoordSystem.getZoomLevel() >= 15) return 6;
+		else return 4.5;
 	}
 
 	public Group getGroup() {
@@ -243,10 +248,15 @@ public class StopLayer implements Layer {
 	}
 
 	Stop findNearStop(double localX, double localY) {
-		double bestSqDistance = CLICK_RADIUS * CLICK_RADIUS;
+		double bestSqDistance = Math.pow(stopRadius() + 1, 2);
 		Stop best = null;
 
+		Set<String> alreadySeen = new HashSet<>();
+
 		for (Stop stop: parser.stops.values()) {
+			if (alreadySeen.contains(stop.name)) continue;
+			alreadySeen.add(stop.name);
+
 			double[] local = CoordSystem.getLocalFromLatLon(stop.lat, stop.lon);
 
 			double dx = local[0] - localX;
