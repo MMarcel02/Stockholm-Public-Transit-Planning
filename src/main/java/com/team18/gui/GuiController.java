@@ -215,11 +215,7 @@ public class GuiController {
 				double lon = Double.parseDouble(row.getCol("lon"));
 				double pop = Double.parseDouble(row.getCol("population"));
 
-				points.add(new HeatmapLayer.Point(
-					lat + PopdistParser.CELL_SIZE_LAT/2,
-					lon - PopdistParser.CELL_SIZE_LON/2,
-					pop / 10
-				));
+				points.add(new HeatmapLayer.Point(lat, lon, pop / 10.0));
 			}
 
 			stack.heatmapLayer.configureManual(points,
