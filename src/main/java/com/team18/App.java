@@ -18,25 +18,25 @@ public class App
 {
 	public static void main( String[] args )
 	{	
-		// GuiApp.main(args);
+		//GuiApp.main(args);
 		try {
 			if (args.length != 1) {
 				throw new IOException("need 1 argument for csv output :)");
 			}
-			
+
 			GTFSParser gparser = new GTFSParser();
-            gparser.loadFromZip("data/stockholm/sl_center.zip");
-			
+			gparser.loadFromZip("data/stockholm/sl_center.zip");
+
 			RaptorBuilder builder = new RaptorBuilder();
 			RaptorNetwork network = builder.build(gparser.agencies, gparser.stops, gparser.routes, gparser.trips, gparser.serviceByCalendar);
 
 			PopdistParser parser = new PopdistParser();
 			parser.loadFromCsv("data/stockholm/population.csv");
-			
+
 			Optimizer optimizer = new Optimizer(network, parser.demandPointCoordinates, parser.demand);
 
 			long curr = System.currentTimeMillis();
-			// optimizer.multiThreadedOptimize();
+			optimizer.multiThreadedOptimize();
 			Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
 			long end = System.currentTimeMillis();
 			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));

@@ -12,48 +12,39 @@ import com.team18.util.GeoCalculator;
 import com.team18.util.ParsingUtil;
 
 public class RouteDisplay {
-	VBox vbox;
+    VBox vbox;
 
-	public RouteDisplay(VBox vbox) {
-		this.vbox = vbox;
-	}
+    public RouteDisplay(VBox vbox) {
+        this.vbox = vbox;
+    }
 
-	public void display(List<RouteStep> steps) {
-		vbox.getChildren().clear();
+    public void display(List<RouteStep> steps) {
+        vbox.getChildren().clear();
 
-		if (steps.isEmpty()) {
-			vbox.getChildren().add(new Label("No route found"));
-			return;
-		}
+        if (steps.isEmpty()) {
+            vbox.getChildren().add(new Label("No route found"));
+            return;
+        }
 
-		vbox.getChildren().add(buildSummary(steps));
+        vbox.getChildren().add(buildSummary(steps));
 
-		for (RouteStep step: steps) {
-			VBox stepCard = new VBox(5);
+        for (RouteStep step: steps) {
+            VBox stepCard = new VBox(5);
+            stepCard.getStyleClass().add("route-step-card");
 
-			stepCard.setStyle(
-				"-fx-background-color: #f4f4f4; " +
-				"-fx-padding: 10; " +
-				"-fx-background-radius: 5; " +
-				"-fx-border-color: #ddd; " +
-				"-fx-border-radius: 5;"
-			);
-
-			String startTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(step.startTimeSecondsAfterMidnight);
+            String startTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(step.startTimeSecondsAfterMidnight);
             int waitMins = (int) Math.round(step.waitTimeSecs / 60.0);
             int tripMins = (int) Math.round(step.tripTimeSecs / 60.0);
-
-            String detailStyle = "-fx-padding: 0 0 0 15; -fx-text-fill: #5f6368;";
 
             if (step.routeStepType == RouteStepType.TRANSIT) {
                 
                 // waiting
                 if (waitMins > 0) {
                     Label waitTitle = new Label(startTimeStr + " | Wait");
-                    waitTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #0d4b9c;");
+                    waitTitle.getStyleClass().add("route-step-title");
                     
                     Label waitDuration = new Label(waitMins + " min");
-                    waitDuration.setStyle(detailStyle + " -fx-padding: 0 0 8 15;");
+                    waitDuration.getStyleClass().addAll("route-step-detail", "route-step-detail-bottom-pad");
                     
                     stepCard.getChildren().addAll(waitTitle, waitDuration);
                 }
@@ -64,21 +55,21 @@ public class RouteDisplay {
 
                 String vehicleName = step.route.routeType.name() + " " + step.route.shortName;
                 Label rideTitle = new Label(rideStartStr + " | " + vehicleName);
-                rideTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #0d4b9c;");
+                rideTitle.getStyleClass().add("route-step-title");
                 stepCard.getChildren().add(rideTitle);
 
                 if (step.route.longName != null && !step.route.longName.isEmpty()) {
                     Label longNameLabel = new Label(step.route.longName);
-                    longNameLabel.setStyle(detailStyle);
+                    longNameLabel.getStyleClass().add("route-step-detail");
                     longNameLabel.setWrapText(true);
                     stepCard.getChildren().add(longNameLabel);
                 }
 
                 Label rideDuration = new Label(tripMins + " min");
-                rideDuration.setStyle(detailStyle);
+                rideDuration.getStyleClass().add("route-step-detail");
                 
                 Label destLabel = new Label("To " + step.toStop.name);
-                destLabel.setStyle(detailStyle);
+                destLabel.getStyleClass().add("route-step-detail");
                 destLabel.setWrapText(true);
 
                 stepCard.getChildren().addAll(rideDuration, destLabel);
@@ -86,11 +77,11 @@ public class RouteDisplay {
             } else {
                 // walking
                 Label walkTitle = new Label(startTimeStr + " | Walk");
-                walkTitle.setStyle("-fx-font-weight: bold; -fx-text-fill: #0d4b9c;");
+                walkTitle.getStyleClass().add("route-step-title");
                 
                 String durationTxt = tripMins == 0 ? "<1 min" : tripMins + " min";
                 Label walkDuration = new Label(durationTxt);
-                walkDuration.setStyle(detailStyle);
+                walkDuration.getStyleClass().add("route-step-detail");
                 
                 String destText;
                 if (step.routeStepType == RouteStepType.DIRECT_WALK || step.routeStepType == RouteStepType.WALK_TO_DEST) {
@@ -100,92 +91,90 @@ public class RouteDisplay {
                 }
                 
                 Label walkDest = new Label(destText);
-                walkDest.setStyle(detailStyle);
+                walkDest.getStyleClass().add("route-step-detail");
                 walkDest.setWrapText(true);
                 
                 stepCard.getChildren().addAll(walkTitle, walkDuration, walkDest);
             }
 
             vbox.getChildren().add(stepCard);
-		}
-	}
+        }
+    }
 
-	public void clear() {
-		vbox.getChildren().clear();
-	}
+    public void clear() {
+        vbox.getChildren().clear();
+    }
 
-	public void displayInvalidInput() {
-		vbox.getChildren().clear();
+    public void displayInvalidInput() {
+        vbox.getChildren().clear();
 
-		Label errorLabel =
-			new Label("Invalid input. Choose a stop suggestion or enter coordinates.");
-		errorLabel.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
+        Label errorLabel = new Label("Invalid input. Choose a stop suggestion or enter coordinates.");
+        errorLabel.getStyleClass().add("error-label");
 
-		vbox.getChildren().add(errorLabel);
-	}
+        vbox.getChildren().add(errorLabel);
+    }
 
-	VBox buildSummary(List<RouteStep> steps) {
-		int totalSecs = 0;
-		double totalMeters = 0.0;
-		
-		for (RouteStep step : steps) {
-			totalSecs += (step.waitTimeSecs + step.tripTimeSecs);
-			totalMeters += GeoCalculator.calculateEquirectangularDistance(
-				step.latFrom, step.lonFrom,
-				step.latTo, step.lonTo
-			);
-		}
+    VBox buildSummary(List<RouteStep> steps) {
+        int totalSecs = 0;
+        double totalMeters = 0.0;
+        
+        for (RouteStep step : steps) {
+            totalSecs += (step.waitTimeSecs + step.tripTimeSecs);
+            totalMeters += GeoCalculator.calculateEquirectangularDistance(
+                step.latFrom, step.lonFrom,
+                step.latTo, step.lonTo
+            );
+        }
 
-		RouteStep firstStep = steps.get(0);
+        RouteStep firstStep = steps.get(0);
         String startTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(firstStep.startTimeSecondsAfterMidnight);
 
-		RouteStep lastStep = steps.get(steps.size() - 1);
+        RouteStep lastStep = steps.get(steps.size() - 1);
         String arrivalTimeStr = ParsingUtil.secondsAfterMidnightToTimeString(lastStep.startTimeSecondsAfterMidnight + lastStep.waitTimeSecs + lastStep.tripTimeSecs);
-		
-		double totalMinutes = totalSecs / 60.0;
+        
+        double totalMinutes = totalSecs / 60.0;
 
-		VBox summary = new VBox(4);
-		summary.getStyleClass().add("route-summary-card");
+        VBox summary = new VBox(4);
+        summary.getStyleClass().add("route-summary-card");
 
-		Label title = new Label("Trip summary");
-		title.getStyleClass().add("route-summary-title");
+        Label title = new Label("Trip summary");
+        title.getStyleClass().add("route-summary-title");
 
-		Label totals = new Label(
-			formatDuration(totalMinutes) + " | " +
-			formatKilometers(totalMeters));
+        Label totals = new Label(
+            formatDuration(totalMinutes) + " | " +
+            formatKilometers(totalMeters));
 
-		totals.getStyleClass().add("route-summary-value");
+        totals.getStyleClass().add("route-summary-value");
 
-		Label scheduleLabel = new Label(startTimeStr + " : " + arrivalTimeStr);
-        scheduleLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #0d4b9c; -fx-font-weight: bold;");
+        Label scheduleLabel = new Label(startTimeStr + " - " + arrivalTimeStr);
+        scheduleLabel.getStyleClass().add("route-summary-schedule");
 
-		summary.getChildren().addAll(title, scheduleLabel, totals);
+        summary.getChildren().addAll(title, scheduleLabel, totals);
 
-		return summary;
-	}
+        return summary;
+    }
 
-	String formatDuration(double minutes) {
-		int roundedMinutes = (int) Math.round(minutes);
+    String formatDuration(double minutes) {
+        int roundedMinutes = (int) Math.round(minutes);
 
-		if (roundedMinutes <= 0) {
-			return "<1 min";
-		}
+        if (roundedMinutes <= 0) {
+            return "<1 min";
+        }
 
-		if (roundedMinutes < 60) {
-			return roundedMinutes + " min";
-		}
+        if (roundedMinutes < 60) {
+            return roundedMinutes + " min";
+        }
 
-		int hours = roundedMinutes / 60;
-		int remMinutes = roundedMinutes % 60;
-		if (remMinutes == 0) {
-			return hours + " hr";
-		}
+        int hours = roundedMinutes / 60;
+        int remMinutes = roundedMinutes % 60;
+        if (remMinutes == 0) {
+            return hours + " hr";
+        }
 
-		return hours + " hr " + remMinutes + " min";
-	}
+        return hours + " hr " + remMinutes + " min";
+    }
 
-	private String formatKilometers(double meters) {
-		return String.format(Locale.US, "%.1f km", meters / 1000.0);
-	}
+    private String formatKilometers(double meters) {
+        return String.format(Locale.US, "%.1f km", meters / 1000.0);
+    }
 }
-

@@ -59,7 +59,7 @@ public class JourneyInput {
 	public double[] resolveStart() { return resolve(getStart()); }
 	public double[] resolveEnd() { return resolve(getEnd()); }
 
-	public int getTimeInSeconds() throws IOException {
+	public int getTimeInSeconds() {
 		return ParsingUtil.timeStringToSecondsAfterMidnight(getTime());
 	}
 
@@ -198,7 +198,7 @@ public class JourneyInput {
 	}
 
 	// use schedule from previous day for journeys starting between midnight and 4am
-	public LocalDate getEffectiveDate() throws IOException {
+	public LocalDate getEffectiveDate() {
 		LocalDate date = datePicker.getValue();
 		if (date == null) date = LocalDate.now();
 		
@@ -210,7 +210,7 @@ public class JourneyInput {
 	}
 
 	// since we are taking the one from prev day, we need to format it as something like 25:00 for gtfs 
-	public int getEffectiveTimeInSeconds() throws IOException {
+	public int getEffectiveTimeInSeconds() {
 		int time = getTimeInSeconds();
 		if (time >= 0 && time < 4 * 3600) {
 			return time + 86400;
