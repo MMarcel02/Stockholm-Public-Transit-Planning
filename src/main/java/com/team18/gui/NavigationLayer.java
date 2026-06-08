@@ -139,7 +139,7 @@ public class NavigationLayer implements Layer {
 					(step.shapeId != null && parser.shapes != null);
 
 				// In this case we can probably use the shapes from gtfs data
-				if (usingTransit && shapeAvailable) {
+				if (shapeAvailable) {
 					segment = buildPolylineSegment(step);
 				}
 
