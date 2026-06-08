@@ -19,8 +19,6 @@ import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.optimizer.Config;
 
 public class HeatmapLayer implements Layer {
-	static final int KD_LEAF_SIZE = 16;
-
 	RaptorNetwork network;
 
 	List<Point> points = List.of();
@@ -110,16 +108,6 @@ public class HeatmapLayer implements Layer {
 
 		points = new ArrayList<>();
 
-		Estimator estimator = new Estimator(
-				new double[] {originLat, originLon},
-				times, network.stopLookup);
-
-		Estimator baselineEstimator = null;
-		if (differenceMode) baselineEstimator = new Estimator(
-				new double[] {originLat, originLon},
-				baselineTimes, network.stopLookup);
-
-
 		for (int row = 0; row < getRowCount(); row++) {
 			double lat = StockholmUrbanArea.OUTER_MAX_LAT - ((row + 0.5) * latSize);
 
@@ -128,16 +116,29 @@ public class HeatmapLayer implements Layer {
 					StockholmUrbanArea.OUTER_MIN_LON + ((col + 0.5) * lonSize);
 
 				if (differenceMode) {
-					int newSeconds = estimator.estimateTravelTimeToPoint(lat, lon);
-					// Use the baselineEstimator instead of estimator
-					int baselineSeconds = baselineEstimator.estimateTravelTimeToPoint(lat, lon);
+					int newSeconds = estimateTravelTimeToPoint(
+						originLat, originLon,
+						lat, lon,
+						times
+					);
+
+					int baselineSeconds = estimateTravelTimeToPoint(
+						originLat, originLon,
+						lat, lon,
+						baselineTimes
+					);
 
 					double delayMinutes =
 							Math.max(0.0, (newSeconds - baselineSeconds) / 60.0);
 
 					points.add(new Point(lat, lon, delayMinutes));
 				} else {
-					int seconds = estimator.estimateTravelTimeToPoint(lat, lon);
+					int seconds = estimateTravelTimeToPoint(
+						originLat, originLon,
+						lat, lon,
+						times
+					);
+
 					points.add(new Point(lat, lon, (double) seconds / 60.0));
 				}
 			}
@@ -317,174 +318,24 @@ public class HeatmapLayer implements Layer {
 	}
 
 
-	private static class Estimator {
-		private final double originLat;
-		private final double originLon;
-		private final KdNode root;
-
-		Estimator(double[] origin, int[] travelTimes, Stop[] stopLookup) {
-			this.originLat = origin[0];
-			this.originLon = origin[1];
-
-			List<Candidate> candidates = new ArrayList<>();
-			for (int i = 0; i < travelTimes.length; i++) {
-				if (travelTimes[i] == Integer.MAX_VALUE) continue;
-
-				Stop stop = stopLookup[i];
-				candidates.add(new Candidate(stop.lat, stop.lon, travelTimes[i]));
+	private int estimateTravelTimeToPoint(double originLat, double originLon,
+			double lat, double lon, int[] times) {
+		double walkOnlyDistance = GeoCalculator.calculateEquirectangularDistance(
+				originLat, originLon, lat, lon);
+		int bestSeconds = (int) Math.round(walkOnlyDistance / Config.WALK_SPEED_MPS);
+		for (int i = 0; i < times.length; i++) {
+			if (times[i] == Integer.MAX_VALUE) continue;
+			Stop stop = network.stopLookup[i];
+			double walkDistanceLeft = GeoCalculator.calculateEquirectangularDistance(
+					stop.lat, stop.lon, lat, lon);
+			int totalSeconds =
+				times[i] + (int) Math.round(walkDistanceLeft / Config.WALK_SPEED_MPS);
+			if (totalSeconds < bestSeconds) {
+				bestSeconds = totalSeconds;
 			}
-
-			Candidate[] candidateArray = candidates.toArray(new Candidate[0]);
-			this.root = candidateArray.length == 0
-				? null
-				: new KdNode(candidateArray, 0, candidateArray.length);
 		}
 
-		int estimateTravelTimeToPoint(double lat, double lon) {
-			double directWalkDistance = GeoCalculator.calculateEquirectangularDistance(originLat, originLon, lat, lon);
-			int bestSeconds = (int) Math.round(directWalkDistance / Config.WALK_SPEED_MPS);
-			return root == null ? bestSeconds : root.estimateTravelTimeToPoint(lat, lon, bestSeconds);
-		}
-	}
-
-	private static class KdNode {
-		private final double minLat;
-		private final double maxLat;
-		private final double minLon;
-		private final double maxLon;
-		private final int minTravelSeconds;
-		private final Candidate[] candidates;
-		private final KdNode left;
-		private final KdNode right;
-
-		KdNode(Candidate[] points, int start, int end) {
-			double nodeMinLat = Double.POSITIVE_INFINITY;
-			double nodeMaxLat = Double.NEGATIVE_INFINITY;
-			double nodeMinLon = Double.POSITIVE_INFINITY;
-			double nodeMaxLon = Double.NEGATIVE_INFINITY;
-			int nodeMinTravelSeconds = Integer.MAX_VALUE;
-
-			for (int i = start; i < end; i++) {
-				Candidate point = points[i];
-				nodeMinLat = Math.min(nodeMinLat, point.lat);
-				nodeMaxLat = Math.max(nodeMaxLat, point.lat);
-				nodeMinLon = Math.min(nodeMinLon, point.lon);
-				nodeMaxLon = Math.max(nodeMaxLon, point.lon);
-				nodeMinTravelSeconds =
-					Math.min(nodeMinTravelSeconds, point.travelSeconds);
-			}
-
-			this.minLat = nodeMinLat;
-			this.maxLat = nodeMaxLat;
-			this.minLon = nodeMinLon;
-			this.maxLon = nodeMaxLon;
-			this.minTravelSeconds = nodeMinTravelSeconds;
-
-			if (end - start <= KD_LEAF_SIZE) {
-				this.candidates = Arrays.copyOfRange(points, start, end);
-				this.left = null;
-				this.right = null;
-				return;
-			}
-
-			boolean splitByLat = (maxLat - minLat) >= (maxLon - minLon);
-			Arrays.sort(points, start, end, splitByLat
-					? Comparator.comparingDouble(candidate -> candidate.lat)
-					: Comparator.comparingDouble(candidate -> candidate.lon));
-
-			int midpoint = start + ((end - start) / 2);
-			this.candidates = null;
-			this.left = new KdNode(points, start, midpoint);
-			this.right = new KdNode(points, midpoint, end);
-		}
-
-		int estimateTravelTimeToPoint(double lat, double lon, int bestSeconds) {
-			if (lowerBoundSeconds(lat, lon) >= bestSeconds) {
-				return bestSeconds;
-			}
-
-			if (candidates != null) {
-				for (Candidate candidate : candidates) {
-					if (candidate.travelSeconds >= bestSeconds) continue;
-
-					double walkDistance =
-						GeoCalculator.calculateEquirectangularDistance(
-								candidate.lat, candidate.lon, lat, lon);
-
-					int totalSeconds = candidate.travelSeconds
-						+ (int) Math.round(walkDistance / Config.WALK_SPEED_MPS);
-
-					if (totalSeconds < bestSeconds) {
-						bestSeconds = totalSeconds;
-					}
-				}
-				return bestSeconds;
-			}
-
-			double leftLowerBound = left.lowerBoundSeconds(lat, lon);
-			double rightLowerBound = right.lowerBoundSeconds(lat, lon);
-
-			if (leftLowerBound <= rightLowerBound) {
-				bestSeconds = left.estimateTravelTimeToPoint(lat, lon, bestSeconds);
-				bestSeconds = right.estimateTravelTimeToPoint(lat, lon, bestSeconds);
-			} else {
-				bestSeconds = right.estimateTravelTimeToPoint(lat, lon, bestSeconds);
-				bestSeconds = left.estimateTravelTimeToPoint(lat, lon, bestSeconds);
-			}
-
-			return bestSeconds;
-		}
-
-		private double lowerBoundSeconds(double lat, double lon) {
-			return minTravelSeconds
-				+ (minimumDistanceToBoundsMeters(lat, lon) / Config.WALK_SPEED_MPS);
-		}
-
-		private double minimumDistanceToBoundsMeters(double lat, double lon) {
-			double latDistance = 0.0;
-			if (lat < minLat) {
-				latDistance = Math.toRadians(minLat - lat) * Config.EARTH_RADIUS_METERS;
-			} else if (lat > maxLat) {
-				latDistance = Math.toRadians(lat - maxLat) * Config.EARTH_RADIUS_METERS;
-			}
-
-			double lonDistance = 0.0;
-			if (lon < minLon) {
-				lonDistance = conservativeLongitudeDistanceMeters(
-						lat, minLat, maxLat, minLon - lon);
-			} else if (lon > maxLon) {
-				lonDistance = conservativeLongitudeDistanceMeters(
-						lat, minLat, maxLat, lon - maxLon);
-			}
-
-			return Math.max(latDistance, lonDistance);
-		}
-
-		private double conservativeLongitudeDistanceMeters(
-				double queryLat,
-				double boundsMinLat, double boundsMaxLat,
-				double deltaLonDegrees) {
-			double maxAbsLat = Math.max(
-				Math.abs(queryLat),
-				Math.max(Math.abs(boundsMinLat), Math.abs(boundsMaxLat))
-			);
-
-			return Math.toRadians(deltaLonDegrees)
-				* Config.EARTH_RADIUS_METERS
-				* Math.cos(Math.toRadians(maxAbsLat));
-		}
-	}
-
-	private static class Candidate {
-		final double lat;
-		final double lon;
-		final int travelSeconds;
-
-		Candidate(double lat, double lon, int travelSeconds) {
-			this.lat = lat;
-			this.lon = lon;
-			this.travelSeconds = travelSeconds;
-		}
+		return bestSeconds;
 	}
 }
 
