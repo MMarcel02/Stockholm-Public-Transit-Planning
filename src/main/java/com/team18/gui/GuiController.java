@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.Collections;
 import java.util.Comparator;
 import java.io.IOException;
+import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
 
@@ -23,6 +24,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.stage.Stage;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.scene.layout.Pane;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.TextField;
@@ -208,7 +211,14 @@ public class GuiController {
 		optimizerRoutes.clear();
 
 		try {
-			FileReader reader = new FileReader("data/costs/run1.csv");
+			FileChooser chooser = new FileChooser();
+			chooser.setTitle("Choose optimizer results file");
+			chooser.getExtensionFilters().add(
+					new ExtensionFilter("CSV Files", "*.csv"));
+			File file = chooser.showOpenDialog(stage);
+			if (file == null) return;
+
+			FileReader reader = new FileReader(file);
 			CSVParser costp = new CSVParser(new BufferedReader(reader));
 
 			Map<String, Double> costs = new HashMap<>();

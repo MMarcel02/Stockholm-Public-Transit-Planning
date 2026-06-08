@@ -12,7 +12,8 @@ public class GuiApp extends Application {
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/GUI.fxml"));
 		Parent root = (Parent) loader.load();
 
-		// GuiController controller = loader.getController();
+		GuiController controller = loader.getController();
+		controller.stage = stage;
 
 		stage.setTitle("Stockholm Public Transport Router");
 		Scene scene = new Scene(root, 1024, 768);
@@ -20,8 +21,8 @@ public class GuiApp extends Application {
 				getClass().getResource("/styles.css").toExternalForm());
 		stage.setScene(scene);
 		stage.show();
-		stage.setFullScreen(false);
-		stage.setMaximized(true);
+		//stage.setFullScreen(false);
+		//stage.setMaximized(true);
 	}
 
 	public static void main(String[] args) {
