@@ -37,7 +37,7 @@ public class Config {
     };
 
     public static final Set<String> CRITICAL_BUS_ROUTES = Set.of(
-        "1", "2", "3", "4", "5", "6", "17", "18", "19", "20"
+        "1", "2", "3", "4", "5", "6"
     );
 
 
@@ -140,7 +140,7 @@ public class Config {
     public static double VOT_CAR = 140.0 / 3600.0;                // 112 in 2019 adjusted for inflation is 141
     public static double VOT_WALKING = 200.0 / 3600.0;                // calculated as a 2x of bus time 
     public static double VOT_TRANSIT = 100.0 / 3600.0;                // about 80 in 2019 adjusted for inflation is 100
-    public static double PASSENGER_COST_WEIGHT = 1;         // how much we actually value passenger cost
+    public static double PASSENGER_COST_WEIGHT = 2;         // how much we actually value passenger cost
 
     public static int MAX_TRANSIT_TIME_SECONDS = 2*60*60;     // 2 hrs (if goes over this we assume passenger would rather take car)
     

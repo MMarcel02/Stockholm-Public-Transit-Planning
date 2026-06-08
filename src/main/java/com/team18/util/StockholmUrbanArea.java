@@ -4,14 +4,13 @@ public class StockholmUrbanArea {
     
     // Large bounding box for greater stockholm urban area 
     // Actual trips will need to be routed inside a smaller bounding box to avoid edge cases
-    // Visualise here: https://bboxfinder.com/#59.159045,17.655029,59.510634,18.483104
-
+    // Visualise here: https://bboxfinder.com/#59.207929,17.744295,59.447169,18.393180
     // Remove unnecessary data in sl dataset that falls outside of this region 
 
-    public static final double OUTER_MIN_LAT = 59.159045;
-    public static final double OUTER_MAX_LAT = 59.510634;
-    public static final double OUTER_MIN_LON = 17.655029;
-    public static final double OUTER_MAX_LON = 18.483104;
+    public static final double OUTER_MIN_LAT = 59.207929;
+    public static final double OUTER_MAX_LAT = 59.447169;
+    public static final double OUTER_MIN_LON = 17.744295;
+    public static final double OUTER_MAX_LON = 18.393180;
 
     // Smaller bounding box for inner urban area on which we will calculate heatmap and optimizer
     // Visualise here: https://bboxfinder.com/#59.223832,17.779999,59.432507,18.358842

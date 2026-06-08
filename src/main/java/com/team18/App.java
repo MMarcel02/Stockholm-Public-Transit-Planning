@@ -14,7 +14,7 @@ public class App
 {
 	public static void main( String[] args )
 	{	
-		//GuiApp.main(args);
+		// GuiApp.main(args);
 		try {
 			GTFSParser gparser = new GTFSParser();
 			gparser.loadFromZip("data/stockholm/sl_center.zip");
@@ -27,14 +27,14 @@ public class App
 
 			Optimizer optimizer = new Optimizer(network, parser.demandPointCoordinates, parser.demand);
 
-			long curr = System.currentTimeMillis();
-			Map<String, Double> bestRoutesToDisable = optimizer.multiThreadedOptimize();
-			long end = System.currentTimeMillis();
-			System.err.println("Time for 3 map calcs (mins): " + ((end - curr) / 60000.0));
+			// long curr = System.currentTimeMillis();
+			// Map<String, Double> bestRoutesToDisable = optimizer.multiThreadedOptimize();
+			// long end = System.currentTimeMillis();
+			// System.err.println("Time for 3 map calcs (mins): " + ((end - curr) / 60000.0));
 
-			curr = System.currentTimeMillis();
+			long curr = System.currentTimeMillis();
 			Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
-			end = System.currentTimeMillis();
+			long end = System.currentTimeMillis();
 			System.err.println("Time for one map calc (mins): " + ((end - curr) / 60000.0));
 			
 			FileWriter wr = new FileWriter("data/costs/run7.csv");
@@ -47,15 +47,15 @@ public class App
 
 			wr.close();
 
-			wr = new FileWriter("data/costs/run7Best3RoutesByGreedy.csv");
+			// wr = new FileWriter("data/costs/run7Best3RoutesByGreedy.csv");
 
-			wr.write("routeId,cost\n");
-			for (String routeId : bestRoutesToDisable.keySet()) {
-				wr.write(String.format("%s,%f\n", routeId,
-							bestRoutesToDisable.get(routeId)));
-			}
+			// wr.write("routeId,cost\n");
+			// for (String routeId : bestRoutesToDisable.keySet()) {
+			// 	wr.write(String.format("%s,%f\n", routeId,
+			// 				bestRoutesToDisable.get(routeId)));
+			// }
 
-			wr.close();
+			// wr.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
