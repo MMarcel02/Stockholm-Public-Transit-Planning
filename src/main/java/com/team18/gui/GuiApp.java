@@ -20,7 +20,8 @@ public class GuiApp extends Application {
 				getClass().getResource("/styles.css").toExternalForm());
 		stage.setScene(scene);
 		stage.show();
-		stage.setFullScreen(true);
+		stage.setFullScreen(false);
+		stage.setMaximized(true);
 	}
 
 	public static void main(String[] args) {
