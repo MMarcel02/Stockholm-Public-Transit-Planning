@@ -75,7 +75,7 @@ public class StopLayer implements Layer {
 			String direction = "";
 			if (!direction.isBlank()) direction = " to " + headSign;
 
-			int hours = timeSeconds / 3600;
+			int hours = (timeSeconds / 3600) % 24;
 			int mins = (timeSeconds % 3600) / 60;
 
 			return String.format(Locale.US, "%02d:%02d | %s%s", hours, mins, route, direction);

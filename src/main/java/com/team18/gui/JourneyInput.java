@@ -60,7 +60,22 @@ public class JourneyInput {
 	public double[] resolveEnd() { return resolve(getEnd()); }
 
 	public int getTimeInSeconds() {
-		return ParsingUtil.timeStringToSecondsAfterMidnight(getTime());
+		String timeStr = getTime();
+		if (timeStr != null && !timeStr.isBlank()) {
+			try {
+				String[] parts = timeStr.split(":");
+				int hours = Integer.parseInt(parts[0]);
+				int mins = Integer.parseInt(parts[1]);
+
+				if (hours < 0 || hours > 23 || mins < 0 || mins > 59) {
+					throw new IllegalArgumentException("Invalid user time.");
+				}
+			} catch (Exception e) {
+				throw new IllegalArgumentException("Invalid user time format.");
+			}
+		}
+
+		return ParsingUtil.timeStringToSecondsAfterMidnight(timeStr);
 	}
 
 	double[] resolve(String text) {
