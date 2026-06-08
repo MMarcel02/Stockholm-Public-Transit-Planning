@@ -1,6 +1,8 @@
 package com.team18;
 
 import java.util.Map;
+import java.io.IOException;
+import java.io.FileWriter;
 
 import com.team18.gui.GuiApp;
 import com.team18.model.Route;
@@ -18,6 +20,9 @@ public class App
 	{	
 		// GuiApp.main(args);
 		try {
+			if (args.length != 1) {
+				throw new IOException("need 1 argument for csv output :)");
+			}
 			
 			GTFSParser gparser = new GTFSParser();
             gparser.loadFromZip("data/stockholm/sl_center.zip");
@@ -36,11 +41,15 @@ public class App
 			long end = System.currentTimeMillis();
 			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
+			FileWriter wr = new FileWriter(args[0]);
+
+			wr.write("routeId,cost\n");
 			for (String routeId : routeToCostImpact.keySet()) {
-				Route route = network.parentRouteLookup.get(routeId);
-				System.err.println(route.routeType + " id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
-				System.err.println("Cost impact: " + routeToCostImpact.get(routeId));
+				wr.write(String.format("%s,%f\n", routeId,
+							routeToCostImpact.get(routeId)));
 			}
+
+			wr.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

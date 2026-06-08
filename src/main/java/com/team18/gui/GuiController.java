@@ -6,7 +6,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Collections;
+import java.util.Comparator;
 import java.io.IOException;
+import java.io.FileReader;
+import java.io.BufferedReader;
 
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.routing.raptor.RaptorBuilder;
@@ -26,6 +32,8 @@ import javafx.util.converter.LocalDateStringConverter;
 import javafx.scene.paint.Color;
 
 import com.team18.parser.GTFSParser;
+import com.team18.parser.CSVParser;
+import com.team18.parser.CSVParser.Row;
 import com.team18.model.RouteStep;
 import com.team18.gui.NavigationLayer.DrawnRoute;
 import com.team18.model.RouteStep;
@@ -199,54 +207,67 @@ public class GuiController {
 		optimizerRoutes.clear();
 
 		try {
-			PopdistParser popd = new PopdistParser();
-			popd.loadFromCsv("data/stockholm/population.csv");
+			FileReader reader = new FileReader("data/costs/run1.csv");
+			CSVParser costp = new CSVParser(new BufferedReader(reader));
 
-			Optimizer optimizer = new Optimizer(network, popd.demandPointCoordinates,
-					popd.demand);
+			Map<String, Double> costs = new HashMap<>();
 
-			Map<String, Double> costs = optimizer.getRouteRemovedToCostImpact(
-					Config.REPRESENTATIVE_WEEKDAY);
+			Row row;
+			while ((row = costp.nextRow()) != null) {
+				String routeId = row.getCol("routeId");
+				double cost = Double.parseDouble(row.getCol("cost"));
+				costs.put(routeId, cost);
+			}
 
-			for (String routeId: costs.keySet()) {
+			Set<Map.Entry<String, Double>> entrySet = costs.entrySet();
+
+			List<Map.Entry<String, Double>> entries = new ArrayList<>();
+			entries.addAll(entrySet);
+			entries.sort(Comparator.comparingDouble(e -> e.getValue()));
+
+			for (int entryIndex = entries.size()-1;
+					entryIndex >= entries.size()-3 && entryIndex >= 0;
+					entryIndex--) {
+				Map.Entry<String, Double> entry = entries.get(entryIndex);
+				String routeId = entry.getKey();
 				Route route = network.parentRouteLookup.get(routeId);
 
-				for (Trip trip: route.trips) {
-					List<NavigationLayer.Step> steps = new ArrayList<>();
-					if (trip.stopTimes.size() == 0) continue;
+				Trip trip = route.trips.get(0);
 
-					double latFrom = trip.stopTimes.get(0).stop.lat;
-					double lonFrom = trip.stopTimes.get(0).stop.lon;
+				List<NavigationLayer.Step> steps = new ArrayList<>();
+				if (trip.stopTimes.size() == 0) continue;
 
-					for (int i = 1; i < trip.stopTimes.size(); i++) {
-						StopTime time = trip.stopTimes.get(i);
-						Stop stop = time.stop;
+				double latFrom = trip.stopTimes.get(0).stop.lat;
+				double lonFrom = trip.stopTimes.get(0).stop.lon;
 
-						steps.add(new NavigationLayer.Step(
-									latFrom, lonFrom,
-									stop.lat, stop.lon,
-									trip.shapeId
-									));
+				for (int i = 1; i < trip.stopTimes.size(); i++) {
+					StopTime time = trip.stopTimes.get(i);
+					Stop stop = time.stop;
 
-						latFrom = stop.lat;
-						lonFrom = stop.lon;
-					}
+					steps.add(new NavigationLayer.Step(
+						latFrom, lonFrom,
+						stop.lat, stop.lon,
+						trip.shapeId
+					));
 
-
-					double[] thresholds = {0, 0.2, 0.5, 1, 2, 3, 6, 10};
-
-					String[] colors = {
-						"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
-						"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
-					};
-
-					Color color =
-						interpolatePalette(costs.get(routeId), thresholds, colors, 0.48);
-
-					DrawnRoute dr = new DrawnRoute(steps, color);
-					optimizerRoutes.add(dr);
-					stack.navLayer.add(dr);
+					latFrom = stop.lat;
+					lonFrom = stop.lon;
 				}
+
+
+				double[] thresholds = {-1000, 0, 500, 1000, 5000, 10000, 20000, 50000};
+
+				String[] colors = {
+					"#00FF2A", "#24DB24", "#49B61E", "#6D9218",
+					"#926D12", "#B6490C", "#DB2406", "#FF0000"
+				};
+
+				Color color =
+					interpolatePalette(entry.getValue(), thresholds, colors, 1);
+
+				DrawnRoute dr = new DrawnRoute(steps, color);
+				optimizerRoutes.add(dr);
+				stack.navLayer.add(dr);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
