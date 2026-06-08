@@ -75,6 +75,10 @@
                                 <Button maxWidth="1.7976931348623157E308" minWidth="72.0" onAction="#handleHideHeatmap" styleClass="outline-button" text="Clear" />
                             </HBox>
                             <HBox spacing="5.0">
+                                <Button maxWidth="1.7976931348623157E308" minWidth="150.0" onAction="#handleGeneratePopHeatmap" styleClass="primary-button" text="Pop. Distribution" />
+                                <Button maxWidth="1.7976931348623157E308" minWidth="72.0" onAction="#handleHideHeatmap" styleClass="outline-button" text="Clear" />
+                            </HBox>
+                            <HBox spacing="5.0">
                                 <Button maxWidth="1.7976931348623157E308" minWidth="150.0" onAction="#handleRemovalCosts" styleClass="primary-button" text="Removal Costs" />
                                 <Button minWidth="72.0" onAction="#handleHideRemovalCosts" styleClass="outline-button" text="Clear" />
                             </HBox>

@@ -9,8 +9,8 @@ import com.team18.optimizer.Config;
 import com.team18.parser.CSVParser.Row;
 
 public class PopdistParser {
-	public final double CELL_SIZE_LAT = 0.009070;
-	public final double CELL_SIZE_LON = 0.017501;
+	public static final double CELL_SIZE_LAT = 0.009070;
+	public static final double CELL_SIZE_LON = 0.017501;
 
 	public static class Point {
 		public double lat;
