@@ -17,6 +17,7 @@ import com.team18.model.Stop;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.optimizer.Config;
+import com.team18.util.Colors;
 
 public class HeatmapLayer implements Layer {
 	RaptorNetwork network;
@@ -36,15 +37,18 @@ public class HeatmapLayer implements Layer {
 	double cellLatSize = 0;
 	double cellLonSize = 0;
 
+	double[] thresholds;
+	String[] colors;
+
 	public static class Point {
 		public final double lat;
 		public final double lon;
-		public final double valueMinutes;
+		public final double value;
 
-		public Point(double lat, double lon, double valueMinutes) {
+		public Point(double lat, double lon, double value) {
 			this.lat = lat;
 			this.lon = lon;
-			this.valueMinutes = valueMinutes;
+			this.value = value;
 		}
 	}
 
@@ -58,6 +62,23 @@ public class HeatmapLayer implements Layer {
 	public void configureDelayMode(double originLat, double originLon,
 								   int startTimeSeconds, boolean differenceMode) {
 		this.differenceMode = differenceMode;
+
+		if (differenceMode) {
+			thresholds = new double[] {0, 1, 3, 5, 10, 15, 20, 30};
+			colors = new String[] {
+				"#FDD835", // Yellow (starts here immediately after 0.01)
+				"#FB8C00", // 1 min delay -> Orange
+				"#E53935", // 3 min delay -> Red
+				"#8E0000", // 5+ min delay -> Dark Red
+				"#4A0000", "#300000", "#1A0000", "#000000"
+			};
+		} else {
+			thresholds = new double[] {0, 10, 20, 30, 45, 60, 75, 90};
+			colors = new String[] {
+				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
+				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
+			};
+		}
 
 		cellLatSize =
 			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
@@ -148,11 +169,14 @@ public class HeatmapLayer implements Layer {
 	}
 
 	public void configureManual(List<Point> points,
-			double cellLatSize, double cellLonSize) {
+			double cellLatSize, double cellLonSize,
+			double[] thresholds, String[] colors) {
 		this.points = points;
 		this.differenceMode = false;
 		this.cellLatSize = cellLatSize;
 		this.cellLonSize = cellLonSize;
+		this.thresholds = thresholds;
+		this.colors = colors;
 		update();
 	}
 
@@ -254,52 +278,13 @@ public class HeatmapLayer implements Layer {
 	}
 
 	private Color pointColor(Point point) {
-		if (differenceMode) {
-			if (point.valueMinutes <= 0.05) {
-				return Color.TRANSPARENT;
-			}
-			double[] thresholds = {0, 1, 3, 5, 10, 15, 20, 30};
-
-			String[] colors = {
-					"#FDD835", // Yellow (starts here immediately after 0.01)
-					"#FB8C00", // 1 min delay -> Orange
-					"#E53935", // 3 min delay -> Red
-					"#8E0000", // 5+ min delay -> Dark Red
-					"#4A0000", "#300000", "#1A0000", "#000000"
-			};
-			return interpolatePalette(point.valueMinutes, thresholds, colors, 0.65);
+		if (differenceMode && point.value <= 0.05) {
+			return Color.TRANSPARENT;
 		}
 
-		double[] thresholds = {0, 10, 20, 30, 45, 60, 75, 90};
-
-		String[] colors = {
-			"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
-			"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
-		};
-
-		return interpolatePalette(point.valueMinutes, thresholds, colors, 0.48);
+		return Colors.interpolatePalette(point.value, thresholds, colors, 0.48);
 	}
 
-	private Color interpolatePalette(double value, double[] thresholds,
-			String[] colors, double opacity) {
-		if (value <= thresholds[0]) {
-			return Color.web(colors[0], opacity);
-		}
-
-		for (int i = 1; i < thresholds.length; i++) {
-			if (value <= thresholds[i]) {
-				double ratio =
-					(value - thresholds[i - 1]) / (thresholds[i] - thresholds[i - 1]);
-
-				Color start = Color.web(colors[i - 1]);
-				Color end = Color.web(colors[i]);
-
-				return start.interpolate(end, ratio).deriveColor(0, 1, 1, opacity);
-			}
-		}
-
-		return Color.web(colors[colors.length - 1], opacity);
-	}
 
 	private double getRowCount() {
 		return

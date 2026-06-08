@@ -48,6 +48,7 @@ import com.team18.model.StopTime;
 import com.team18.optimizer.Optimizer;
 import com.team18.parser.PopdistParser;
 import com.team18.optimizer.Config;
+import com.team18.util.Colors;
 
 import java.util.List;
 
@@ -218,9 +219,16 @@ public class GuiController {
 				points.add(new HeatmapLayer.Point(lat, lon, pop / 10.0));
 			}
 
+			double[] thresholds = {0, 10, 20, 30, 45, 60, 75, 90};
+			String[] colors = {
+				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
+				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
+			};
+
 			stack.heatmapLayer.configureManual(points,
 					PopdistParser.CELL_SIZE_LAT,
-					PopdistParser.CELL_SIZE_LON);
+					PopdistParser.CELL_SIZE_LON,
+					thresholds, colors);
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}
@@ -311,8 +319,8 @@ public class GuiController {
 					"#926D12", "#B6490C", "#DB2406", "#FF0000"
 				};
 
-				Color color =
-					interpolatePalette(entry.getValue(), thresholds, colors, 1);
+				Color color = Colors.interpolatePalette(entry.getValue(),
+						thresholds, colors, 1);
 
 				DrawnRoute dr = new DrawnRoute(steps, color);
 				optimizerRoutes.add(dr);
@@ -331,27 +339,6 @@ public class GuiController {
 		}
 
 		optimizerRoutes.clear();
-	}
-
-	private Color interpolatePalette(double value, double[] thresholds,
-			String[] colors, double opacity) {
-		if (value <= thresholds[0]) {
-			return Color.web(colors[0], opacity);
-		}
-
-		for (int i = 1; i < thresholds.length; i++) {
-			if (value <= thresholds[i]) {
-				double ratio =
-					(value - thresholds[i - 1]) / (thresholds[i] - thresholds[i - 1]);
-
-				Color start = Color.web(colors[i - 1]);
-				Color end = Color.web(colors[i]);
-
-				return start.interpolate(end, ratio).deriveColor(0, 1, 1, opacity);
-			}
-		}
-
-		return Color.web(colors[colors.length - 1], opacity);
 	}
 
 
