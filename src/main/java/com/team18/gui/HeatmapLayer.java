@@ -63,11 +63,11 @@ public class HeatmapLayer implements Layer {
 
 		cellLatSize =
 			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
-			/ 90*3;
+			/ (56*3);
 
 		cellLonSize =
 			(StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON)
-			/ 56*3;
+			/ (90*3);
 
 		int[] times = new RaptorAlgorithm(network)
 				.getBestArrivalTimeToAllStops(originLat, originLon, startTimeSeconds);
@@ -294,7 +294,7 @@ public class HeatmapLayer implements Layer {
 
 	private double getColCount() {
 		return
-			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
+			(StockholmUrbanArea.OUTER_MAX_LON - StockholmUrbanArea.OUTER_MIN_LON)
 			/ cellLonSize;
 	}
 
