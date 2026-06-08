@@ -101,6 +101,7 @@ public class Optimizer {
             Map.Entry<String, Double> bestRouteToDisable = network.parentRouteLookup.values().parallelStream()
                 .filter(route -> !diasbledParentRoutes.contains(route.id)
                 && route.routeType == Route.RouteType.BUS
+                && !Config.CRITICAL_BUS_ROUTES.contains(route.shortName)
                 )
                 .map(route -> {
 
