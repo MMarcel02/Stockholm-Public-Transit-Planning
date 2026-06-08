@@ -39,7 +39,7 @@ public class App
 			long end = System.currentTimeMillis();
 			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
-			FileWriter wr = new FileWriter("data/costs/run3.csv");
+			FileWriter wr = new FileWriter("data/costs/run4.csv");
 
 			wr.write("routeId,cost\n");
 			for (String routeId : routeToCostImpact.keySet()) {
