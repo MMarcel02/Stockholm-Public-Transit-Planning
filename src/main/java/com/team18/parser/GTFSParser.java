@@ -530,7 +530,16 @@ public class GTFSParser {
             
             if (activeServices.isEmpty()) continue;
             if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) continue;
-            if (Config.SWEDISH_PUBLIC_HOLIDAYS.contains(date)) continue;
+            
+            boolean isHoliday = false; 
+            for (int i = 0; i < Config.SWEDISH_PUBLIC_HOLIDAYS.length; i++) {
+                if (date.equals(Config.SWEDISH_PUBLIC_HOLIDAYS[i])) {
+                    isHoliday = true;
+                    break; 
+                }
+            }
+            if (isHoliday) continue;
+
             if (date.isBefore(startDate) || date.isAfter(endDate)) continue;
             
             double dailyOperationalCost = 0;

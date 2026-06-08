@@ -1,18 +1,10 @@
 package com.team18;
 
-import java.util.Map;
-import java.io.IOException;
-import java.io.FileWriter;
-
-import com.team18.gui.GuiApp;
-import com.team18.model.Route;
-import com.team18.optimizer.Config;
 import com.team18.optimizer.Optimizer;
 import com.team18.parser.GTFSParser;
 import com.team18.parser.PopdistParser;
 import com.team18.routing.raptor.RaptorBuilder;
 import com.team18.routing.raptor.RaptorNetwork;
-
 
 public class App 
 {
@@ -20,7 +12,6 @@ public class App
 	{	
 		//GuiApp.main(args);
 		try {
-
 
 			GTFSParser gparser = new GTFSParser();
 			gparser.loadFromZip("data/stockholm/sl_center.zip");
@@ -35,19 +26,19 @@ public class App
 
 			long curr = System.currentTimeMillis();
 			optimizer.multiThreadedOptimize();
-			Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
+			// Map<String, Double> routeToCostImpact = optimizer.getRouteRemovedToCostImpact(Config.REPRESENTATIVE_WEEKDAY);
 			long end = System.currentTimeMillis();
 			System.err.println("Time for total optimization multi threaded (mins): " + ((end - curr) / 60000.0));
 
-			FileWriter wr = new FileWriter("data/costs/run6.csv");
+			// FileWriter wr = new FileWriter("data/costs/run6.csv");
 
-			wr.write("routeId,cost\n");
-			for (String routeId : routeToCostImpact.keySet()) {
-				wr.write(String.format("%s,%f\n", routeId,
-							routeToCostImpact.get(routeId)));
-			}
+			// wr.write("routeId,cost\n");
+			// for (String routeId : routeToCostImpact.keySet()) {
+			// 	wr.write(String.format("%s,%f\n", routeId,
+			// 				routeToCostImpact.get(routeId)));
+			// }
 
-			wr.close();
+			// wr.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

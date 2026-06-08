@@ -12,7 +12,6 @@ import com.team18.model.Stop;
 import com.team18.routing.raptor.RaptorAlgorithm;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.util.GeoCalculator;
-import com.team18.util.ParsingUtil;
 
 public class Optimizer {
 
@@ -95,7 +94,7 @@ public class Optimizer {
         System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
         System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
 
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 1; j++) {
 
             double baselineTotalCostForThisRound = baselineTotalCost;
 
@@ -140,16 +139,10 @@ public class Optimizer {
                 this.baselineTransitOperationalCost -= disabledRoute.operatingCostSEK;
                 
                 double costImpact = bestRouteToDisable.getValue();
-                System.err.println("Money saved: " + costImpact);
+                System.err.println(disabledRoute.routeType + " id: " + disabledRoute.id + " shortname: " + disabledRoute.shortName + " longname: " + disabledRoute.longName + " operator: " + disabledRoute.operator);
+                System.err.println("Money difference: " + costImpact);
                 baselineTotalCost += costImpact;
             }
-        }
-
-        Map<String, Route> parentRouteLookup = network.parentRouteLookup;
-        for (String routeId : diasbledParentRoutes) {
-            Route route = parentRouteLookup.get(routeId);
-            
-            System.err.println("id: " + route.id + " shortname: " + route.shortName + " longname: " + route.longName + " operator: " + route.operator);
         }
     }
 
@@ -212,7 +205,7 @@ public class Optimizer {
                 bestArrivalTimeForEachStop = raptor.getBestArrivalTimeToAllStops(demandPointCoordinates[i*2], demandPointCoordinates[i*2+1], startTime);
     
                 for (int j = 0; j < totalDemandPoints; j++) {
-                    if (i == j || demandMatrix[i][j] == 0) {
+                    if (i == j || demandMatrix[i][j] < 50) {
                         continue;
                     }
     
@@ -234,16 +227,15 @@ public class Optimizer {
                     }
                     
                     double distToDestination = GeoCalculator.calculateEquirectangularDistance(demandPointCoordinates[i*2], demandPointCoordinates[i*2+1], demandPointCoordinates[j*2], demandPointCoordinates[j*2+1]);
-                    double cost = 0;
+                    double cost;
     
                     if (bestArrivalTimeAtDemandPoint != Integer.MAX_VALUE && (bestArrivalTimeAtDemandPoint - startTime) <= Config.MAX_TRANSIT_TIME_SECONDS) {
-                        cost = (bestArrivalTimeAtDemandPoint - startTime) * Config.VOT;
+                        cost = (bestArrivalTimeAtDemandPoint - startTime) * Config.VOT_TRANSIT;
                     } else if (distToDestination < Config.MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES) {
-                        cost = (distToDestination / Config.WALK_SPEED_MPS) * Config.VOT;
+                        cost = (distToDestination * Config.WALK_DISTANCE_MULTIPLIER / Config.WALK_SPEED_MPS) * Config.VOT_WALKING;
                     } else {
-                        cost = (distToDestination / Config.WALK_SPEED_MPS) * Config.VOT;
                         double carTimeSecs = distToDestination * Config.CAR_DISTANCE_MULTIPLIER / Config.CAR_SPEED_MPS;
-                        double timeCost = carTimeSecs * Config.VOT;
+                        double timeCost = carTimeSecs * Config.VOT_CAR;
                         double carCost = distToDestination * Config.CAR_COST_PER_METRE + Config.FLAT_CAR_PENALTY;
                         cost = timeCost + carCost;
                     }
