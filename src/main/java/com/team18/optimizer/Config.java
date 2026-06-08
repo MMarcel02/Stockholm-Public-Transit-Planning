@@ -84,11 +84,11 @@ public class Config {
 
     // TODO: Find a good reference for an actual VOT
     public static double VOT = 200.0 / 3600.0;                // 100 SEK per hour (how much ppl estimate their time is worth)
-    public static double PASSENGER_COST_WEIGHT = 1;         // how much we actually value passenger cost
+    public static double PASSENGER_COST_WEIGHT = 2;         // how much we actually value passenger cost
 
     public static int MAX_TRANSIT_TIME_SECONDS = 2*60*60;     // 2 hrs (if goes over this we assume passenger would rather take car)
     
-    public static int MAX_WALK_DISTANCE_TRANSFERS_METRES = 700;            // how much a passenger is willing to transfer
+    public static int MAX_WALK_DISTANCE_TRANSFERS_METRES = 500;            // how much a passenger is willing to transfer
     public static int MAX_WALK_DISTANCE_INITIAL_AND_FINAL_METRES = 1500;   // how much a passenger is willing to walk before/after transit 
     public static int TRANSFER_PENALTY = 120;                               // time in seconds added to each transfer
 
