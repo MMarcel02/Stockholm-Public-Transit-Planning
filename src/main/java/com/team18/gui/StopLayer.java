@@ -273,38 +273,44 @@ public class StopLayer implements Layer {
         }
     }
 
-	List<Arrival> getArrivals(Stop stop) {
-		LocalDate activeDate = journeyInput.getEffectiveDate();
-    	Set<String> activeServices = network.serviceByCalendar.get(activeDate);
-		
-        List<Arrival> arrivals = arrivalMap.get(stop.id);
-        if (arrivals == null || arrivals.isEmpty()) {
-            return List.of(new Arrival(-1, "", "No scheduled rides", "", null));
-        }
+    List<Arrival> getArrivals(Stop stop) {
+	    LocalDate activeDate = journeyInput.getEffectiveDate();
+	    Set<String> activeServices = network.serviceByCalendar.get(activeDate);
 
-        int earliest = 0;
-        List<Arrival> rows = new ArrayList<>();
+	    List<Arrival> arrivals = new ArrayList<>();
+	    for (Stop otherStop: parser.stops.values()) {
+		    if (stop.name.equals(otherStop.name)) {
+			    arrivals.addAll(arrivalMap.get(otherStop.id));
+		    }
+	    }
 
-        try {
-            if (!journeyInput.getTime().isBlank()) {
-                earliest = ParsingUtil.timeStringToSecondsAfterMidnight(
-                        journeyInput.getTime());
-            }
-        } catch (Exception ex) {}
+	    if (arrivals == null || arrivals.isEmpty()) {
+		    return List.of(new Arrival(-1, "", "No scheduled rides", "", null));
+	    }
 
-        for (Arrival arrival: arrivals) {
-            if (activeServices.contains(arrival.trip.serviceId)) {
-				if (arrival.timeSeconds >= earliest) {
-					rows.add(arrival);
-				}
-        	}
-        }
+	    int earliest = 0;
+	    List<Arrival> rows = new ArrayList<>();
 
-        if (rows.isEmpty()) {
-            rows.add(new Arrival(-1, "", "No later rides today", "", null));
-        }
+	    try {
+		    if (!journeyInput.getTime().isBlank()) {
+			    earliest = ParsingUtil.timeStringToSecondsAfterMidnight(
+					    journeyInput.getTime());
+		    }
+	    } catch (Exception ex) {}
 
-        return rows;
+	    for (Arrival arrival: arrivals) {
+		    if (activeServices.contains(arrival.trip.serviceId)) {
+			    if (arrival.timeSeconds >= earliest) {
+				    rows.add(arrival);
+			    }
+		    }
+	    }
+
+	    if (rows.isEmpty()) {
+		    rows.add(new Arrival(-1, "", "No later rides today", "", null));
+	    }
+
+	    return rows;
     }
 }
 

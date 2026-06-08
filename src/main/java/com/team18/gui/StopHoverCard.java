@@ -2,6 +2,8 @@ package com.team18.gui;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.HashSet;
 
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
@@ -13,6 +15,7 @@ import javafx.scene.control.OverrunStyle;
 import com.team18.model.Stop;
 import com.team18.routing.raptor.RaptorNetwork;
 import com.team18.parser.GTFSParser;
+import com.team18.model.Route.RouteType;
 
 public class StopHoverCard {
 	final double CARD_WIDTH = 268;
@@ -48,107 +51,126 @@ public class StopHoverCard {
         return card.isVisible();
     }
 
-	public void show(Stop stop, List<StopLayer.Arrival> arrivals) {
+    public void show(Stop stop, List<StopLayer.Arrival> arrivals) {
+	    if (stop == currentStop && card.isVisible()) {
+		    return; 
+	    }
 
-		if (stop == currentStop && card.isVisible()) {
-            return; 
-        }
-
-        currentStop = stop;
-        card.getChildren().clear();
-
-
-		Label name = new Label(stop.name);
-		name.getStyleClass().add("stop-hover-title");
-		name.setWrapText(true);
-		name.setPrefWidth(CARD_WIDTH - 24);
-		name.setMinHeight(38);
-
-		card.getChildren().add(name);
+	    currentStop = stop;
+	    card.getChildren().clear();
 
 
-		String coordText = String.format(Locale.US, "%.6f, %.6f", stop.lat, stop.lon);
-		Label coordinates = new Label(coordText);
-		coordinates.getStyleClass().add("stop-hover-coordinates");
-		coordinates.setPrefWidth(CARD_WIDTH - 24);
-		coordinates.setTextOverrun(OverrunStyle.CLIP);
+	    Label name = new Label(stop.name);
+	    name.getStyleClass().add("stop-hover-title");
+	    name.setWrapText(true);
+	    name.setPrefWidth(CARD_WIDTH - 24);
+	    name.setMinHeight(38);
 
-		card.getChildren().add(coordinates);
-
-
-		Label arrivalsLabel = new Label("Rides through this stop");
-		arrivalsLabel.getStyleClass().add("stop-hover-section-title");
-		card.getChildren().add(arrivalsLabel);
+	    card.getChildren().add(name);
 
 
-		ListView<StopLayer.Arrival> arrivalsList = new ListView<>();
-		arrivalsList.getStyleClass().add("stop-hover-arrivals");
-		arrivalsList.setPrefWidth(CARD_WIDTH - 24);
-		arrivalsList.setMinWidth(CARD_WIDTH - 24);
-		arrivalsList.setPrefHeight(145);
-		arrivalsList.setMinHeight(145);
-		arrivalsList.getItems().addAll(arrivals);
+	    Set<RouteType> types = new HashSet<>();
+	    for (StopLayer.Arrival arrival: arrivals) {
+		    if (arrival.trip == null) continue;
+		    types.add(arrival.trip.route.routeType);
+	    }
 
-		card.getChildren().add(arrivalsList);
+	    String modesString = "";
+	    for (RouteType type: types) {
+		    if (modesString.isBlank()) modesString = type.toString();
+		    else modesString = modesString + " | " + type.toString();
+	    }
+
+	    Label modes = new Label(modesString);
+	    modes.getStyleClass().add("stop-hover-section-title");
+	    modes.setWrapText(true);
+	    modes.setPrefWidth(CARD_WIDTH - 24);
+
+	    card.getChildren().add(modes);
 
 
-		Button startButton = new Button("Origin");
-		startButton.getStyleClass().add("primary-button-with-border");
-		startButton.setMaxWidth(Double.MAX_VALUE);
-		startButton.setPrefWidth(0);
-		startButton.setMinHeight(34);
-		HBox.setHgrow(startButton, javafx.scene.layout.Priority.ALWAYS);
-		startButton.setOnAction(ev -> {
-			journeyInput.setStart(stop.name);
-			hide();
-		});
+	    String coordText = String.format(Locale.US, "%.6f, %.6f", stop.lat, stop.lon);
+	    Label coordinates = new Label(coordText);
+	    coordinates.getStyleClass().add("stop-hover-coordinates");
+	    coordinates.setPrefWidth(CARD_WIDTH - 24);
+	    coordinates.setTextOverrun(OverrunStyle.CLIP);
 
-		Button endButton = new Button("Destination");
-		endButton.getStyleClass().add("primary-button-with-border");
-		endButton.setMaxWidth(Double.MAX_VALUE);
-		endButton.setPrefWidth(0);
-		endButton.setMinHeight(34);
-		HBox.setHgrow(endButton, javafx.scene.layout.Priority.ALWAYS);
-		endButton.setOnAction(ev -> {
-			journeyInput.setEnd(stop.name);
-			hide();
-		});
+	    card.getChildren().add(coordinates);
 
-		HBox actionRow = new HBox(5);
-		actionRow.setPrefWidth(CARD_WIDTH - 28);
-		actionRow.setMinWidth(CARD_WIDTH - 28);
-		actionRow.getChildren().addAll(startButton, endButton);
 
-		card.getChildren().add(actionRow);
+	    Label arrivalsLabel = new Label("Rides through this stop");
+	    arrivalsLabel.getStyleClass().add("stop-hover-section-title");
+	    card.getChildren().add(arrivalsLabel);
 
-		int internalId = network.stopStringToIntMap.get(stop.id);
-		boolean isEnabled = network.stopsEnabledArr[internalId];
 
-		Button disableButton = new Button(isEnabled ? "Disable Stop" : "Enable Stop");
-		disableButton.getStyleClass().add("outline-button");
-		disableButton.setMaxWidth(Double.MAX_VALUE);
-		disableButton.setMinHeight(34);
-		disableButton.setOnAction(ev -> {
-			for (Stop toToggle: parser.stops.values()) {
-				if (!toToggle.name.equals(stop.name)) continue;
-				network.toggleStop(toToggle.id);
-			}
+	    ListView<StopLayer.Arrival> arrivalsList = new ListView<>();
+	    arrivalsList.getStyleClass().add("stop-hover-arrivals");
+	    arrivalsList.setPrefWidth(CARD_WIDTH - 24);
+	    arrivalsList.setMinWidth(CARD_WIDTH - 24);
+	    arrivalsList.setPrefHeight(145);
+	    arrivalsList.setMinHeight(145);
+	    arrivalsList.getItems().addAll(arrivals);
 
-			hide();
-			if (onToggleCallback != null) {
-				onToggleCallback.run();
-			}
-		});
+	    card.getChildren().add(arrivalsList);
 
-		card.getChildren().add(disableButton);
-		card.setVisible(true);
-		card.toFront();
-		card.applyCss();
-		card.autosize();
-		card.layout();
 
-		// position(viewWidth, viewHeight, mouseX, mouseY);
-	}
+	    Button startButton = new Button("Origin");
+	    startButton.getStyleClass().add("primary-button-with-border");
+	    startButton.setMaxWidth(Double.MAX_VALUE);
+	    startButton.setPrefWidth(0);
+	    startButton.setMinHeight(34);
+	    HBox.setHgrow(startButton, javafx.scene.layout.Priority.ALWAYS);
+	    startButton.setOnAction(ev -> {
+		    journeyInput.setStart(stop.name);
+		    hide();
+	    });
+
+	    Button endButton = new Button("Destination");
+	    endButton.getStyleClass().add("primary-button-with-border");
+	    endButton.setMaxWidth(Double.MAX_VALUE);
+	    endButton.setPrefWidth(0);
+	    endButton.setMinHeight(34);
+	    HBox.setHgrow(endButton, javafx.scene.layout.Priority.ALWAYS);
+	    endButton.setOnAction(ev -> {
+		    journeyInput.setEnd(stop.name);
+		    hide();
+	    });
+
+	    HBox actionRow = new HBox(5);
+	    actionRow.setPrefWidth(CARD_WIDTH - 28);
+	    actionRow.setMinWidth(CARD_WIDTH - 28);
+	    actionRow.getChildren().addAll(startButton, endButton);
+
+	    card.getChildren().add(actionRow);
+
+	    int internalId = network.stopStringToIntMap.get(stop.id);
+	    boolean isEnabled = network.stopsEnabledArr[internalId];
+
+	    Button disableButton = new Button(isEnabled ? "Disable Stop" : "Enable Stop");
+	    disableButton.getStyleClass().add("outline-button");
+	    disableButton.setMaxWidth(Double.MAX_VALUE);
+	    disableButton.setMinHeight(34);
+	    disableButton.setOnAction(ev -> {
+		    for (Stop toToggle: parser.stops.values()) {
+			    if (!toToggle.name.equals(stop.name)) continue;
+			    network.toggleStop(toToggle.id);
+		    }
+
+		    hide();
+		    if (onToggleCallback != null) {
+			    onToggleCallback.run();
+		    }
+	    });
+
+	    card.getChildren().add(disableButton);
+	    card.setVisible(true);
+	    card.toFront();
+	    card.applyCss();
+	    card.autosize();
+	    card.layout();
+
+	    // position(viewWidth, viewHeight, mouseX, mouseY);
+    }
 
 	public void hide() {
 		card.setVisible(false);
