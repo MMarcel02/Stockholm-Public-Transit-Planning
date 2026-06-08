@@ -152,6 +152,8 @@ public class GuiController {
 				stack.stopLayer.setHideDisabled(hideDisabled.isSelected()));
 		hideEnabled.setOnAction(ev ->
 				stack.stopLayer.setHideEnabled(hideEnabled.isSelected()));
+
+		removalCutoff.setText("3");
 	}
 
 	@FXML

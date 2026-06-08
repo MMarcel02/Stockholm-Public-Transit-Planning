@@ -42,6 +42,11 @@
     -fx-background-color: #01afd1;
 }
 
+.normal-label {
+    -fx-text-fill: #ffffff; 
+    -fx-font-size: 14px;
+}
+
 .primary-button {
     -fx-background-color: #ffffff, #ffffff; 
     -fx-background-insets: 0, 2;
