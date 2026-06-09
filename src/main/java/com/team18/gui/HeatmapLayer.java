@@ -276,6 +276,19 @@ public class HeatmapLayer implements Layer {
 			}
 		}
 	}
+	public double[] getThresholds(){
+		return thresholds;
+	}
+	public String[] getColors(){
+		return colors;
+	}
+	public boolean isDifferenceMode(){
+		return differenceMode;
+	}
+	public boolean isActive(){
+		return !points.isEmpty();
+	}
+
 
 	private Color pointColor(Point point) {
 		if (differenceMode && point.value <= 0.05) {

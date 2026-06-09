@@ -23,6 +23,9 @@ import com.team18.routing.raptor.RaptorAlgorithm;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
@@ -62,6 +65,12 @@ public class GuiController {
 	@FXML DatePicker datePicker;
 	@FXML VBox routeStepsContainer;
 	@FXML VBox stopCardPlaceholder;
+	@FXML VBox legendContainer;
+	@FXML
+	HBox legendItems;
+	@FXML
+	Label legendTitle;
+
 
 	@FXML CheckBox hideDisabled;
 	@FXML CheckBox hideEnabled;
@@ -197,6 +206,7 @@ public class GuiController {
 
 			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
 					startTimeSeconds, differenceMode.isSelected());
+			updateLegendView();
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}
@@ -229,6 +239,7 @@ public class GuiController {
 					PopdistParser.CELL_SIZE_LAT,
 					PopdistParser.CELL_SIZE_LON,
 					thresholds, colors);
+			updateLegendView();
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}
@@ -238,6 +249,7 @@ public class GuiController {
 	public void handleHideHeatmap() {
 		stack.heatmapLayer.clear();
 		stack.render(mapContainer.getWidth(), mapContainer.getHeight());
+		updateLegendView();
 	}
 
 
@@ -331,6 +343,45 @@ public class GuiController {
 			System.exit(1);
 		}
 	}
+	private void updateLegendView(){
+		HeatmapLayer heatmap =  stack.heatmapLayer;
+		legendItems.getChildren().clear();
+		if (!heatmap.isActive()){
+			legendContainer.setVisible(false);
+			legendContainer.setManaged(false);
+			return;
+		}
+		else if(heatmap.isDifferenceMode()){
+			legendTitle.setText("Delay (minutes)");
+		}
+		else {
+			legendTitle.setText("Travel time/ Value");
+		}
+		double[] thresholds = heatmap.getThresholds();
+		String[] colors = heatmap.getColors();
+		for (int i = 0; i < thresholds.length; i++) {
+			VBox item = new VBox(2);
+			item.setAlignment(javafx.geometry.Pos.BOTTOM_LEFT);
+			javafx.scene.shape.Rectangle colorBlock = new javafx.scene.shape.Rectangle(30, 15);
+			colorBlock.setFill(Color.web(colors[i]));
+			colorBlock.setStroke(Color.BLACK);
+			colorBlock.setStrokeWidth(0.5);
+			String labelText = (i == thresholds.length - 1)
+					? (int)thresholds[i] + "+"
+					: String.valueOf((int)thresholds[i]);
+			javafx.scene.control.Label label = new javafx.scene.control.Label(labelText);
+			label.setStyle("-fx-font-size: 10px;");
+
+			item.getChildren().addAll(colorBlock, label);
+			legendItems.getChildren().add(item);
+		}
+
+		// 5. Make it visible
+		legendContainer.setVisible(true);
+		legendContainer.setManaged(true);
+		}
+
+
 
 	@FXML
 	public void handleHideRemovalCosts() {

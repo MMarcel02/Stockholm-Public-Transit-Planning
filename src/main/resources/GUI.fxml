@@ -17,6 +17,16 @@
 
     <Pane fx:id="mapContainer" style="-fx-background-color: #aad3df;" />
 
+    <VBox fx:id="legendContainer" spacing="5" visible="false" managed="false"
+          StackPane.alignment="BOTTOM_LEFT" maxHeight="-Infinity" maxWidth="-Infinity"
+          style="-fx-background-color: rgba(255, 255, 255, 0.8); -fx-padding: 10; -fx-background-radius: 5;">
+        <StackPane.margin>
+            <Insets bottom="20.0" left="320.0" />
+        </StackPane.margin>
+        <Label fx:id="legendTitle" text="Heatmap Legend" style="-fx-font-weight: bold;"/>
+        <HBox fx:id="legendItems" spacing="10" alignment="BOTTOM_LEFT"/>
+    </VBox>
+
     <VBox id="sidebar" maxWidth="300.0" minWidth="300.0" spacing="15.0" StackPane.alignment="TOP_LEFT">
         <StackPane.margin>
             <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
@@ -53,6 +63,7 @@
             <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
         </StackPane.margin>
         <children>
+
             <VBox id="rightSidebar" spacing="15.0">
                 <children>
                     <Label styleClass="header-label" text="Map Settings" />
