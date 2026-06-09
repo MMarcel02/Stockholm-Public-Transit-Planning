@@ -52,7 +52,7 @@ public class CostAnalyzer {
                 double difference = passengerCost - routeCost;
 
                 // the 15 can also be adjusted, its just a ratio to try to exclude busses that are inbetween bounding boxes
-                if (Math.abs(difference) < 0.001 || (routeCost / passengerCost) > 15) {
+                if (Math.abs(difference) < 0.001) {
                     continue;
                 }
 
