@@ -89,20 +89,6 @@ public class StopHoverCard {
 	    card.getChildren().add(modes);
 
 
-	    String coordText = String.format(Locale.US, "%.6f, %.6f", stop.lat, stop.lon);
-	    Label coordinates = new Label(coordText);
-	    coordinates.getStyleClass().add("stop-hover-coordinates");
-	    coordinates.setPrefWidth(CARD_WIDTH - 24);
-	    coordinates.setTextOverrun(OverrunStyle.CLIP);
-
-	    card.getChildren().add(coordinates);
-
-
-	    Label arrivalsLabel = new Label("Rides through this stop");
-	    arrivalsLabel.getStyleClass().add("stop-hover-section-title");
-	    card.getChildren().add(arrivalsLabel);
-
-
 	    ListView<StopLayer.Arrival> arrivalsList = new ListView<>();
 	    arrivalsList.getStyleClass().add("stop-hover-arrivals");
 	    arrivalsList.setPrefWidth(CARD_WIDTH - 24);
