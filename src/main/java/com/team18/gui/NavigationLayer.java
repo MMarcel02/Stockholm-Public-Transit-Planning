@@ -72,35 +72,11 @@ public class NavigationLayer implements Layer {
 			this.steps = new ArrayList<>();
 
 			for (RouteStep rs: steps) {
-				double latFrom = rs.latFrom;
-				double lonFrom = rs.lonFrom;
-				if (rs.fromStop != null) {
-					for (Stop stop: parser.orderedStops) {
-						if (stop.name.equals(rs.fromStop.name)) {
-							latFrom = stop.lat;
-							lonFrom = stop.lon;
-							break;
-						}
-					}
-				}
-
-				double latTo = rs.latTo;
-				double lonTo = rs.lonTo;
-				if (rs.toStop != null) {
-					for (Stop stop: parser.orderedStops) {
-						if (stop.name.equals(rs.toStop.name)) {
-							latTo = stop.lat;
-							lonTo = stop.lon;
-							break;
-						}
-					}
-				}
-
 				Step step = new Step(
-					latFrom,
-					lonFrom,
-					latTo,
-					lonTo,
+					rs.latFrom,
+					rs.lonFrom,
+					rs.latTo,
+					rs.lonTo,
 					rs.shapeId
 				);
 
