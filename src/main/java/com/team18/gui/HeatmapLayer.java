@@ -67,11 +67,14 @@ public class HeatmapLayer implements Layer {
 			this.legendTitle = "Delay (Minutes)";
 			thresholds = new double[] {0, 1, 3, 5, 10, 15, 20, 30};
 			colors = new String[] {
-				"#FDD835", // Yellow (starts here immediately after 0.01)
-				"#FB8C00", // 1 min delay -> Orange
-				"#E53935", // 3 min delay -> Red
-				"#8E0000", // 5+ min delay -> Dark Red
-				"#4A0000", "#300000", "#1A0000", "#000000"
+					"#FFF59D", // 1. Light Yellow
+					"#FFEB3B", // 2. Normal Yellow
+					"#FF9800", // 3. Orange
+					"#E65100", // 4. Dark Orange
+					"#EF5350", // 5. Light Red
+					"#D32F2F", // 6. Red
+					"#8E0000", // 7. Dark Red
+					"#000000"  // 8. Black
 			};
 		} else {
 			this.legendTitle = "Travel time (Minutes)";
