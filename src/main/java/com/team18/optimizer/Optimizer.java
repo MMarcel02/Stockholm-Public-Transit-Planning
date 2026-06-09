@@ -88,15 +88,11 @@ public class Optimizer {
                 
         network.setByCalendar(Config.REPRESENTATIVE_WEEKDAY);
         double baselinePassengerCost = calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
-        double baselineTotalCost = baselineTransitOperationalCost + baselinePassengerCost;
 
         System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
         System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
 
         for (int j = 0; j < 3; j++) {
-
-            double baselineTotalCostForThisRound = baselineTotalCost;
-
             Map.Entry<String, Double> bestRouteToDisable = network.parentRouteLookup.values().parallelStream()
                 .filter(route -> !diasbledParentRoutes.keySet().contains(route.id)
                 && route.routeType == Route.RouteType.BUS
@@ -117,16 +113,23 @@ public class Optimizer {
 
                     localNetwork.disableParentRouteOptimizer(route.id);
 
-                    double newDailyOperationalCost = this.baselineTransitOperationalCost - route.operatingCostSEK;
-
                     localNetwork.setByCalendar(Config.REPRESENTATIVE_WEEKDAY);
                     double newDailyPassengerCost = localOptimizer.calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
+                    
+                    double passengerCostIncrease = newDailyPassengerCost - baselinePassengerCost;
+                    
+                    // -100 means removing the route saved the city 100 
+                    // +100 means the city would lose 100 if it removed the route
+                    double netCostImpact = passengerCostIncrease - route.operatingCostSEK;
 
-                    double newTotalCost = newDailyOperationalCost + newDailyPassengerCost;
-                    double costDifference = newTotalCost - baselineTotalCostForThisRound;
+                    // extra filter to try to exclude outlier busses on the edge of demand matrix 
+                    if (passengerCostIncrease <= 0.01 || (route.operatingCostSEK / passengerCostIncrease) > 15) {
+                        return null;
+                    }
 
-                    return Map.entry(route.id, costDifference);
+                    return Map.entry(route.id, netCostImpact);
                 })   
+                .filter(entry -> entry != null)
                 .min(Map.Entry.comparingByValue())
                 .orElse(null);
 
@@ -141,7 +144,6 @@ public class Optimizer {
                 double costImpact = bestRouteToDisable.getValue();
                 System.err.println(disabledRoute.routeType + " id: " + disabledRoute.id + " shortname: " + disabledRoute.shortName + " longname: " + disabledRoute.longName + " operator: " + disabledRoute.operator);
                 System.err.println("Money difference: " + costImpact);
-                baselineTotalCost += costImpact;
             }
         }
         return diasbledParentRoutes;
@@ -152,7 +154,6 @@ public class Optimizer {
     public Map<String, Double> getRouteRemovedToCostImpact (LocalDate onDate) {
         network.setByCalendar(onDate);
         double baselinePassengerCost = calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
-        double baselineTotalCost = baselineTransitOperationalCost + baselinePassengerCost;
 
         System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
         System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
@@ -173,15 +174,59 @@ public class Optimizer {
 
                 localNetwork.disableParentRouteOptimizer(route.id);
 
-                double newDailyOperationalCost = this.baselineTransitOperationalCost - route.operatingCostSEK;
-
                 localNetwork.setByCalendar(onDate);
                 double newDailyPassengerCost = localOptimizer.calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
 
-                double newTotalCost = newDailyOperationalCost + newDailyPassengerCost;
-                double costDifference = newTotalCost - baselineTotalCost;
+                double passengerCostIncrease = newDailyPassengerCost - baselinePassengerCost;
+                
+                // -100 means removing the route saved the city 100 
+                // +100 means the city would lose 100 if it removed the route
+                double netCostImpact = passengerCostIncrease - route.operatingCostSEK;
+                return Map.entry(route.id, netCostImpact);
+            })
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 
-                return Map.entry(route.id, costDifference);
+    // ik this is not clean but we dont have time xd 
+    public Map<String, double[]> getRouteCostImpactForAnalysis (LocalDate onDate) {
+        network.setByCalendar(onDate);
+        double baselinePassengerCost = calculateDailyPassengerCost() * Config.PASSENGER_COST_WEIGHT;
+
+        System.err.println("Baseline Operation cost: " + baselineTransitOperationalCost);
+        System.err.println("Baseline Passenger cost: " + (baselinePassengerCost));
+
+        return network.parentRouteLookup.values().parallelStream()
+            .map(route -> {
+
+                RaptorNetwork localNetwork = network.copyForMultithreading();
+
+                Optimizer localOptimizer = new Optimizer(
+                    localNetwork, 
+                    this.demandPointCoordinates, 
+                    this.demandMatrix,
+                    this.stopsReachableFromDemandPoint,
+                    this.walkTimeFromAllStopsToAllDemandPoints,
+                    this.baselineTransitOperationalCost
+                );
+
+                localNetwork.disableParentRouteOptimizer(route.id);
+
+                localNetwork.setByCalendar(onDate);
+                double newDailyPassengerCost = localOptimizer.calculateDailyPassengerCost() * 1;
+
+                double passengerCostIncrease = newDailyPassengerCost - baselinePassengerCost;
+                
+                // -100 means removing the route saved the city 100 
+                // +100 means the city would lose 100 if it removed the route
+                double netCostImpact = passengerCostIncrease - route.operatingCostSEK;
+
+                double[] values = new double[3];
+                values[0] = route.operatingCostSEK;                        
+                values[1] = passengerCostIncrease;
+                values[2] = netCostImpact;
+
+
+                return Map.entry(route.id, values);
             })
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

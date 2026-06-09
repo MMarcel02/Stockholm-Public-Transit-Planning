@@ -230,10 +230,16 @@ public class GuiController {
 				points.add(new HeatmapLayer.Point(lat, lon, pop));
 			}
 
-			double[] thresholds = {0, 20, 100, 500, 1000, 2000, 5000, 10000};
+			double[] thresholds = {0, 100, 500, 1000, 2500, 5000, 10000, 20000};
 			String[] colors = {
-				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
-				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
+				"#FF00000D", // 5% opacity
+				"#FF000033", // 20% opacity
+				"#FF000059", // 35% opacity
+				"#FF000080", // 50% opacity
+				"#E60000A6", // 65% opacity
+				"#B30000CC", // 80% opacity
+				"#660000E6", // 90% opacity
+				"#1A0000FF"  // 100% opacity
 			};
 
 			stack.heatmapLayer.configureManual(points,
@@ -295,27 +301,27 @@ public class GuiController {
 			}
 
 			double[] thresholds = {
-				-300000,
-				-20000,
-				-90000,
-				-50000,
-				-20000,
-				20000,
-				45000,
-				70000,
-				100000,
+				-150000,  
+				-80000,   
+				-40000,   
+				-20000,   
+				-5000,    
+				0,        
+				20000,    
+				50000,    
+				100000
 			};
 
 			String[] colors = {
-				"#04EB00",
-				"#1DCE00",
-				"#36B000",
-				"#4E9300",
-				"#677600",
-				"#805800",
-				"#993B00",
-				"#B11D00",
-				"#CA0000",
+				"#313695", 
+				"#4575b4", 
+				"#74add1", 
+				"#abd9e9", 
+				"#e0f3f8", 
+				"#fdae61", 
+				"#f46d43", 
+				"#d73027",  
+				"#a50026"  
 			};
 
 			for (int entryIndex = 0;

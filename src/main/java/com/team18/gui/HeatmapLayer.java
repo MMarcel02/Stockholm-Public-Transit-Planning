@@ -1,23 +1,21 @@
 package com.team18.gui;
 
-import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Arrays;
+import java.util.List;
+
+import com.team18.model.Stop;
+import com.team18.optimizer.Config;
+import com.team18.routing.raptor.RaptorAlgorithm;
+import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.Colors;
+import com.team18.util.GeoCalculator;
+import com.team18.util.StockholmUrbanArea;
 
 import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-
-import com.team18.gui.Layer;
-import com.team18.util.GeoCalculator;
-import com.team18.util.StockholmUrbanArea;
-import com.team18.model.Stop;
-import com.team18.routing.raptor.RaptorAlgorithm;
-import com.team18.routing.raptor.RaptorNetwork;
-import com.team18.optimizer.Config;
-import com.team18.util.Colors;
 
 public class HeatmapLayer implements Layer {
 	RaptorNetwork network;
@@ -84,10 +82,16 @@ public class HeatmapLayer implements Layer {
 			};
 		} else {
 			legendTitle = "Travel time (min)";
-			thresholds = new double[] {0, 10, 20, 30, 45, 60, 75, 90};
+			thresholds = new double[] {0, 15, 30, 45, 60, 80, 100, 120};
 			colors = new String[] {
-				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
-				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
+				"#a50026", 
+				"#d73027", 
+				"#f46d43", 
+				"#fdae61", 
+				"#abd9e9", 
+				"#74add1", 
+				"#4575b4", 
+				"#313695"  
 			};
 		}
 
@@ -306,7 +310,7 @@ public class HeatmapLayer implements Layer {
 			return Color.TRANSPARENT;
 		}
 
-		return Colors.interpolatePalette(point.value, thresholds, colors, 0.48);
+		return Colors.interpolatePalette(point.value, thresholds, colors, 0.6);
 	}
 
 

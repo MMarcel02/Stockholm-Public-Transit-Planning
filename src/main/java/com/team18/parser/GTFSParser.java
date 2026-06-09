@@ -540,7 +540,7 @@ public class GTFSParser {
             
             double dailyOperationalCost = 0;
             for (Route route : routes.values()) {
-                for (Trip trip : route.trips) {
+                for (Trip trip : route.trips) {     
                     if (activeServices.contains(trip.serviceId)) {
                         dailyOperationalCost += trip.operatingCostSEK;
                     }

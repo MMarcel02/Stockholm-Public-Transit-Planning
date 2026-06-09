@@ -41,62 +41,62 @@ public class Config {
     );
 
 
-    public static final int[] REFERENCE_TIMES = {
-        ParsingUtil.timeStringToSecondsAfterMidnight("8:00"),
-        ParsingUtil.timeStringToSecondsAfterMidnight("12:30"),
-        ParsingUtil.timeStringToSecondsAfterMidnight("17:00")
-    };
+    // public static final int[] REFERENCE_TIMES = {
+    //     ParsingUtil.timeStringToSecondsAfterMidnight("8:00"),
+    //     ParsingUtil.timeStringToSecondsAfterMidnight("12:30"),
+    //     ParsingUtil.timeStringToSecondsAfterMidnight("17:00")
+    // };
 
 
-    public static final double[] REFERENCE_WEIGHTS = {
-        1.0,
-        0.3,
-        0.35
-    };
+    // public static final double[] REFERENCE_WEIGHTS = {
+    //     0.35,
+    //     0.3,
+    //     0.35
+    // };
 
     // For later once we have correct values 
 
-    // public static final int[] REFERENCE_TIMES = {
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("6:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("7:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("7:45"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("8:15"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("9:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("10:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("11:30"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("12:30"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("13:30"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("15:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("16:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("16:45"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("17:15"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("18:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("19:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("20:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("21:00"),
-    //     ParsingUtil.timeStringToSecondsAfterMidnight("22:30")
-    // };
+    public static final int[] REFERENCE_TIMES = {
+        ParsingUtil.timeStringToSecondsAfterMidnight("6:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("7:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("7:45"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("8:15"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("9:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("10:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("11:30"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("12:30"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("13:30"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("15:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("16:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("16:45"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("17:15"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("18:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("19:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("20:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("21:00"),
+        ParsingUtil.timeStringToSecondsAfterMidnight("22:30")
+    };
 
-    // public static final double[] REFERENCE_WEIGHTS = {
-    //     0.02, // 6:00  - Early morning start
-    //     0.05, // 7:00  - Morning build up
-    //     0.08, // 7:45  - Morning peak start
-    //     0.10, // 8:15  - Morning peak max
-    //     0.07, // 9:00  - Morning peak tail
-    //     0.04, // 10:00 - Mid-morning
-    //     0.04, // 11:30 - Pre-lunch
-    //     0.05, // 12:30 - Lunch rush
-    //     0.04, // 13:30 - Post-lunch
-    //     0.04, // 15:00 - Mid-afternoon
-    //     0.06, // 16:00 - Evening peak build up
-    //     0.09, // 16:45 - Evening peak start
-    //     0.11, // 17:15 - Evening peak max
-    //     0.08, // 18:00 - Evening peak tail
-    //     0.05, // 19:00 - Early evening return
-    //     0.04, // 20:00 - Evening
-    //     0.02, // 21:00 - Late evening
-    //     0.02  // 22:30 - Night
-    // };
+    public static final double[] REFERENCE_WEIGHTS = {
+        0.02, // 6:00 
+        0.05, // 7:00 
+        0.08, // 7:45 
+        0.10, // 8:15 
+        0.07, // 9:00 
+        0.04, // 10:00
+        0.04, // 11:30
+        0.05, // 12:30
+        0.04, // 13:30
+        0.04, // 15:00
+        0.06, // 16:00
+        0.09, // 16:45
+        0.11, // 17:15
+        0.08, // 18:00
+        0.05, // 19:00
+        0.04, // 20:00 
+        0.02, // 21:00 
+        0.02  // 22:30 
+    };
 
 
     public static int MAX_RAPTOR_ROUNDS = 6;
@@ -140,7 +140,7 @@ public class Config {
     public static double VOT_CAR = 140.0 / 3600.0;                // 112 in 2019 adjusted for inflation is 141
     public static double VOT_WALKING = 200.0 / 3600.0;                // calculated as a 2x of bus time 
     public static double VOT_TRANSIT = 100.0 / 3600.0;                // about 80 in 2019 adjusted for inflation is 100
-    public static double PASSENGER_COST_WEIGHT = 2;         // how much we actually value passenger cost
+    public static double PASSENGER_COST_WEIGHT = 5;         // how much we actually value passenger cost
 
     public static int MAX_TRANSIT_TIME_SECONDS = 2*60*60;     // 2 hrs (if goes over this we assume passenger would rather take car)
     
