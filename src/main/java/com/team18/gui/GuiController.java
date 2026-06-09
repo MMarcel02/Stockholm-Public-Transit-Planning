@@ -36,6 +36,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.layout.VBox;
 import javafx.util.converter.LocalDateStringConverter;
 import javafx.scene.paint.Color;
+import javafx.scene.input.KeyCode;
 
 import com.team18.parser.GTFSParser;
 import com.team18.parser.CSVParser;
@@ -226,10 +227,10 @@ public class GuiController {
 				double lon = Double.parseDouble(row.getCol("lon"));
 				double pop = Double.parseDouble(row.getCol("population"));
 
-				points.add(new HeatmapLayer.Point(lat, lon, pop / 10.0));
+				points.add(new HeatmapLayer.Point(lat, lon, pop));
 			}
 
-			double[] thresholds = {0, 10, 20, 30, 45, 60, 75, 90};
+			double[] thresholds = {0, 20, 100, 500, 1000, 2000, 5000, 10000};
 			String[] colors = {
 				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
 				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
@@ -301,6 +302,9 @@ public class GuiController {
 				String routeId = entry.getKey();
 				Route route = network.parentRouteLookup.get(routeId);
 
+				if (route == null) continue;
+				if (route.trips.isEmpty()) continue;
+
 				Trip trip = route.trips.get(0);
 
 				List<NavigationLayer.Step> steps = new ArrayList<>();
@@ -324,15 +328,32 @@ public class GuiController {
 				}
 
 
-				double[] thresholds = {-1000, 0, 500, 1000, 5000, 10000, 20000, 50000};
+				double[] thresholds = {
+					-300000,
+					-20000,
+					-90000,
+					-50000,
+					-20000,
+					20000,
+					45000,
+					70000,
+					100000,
+				};
 
 				String[] colors = {
-					"#00FF2A", "#24DB24", "#49B61E", "#6D9218",
-					"#926D12", "#B6490C", "#DB2406", "#FF0000"
+					"#04EB00",
+					"#1DCE00",
+					"#36B000",
+					"#4E9300",
+					"#677600",
+					"#805800",
+					"#993B00",
+					"#B11D00",
+					"#CA0000",
 				};
 
 				Color color = Colors.interpolatePalette(entry.getValue(),
-						thresholds, colors, 1);
+						thresholds, colors, 0.8);
 
 				DrawnRoute dr = new DrawnRoute(steps, color);
 				optimizerRoutes.add(dr);

@@ -13,6 +13,8 @@ public class BoundingBoxLayer implements Layer {
 
 	double viewX = 0;
 	double viewY = 0;
+	double viewWidth = 0;
+	double viewHeight = 0;
 
 	public BoundingBoxLayer() {
 		group.getChildren().add(canvas);
@@ -21,9 +23,13 @@ public class BoundingBoxLayer implements Layer {
 	public void shift(double x, double y) {
 		viewX = x;
 		viewY = y;
+		render(viewWidth, viewHeight);
 	}
 
 	public void render(double width, double height) {
+		viewWidth = width;
+		viewHeight = height;
+
 		width += Tile.RESOLUTION * 2;
 		height += Tile.RESOLUTION * 2;
 
