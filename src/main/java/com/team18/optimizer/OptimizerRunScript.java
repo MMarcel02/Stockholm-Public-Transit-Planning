@@ -39,18 +39,18 @@ public class OptimizerRunScript
 			wr.close();
 			
 			// BEST 3 With GREEDY
-			curr = System.currentTimeMillis();
-			Map<String, Double> bestRoutesToDisable = optimizer.multiThreadedOptimize();
-			end = System.currentTimeMillis();
-			System.err.println("Time for 3 map calcs (mins): " + ((end - curr) / 60000.0));
+			// long curr = System.currentTimeMillis();
+			// Map<String, Double> bestRoutesToDisable = optimizer.multiThreadedOptimize();
+			// long end = System.currentTimeMillis();
+			// System.err.println("Time for 3 map calcs (mins): " + ((end - curr) / 60000.0));
 
-			wr = new FileWriter("data/costs/run_final_3_best.csv");
-			wr.write("routeId,cost\n");
-			for (String routeId : bestRoutesToDisable.keySet()) {
-				Double value = bestRoutesToDisable.get(routeId);
-				wr.write(String.format("%s,%f\n", routeId, value));
-			}
-			wr.close();
+			// FileWriter wr = new FileWriter("data/costs/run_final_3_best.csv");
+			// wr.write("routeId,cost\n");
+			// for (String routeId : bestRoutesToDisable.keySet()) {
+			// 	Double value = bestRoutesToDisable.get(routeId);
+			// 	wr.write(String.format("%s,%f\n", routeId, value));
+			// }
+			// wr.close();
 
 			// ONE THAT OUTPUTS OTHER DATA TO TO USE IN THE ANALYZER
 			// USE FOR FINDING GOOD RATIO + MULTIPLIER
@@ -65,7 +65,7 @@ public class OptimizerRunScript
 			// 	double[] values = routeToCostImpactTESTING.get(routeId);
 			// 	wr.write(String.format("%s,%f,%f,%f\n", routeId, values[0], values[1], values[2]));
 			// }
-			wr.close();
+			// wr.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
