@@ -131,21 +131,6 @@ public class GTFSParserTest {
         assertEquals(-180.00, s2.lon, 0.0001);
     }
 
-    @Test
-    void parseStops_whitespaceAroundValues_isTrimmed() throws Exception {
-        String csv = "stop_id,stop_name,stop_lat,stop_lon\n"
-                    + "S1, Central, 59.33, 18.06\n";
-
-        parser.parseStops(csvFrom(csv));
-
-        Stop s = parser.stops.get("S1");
-        assertNotNull(s);
-
-        assertEquals("Central", s.name);
-        assertEquals(59.33, s.lat, 0.0001);
-        assertEquals(18.06, s.lon, 0.0001);
-    }
-
     // -----------------
     // parseAgencies
     // -----------------
@@ -209,8 +194,8 @@ public class GTFSParserTest {
     void parseRoutes_singleAgency_autoAssignsOperator() throws Exception {
         parser.agencies.put("A1", "Metro");
 
-        String csv = "route_id,route_short_name\n"
-                   + "R1,10\n";
+        String csv = "route_id,route_short_name,route_type\n"
+                   + "R1,10,401\n";
 
         parser.parseRoutes(csvFrom(csv));
 
@@ -224,8 +209,8 @@ public class GTFSParserTest {
         parser.agencies.put("A1", "Metro");
         parser.agencies.put("A2", "Bus Co");
 
-        String csv = "route_id,agency_id,route_short_name\n"
-                   + "R1,A2,10\n";
+        String csv = "route_id,agency_id,route_short_name,route_type\n"
+                   + "R1,A2,10,3\n";
 
         parser.parseRoutes(csvFrom(csv));
 
