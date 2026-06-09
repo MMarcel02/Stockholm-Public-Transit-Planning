@@ -9,11 +9,11 @@ import com.team18.util.ParsingUtil;
 public class Config {
 
     // Our network has the following 
-    // Buses: 427
+    // Buses: 348
     // Trams: 12
     // Metros: 7
     // Trains: 4
-    // Ferries: 21
+    // Ferries: 18
     
     public static LocalDate REPRESENTATIVE_WEEKDAY; 
 
