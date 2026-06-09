@@ -64,6 +64,7 @@ public class HeatmapLayer implements Layer {
 		this.differenceMode = differenceMode;
 
 		if (differenceMode) {
+			this.legendTitle = "Delay (Minutes)";
 			thresholds = new double[] {0, 1, 3, 5, 10, 15, 20, 30};
 			colors = new String[] {
 				"#FDD835", // Yellow (starts here immediately after 0.01)
@@ -73,6 +74,7 @@ public class HeatmapLayer implements Layer {
 				"#4A0000", "#300000", "#1A0000", "#000000"
 			};
 		} else {
+			this.legendTitle = "Travel time (Minutes)";
 			thresholds = new double[] {0, 10, 20, 30, 45, 60, 75, 90};
 			colors = new String[] {
 				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
@@ -170,13 +172,14 @@ public class HeatmapLayer implements Layer {
 
 	public void configureManual(List<Point> points,
 			double cellLatSize, double cellLonSize,
-			double[] thresholds, String[] colors) {
+			double[] thresholds, String[] colors, String title) {
 		this.points = points;
 		this.differenceMode = false;
 		this.cellLatSize = cellLatSize;
 		this.cellLonSize = cellLonSize;
 		this.thresholds = thresholds;
 		this.colors = colors;
+		this.legendTitle = title;
 		update();
 	}
 
@@ -287,6 +290,11 @@ public class HeatmapLayer implements Layer {
 	}
 	public boolean isActive(){
 		return !points.isEmpty();
+	}
+	private String legendTitle = "";
+
+	public String getLegendTitle() {
+		return legendTitle;
 	}
 
 

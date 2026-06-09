@@ -239,7 +239,7 @@ public class GuiController {
 			stack.heatmapLayer.configureManual(points,
 					PopdistParser.CELL_SIZE_LAT,
 					PopdistParser.CELL_SIZE_LON,
-					thresholds, colors);
+					thresholds, colors, "Population density");
 			updateLegendView();
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
@@ -372,12 +372,7 @@ public class GuiController {
 			legendContainer.setManaged(false);
 			return;
 		}
-		else if(heatmap.isDifferenceMode()){
-			legendTitle.setText("Delay (minutes)");
-		}
-		else {
-			legendTitle.setText("Travel time/ Value");
-		}
+		legendTitle.setText(heatmap.getLegendTitle());
 		double[] thresholds = heatmap.getThresholds();
 		String[] colors = heatmap.getColors();
 		for (int i = 0; i < thresholds.length; i++) {
