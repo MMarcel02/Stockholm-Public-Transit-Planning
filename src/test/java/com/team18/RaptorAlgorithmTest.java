@@ -40,7 +40,7 @@ public class RaptorAlgorithmTest {
     
             assertEquals(1, steps.size());
             RouteStep step = steps.get(0);
-            assertEquals(0, step.durationMinutes, "Duration should be exactly 0 minutes");
+            assertEquals(0, step.tripTimeSecs + step.waitTimeSecs, "Duration should be exactly 0 minutes");
             assertTrue(step.routeStepType == RouteStepType.DIRECT_WALK, "Step should be a direct walking step");
         } catch (Exception e) {
             e.printStackTrace();
@@ -85,10 +85,10 @@ public class RaptorAlgorithmTest {
 
             // Check that new route is worse than original 
             RouteStep lastStepOriginal = stepsOriginal.getLast();
-            double arrivalTimeOriginal = lastStepOriginal.startTimeSecondsAfterMidnight + lastStepOriginal.durationMinutes*60;
+            double arrivalTimeOriginal = lastStepOriginal.startTimeSecondsAfterMidnight + (lastStepOriginal.waitTimeSecs + lastStepOriginal.tripTimeSecs);
 
             RouteStep lastStepAltered = stepsAltered.getLast();
-            double arrivalTimeAltered = lastStepAltered.startTimeSecondsAfterMidnight + lastStepAltered.durationMinutes*60;
+            double arrivalTimeAltered = lastStepAltered.startTimeSecondsAfterMidnight + (lastStepAltered.waitTimeSecs + lastStepAltered.tripTimeSecs);
 
             assertTrue(arrivalTimeOriginal < arrivalTimeAltered, "Disabling a stop should make a slower route");
         } catch (Exception e) {
@@ -126,10 +126,10 @@ public class RaptorAlgorithmTest {
 
             // Check that new route is worse than original 
             RouteStep lastStepOriginal = stepsOriginal.getLast();
-            double arrivalTimeOriginal = lastStepOriginal.startTimeSecondsAfterMidnight + lastStepOriginal.durationMinutes*60;
+            double arrivalTimeOriginal = lastStepOriginal.startTimeSecondsAfterMidnight + (lastStepOriginal.waitTimeSecs + lastStepOriginal.tripTimeSecs);
 
             RouteStep lastStepAltered = stepsAltered.getLast();
-            double arrivalTimeAltered = lastStepAltered.startTimeSecondsAfterMidnight + lastStepAltered.durationMinutes*60;
+            double arrivalTimeAltered = lastStepAltered.startTimeSecondsAfterMidnight + (lastStepAltered.waitTimeSecs + lastStepAltered.tripTimeSecs);
 
             assertTrue(arrivalTimeOriginal < arrivalTimeAltered, "Disabling a route should make a slower journey");
         } catch (Exception e) {

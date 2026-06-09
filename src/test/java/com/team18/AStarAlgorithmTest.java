@@ -41,7 +41,7 @@ public class AStarAlgorithmTest {
     
             assertEquals(1, steps.size());
             RouteStep step = steps.get(0);
-            assertEquals(0, step.durationMinutes, "Duration should be exactly 0 minutes");
+            assertEquals(0, step.waitTimeSecs + step.tripTimeSecs, "Duration should be exactly 0 minutes");
             assertTrue(step.routeStepType == RouteStepType.DIRECT_WALK, "Step should be a direct walking step");
         } catch (Exception e) {
             e.printStackTrace();
