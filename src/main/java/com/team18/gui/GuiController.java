@@ -357,7 +357,7 @@ public class GuiController {
 				}
 
 				Color color = Colors.interpolatePalette(entry.getValue(),
-						thresholds, colors, 0.8);
+						thresholds, colors, 1);
 
 				DrawnRoute dr = new DrawnRoute(steps, color);
 				optimizerRoutes.add(dr);

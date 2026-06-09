@@ -1,29 +1,27 @@
 package com.team18.gui;
 
-import java.util.List;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Comparator;
-import java.util.Locale;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import com.team18.model.Stop;
+import com.team18.model.StopTime;
+import com.team18.model.Trip;
+import com.team18.parser.GTFSParser;
+import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.ParsingUtil;
 
 import javafx.scene.Group;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
 import javafx.scene.input.MouseEvent;
-
-import com.team18.parser.GTFSParser;
-import com.team18.model.Stop;
-import com.team18.model.Trip;
-import com.team18.model.StopTime;
-import com.team18.routing.raptor.RaptorNetwork;
-import com.team18.util.GeoCalculator;
-import javafx.scene.Cursor;
-import com.team18.util.ParsingUtil;
+import javafx.scene.paint.Color;
 
 public class StopLayer implements Layer {
 	static final double CLICK_RADIUS = 5;
@@ -191,8 +189,11 @@ public class StopLayer implements Layer {
         double y = -viewY + ev.getY();
 
         if (ev.isStillSincePress()) {
-            Stop stop = findNearStop(x, y);
+			Stop stop = null;
 
+			if (CoordSystem.getZoomLevel() > 12) {
+                stop = findNearStop(x, y);
+            }
             if (stop != null) {
                 // show the card on click 
                 List<Arrival> arrivals = getArrivals(stop);

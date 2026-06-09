@@ -310,7 +310,7 @@ public class HeatmapLayer implements Layer {
 			return Color.TRANSPARENT;
 		}
 
-		return Colors.interpolatePalette(point.value, thresholds, colors, 0.6);
+		return Colors.interpolatePalette(point.value, thresholds, colors, 0.7);
 	}
 
 
