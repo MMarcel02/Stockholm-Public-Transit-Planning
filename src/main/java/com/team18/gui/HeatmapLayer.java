@@ -70,7 +70,7 @@ public class HeatmapLayer implements Layer {
 		String legendTitle;
 
 		if (differenceMode) {
-			legendTitle = "Delay (Minutes)";
+			legendTitle = "Delay (min)";
 			thresholds = new double[] {0, 1, 3, 5, 10, 15, 20, 30};
 			colors = new String[] {
 					"#FFF59D", // 1. Light Yellow
@@ -83,7 +83,7 @@ public class HeatmapLayer implements Layer {
 					"#000000"  // 8. Black
 			};
 		} else {
-			legendTitle = "Travel time (Minutes)";
+			legendTitle = "Travel time (min)";
 			thresholds = new double[] {0, 10, 20, 30, 45, 60, 75, 90};
 			colors = new String[] {
 				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",

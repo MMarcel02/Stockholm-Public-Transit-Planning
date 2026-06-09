@@ -239,7 +239,7 @@ public class GuiController {
 			stack.heatmapLayer.configureManual(points,
 					PopdistParser.CELL_SIZE_LAT,
 					PopdistParser.CELL_SIZE_LON,
-					thresholds, colors, "Population density");
+					thresholds, colors, "Population density (people/km²)");
 		} catch (Exception e) {
 			e.printStackTrace();
 			routeDisplay.displayInvalidInput();
