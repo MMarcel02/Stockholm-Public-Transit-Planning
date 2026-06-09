@@ -40,6 +40,9 @@ public class HeatmapLayer implements Layer {
 	double[] thresholds;
 	String[] colors;
 
+	Legend legend;
+	Legend.Item legendItem = null;
+
 	public static class Point {
 		public final double lat;
 		public final double lon;
@@ -52,19 +55,22 @@ public class HeatmapLayer implements Layer {
 		}
 	}
 
-	public HeatmapLayer(RaptorNetwork network) {
+	public HeatmapLayer(RaptorNetwork network, Legend legend) {
 		canvas.setMouseTransparent(true);
 		group.getChildren().add(canvas);
 
 		this.network = network;
+		this.legend = legend;
 	}
 
 	public void configureDelayMode(double originLat, double originLon,
 								   int startTimeSeconds, boolean differenceMode) {
 		this.differenceMode = differenceMode;
 
+		String legendTitle;
+
 		if (differenceMode) {
-			this.legendTitle = "Delay (Minutes)";
+			legendTitle = "Delay (Minutes)";
 			thresholds = new double[] {0, 1, 3, 5, 10, 15, 20, 30};
 			colors = new String[] {
 					"#FFF59D", // 1. Light Yellow
@@ -77,13 +83,17 @@ public class HeatmapLayer implements Layer {
 					"#000000"  // 8. Black
 			};
 		} else {
-			this.legendTitle = "Travel time (Minutes)";
+			legendTitle = "Travel time (Minutes)";
 			thresholds = new double[] {0, 10, 20, 30, 45, 60, 75, 90};
 			colors = new String[] {
 				"#0B5D1E", "#2E7D32", "#8BC34A", "#FDD835",
 				"#FB8C00", "#EF9A9A", "#E53935", "#8E0000"
 			};
 		}
+
+		if (legendItem != null) legend.remove(legendItem);
+		legendItem = new Legend.Item(legendTitle, thresholds, colors);
+		legend.add(legendItem);
 
 		cellLatSize =
 			(StockholmUrbanArea.OUTER_MAX_LAT - StockholmUrbanArea.OUTER_MIN_LAT)
@@ -182,12 +192,20 @@ public class HeatmapLayer implements Layer {
 		this.cellLonSize = cellLonSize;
 		this.thresholds = thresholds;
 		this.colors = colors;
-		this.legendTitle = title;
+
+		if (legendItem != null) legend.remove(legendItem);
+		legendItem = new Legend.Item(title, thresholds, colors);
+		legend.add(legendItem);
+
 		update();
 	}
 
 	public void clear() {
 		points = List.of();
+
+		if (legendItem != null) legend.remove(legendItem);
+		legendItem = null;
+
 		update();
 	}
 
@@ -282,24 +300,6 @@ public class HeatmapLayer implements Layer {
 			}
 		}
 	}
-	public double[] getThresholds(){
-		return thresholds;
-	}
-	public String[] getColors(){
-		return colors;
-	}
-	public boolean isDifferenceMode(){
-		return differenceMode;
-	}
-	public boolean isActive(){
-		return !points.isEmpty();
-	}
-	private String legendTitle = "";
-
-	public String getLegendTitle() {
-		return legendTitle;
-	}
-
 
 	private Color pointColor(Point point) {
 		if (differenceMode && point.value <= 0.05) {

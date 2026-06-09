@@ -298,3 +298,10 @@
     -fx-text-fill: #405264;
     -fx-font-weight: bold;
 }
+
+.legend-label {
+    -fx-text-fill: #000000; 
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+

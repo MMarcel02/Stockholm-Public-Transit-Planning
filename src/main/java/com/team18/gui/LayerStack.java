@@ -28,9 +28,9 @@ public class LayerStack implements Layer {
 	Group group = new Group();
 
 	public LayerStack(GTFSParser parser, RaptorNetwork network,
-			JourneyInput journeyInput) {
+			JourneyInput journeyInput, Legend legend) {
 		layers.add(mapLayer = new MapLayer());
-		layers.add(heatmapLayer = new HeatmapLayer(network));
+		layers.add(heatmapLayer = new HeatmapLayer(network, legend));
 		layers.add(bbLayer = new BoundingBoxLayer());
 		layers.add(navLayer = new NavigationLayer(parser));
 		layers.add(stopLayer = new StopLayer(parser, network, journeyInput));

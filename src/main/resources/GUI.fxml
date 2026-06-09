@@ -23,8 +23,6 @@
         <StackPane.margin>
             <Insets bottom="20.0" left="320.0" />
         </StackPane.margin>
-        <Label fx:id="legendTitle" text="Heatmap Legend" style="-fx-font-weight: bold;"/>
-        <HBox fx:id="legendItems" spacing="10" alignment="BOTTOM_LEFT"/>
     </VBox>
 
     <VBox id="sidebar" maxWidth="300.0" minWidth="300.0" spacing="15.0" StackPane.alignment="TOP_LEFT">

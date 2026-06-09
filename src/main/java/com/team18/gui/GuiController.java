@@ -66,12 +66,8 @@ public class GuiController {
 	@FXML DatePicker datePicker;
 	@FXML VBox routeStepsContainer;
 	@FXML VBox stopCardPlaceholder;
-	@FXML VBox legendContainer;
-	@FXML
-	HBox legendItems;
-	@FXML
-	Label legendTitle;
 
+	@FXML VBox legendContainer;
 
 	@FXML CheckBox hideDisabled;
 	@FXML CheckBox hideEnabled;
@@ -82,6 +78,7 @@ public class GuiController {
 	RaptorNetwork network;
 	RaptorAlgorithm raptorAlgorithm;
 
+	Legend legend;
 	JourneyInput journeyInput;
 	LayerStack stack;
 	RouteDisplay routeDisplay;
@@ -92,6 +89,8 @@ public class GuiController {
 	List<DrawnRoute> optimizerRoutes = new ArrayList<>();
 
 	GTFSParser parser;
+
+	Legend.Item removalCostLegend;
 
 	@FXML
 	public void initialize() {
@@ -126,7 +125,9 @@ public class GuiController {
         timeField.setText(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
 		journeyInput = new JourneyInput(parser, startField, endField, timeField, datePicker);
 
-		stack = new LayerStack(parser, network, journeyInput);
+		legend = new Legend(legendContainer);
+
+		stack = new LayerStack(parser, network, journeyInput, legend);
 		mapContainer.getChildren().add(stack.getGroup());
 
 		routeDisplay = new RouteDisplay(routeStepsContainer);
@@ -207,7 +208,6 @@ public class GuiController {
 
 			stack.heatmapLayer.configureDelayMode(origin[0], origin[1],
 					startTimeSeconds, differenceMode.isSelected());
-			updateLegendView();
 		} catch (Exception e) {
 			routeDisplay.displayInvalidInput();
 		}
@@ -240,8 +240,8 @@ public class GuiController {
 					PopdistParser.CELL_SIZE_LAT,
 					PopdistParser.CELL_SIZE_LON,
 					thresholds, colors, "Population density");
-			updateLegendView();
 		} catch (Exception e) {
+			e.printStackTrace();
 			routeDisplay.displayInvalidInput();
 		}
 	}
@@ -250,7 +250,6 @@ public class GuiController {
 	public void handleHideHeatmap() {
 		stack.heatmapLayer.clear();
 		stack.render(mapContainer.getWidth(), mapContainer.getHeight());
-		updateLegendView();
 	}
 
 
@@ -295,6 +294,30 @@ public class GuiController {
 				if (cutoff != 0) maxEntries = Math.min(cutoff, maxEntries);
 			}
 
+			double[] thresholds = {
+				-300000,
+				-20000,
+				-90000,
+				-50000,
+				-20000,
+				20000,
+				45000,
+				70000,
+				100000,
+			};
+
+			String[] colors = {
+				"#04EB00",
+				"#1DCE00",
+				"#36B000",
+				"#4E9300",
+				"#677600",
+				"#805800",
+				"#993B00",
+				"#B11D00",
+				"#CA0000",
+			};
+
 			for (int entryIndex = 0;
 					entryIndex < maxEntries;
 					entryIndex++) {
@@ -327,31 +350,6 @@ public class GuiController {
 					lonFrom = stop.lon;
 				}
 
-
-				double[] thresholds = {
-					-300000,
-					-20000,
-					-90000,
-					-50000,
-					-20000,
-					20000,
-					45000,
-					70000,
-					100000,
-				};
-
-				String[] colors = {
-					"#04EB00",
-					"#1DCE00",
-					"#36B000",
-					"#4E9300",
-					"#677600",
-					"#805800",
-					"#993B00",
-					"#B11D00",
-					"#CA0000",
-				};
-
 				Color color = Colors.interpolatePalette(entry.getValue(),
 						thresholds, colors, 0.8);
 
@@ -359,44 +357,16 @@ public class GuiController {
 				optimizerRoutes.add(dr);
 				stack.navLayer.add(dr);
 			}
+
+			if (removalCostLegend != null) legend.remove(removalCostLegend);
+			removalCostLegend = new Legend.Item("Cost of route removal (SEK)",
+					thresholds, colors);
+			legend.add(removalCostLegend);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
 	}
-	private void updateLegendView(){
-		HeatmapLayer heatmap =  stack.heatmapLayer;
-		legendItems.getChildren().clear();
-		if (!heatmap.isActive()){
-			legendContainer.setVisible(false);
-			legendContainer.setManaged(false);
-			return;
-		}
-		legendTitle.setText(heatmap.getLegendTitle());
-		double[] thresholds = heatmap.getThresholds();
-		String[] colors = heatmap.getColors();
-		for (int i = 0; i < thresholds.length; i++) {
-			VBox item = new VBox(2);
-			item.setAlignment(javafx.geometry.Pos.BOTTOM_LEFT);
-			javafx.scene.shape.Rectangle colorBlock = new javafx.scene.shape.Rectangle(30, 15);
-			colorBlock.setFill(Color.web(colors[i]));
-			colorBlock.setStroke(Color.BLACK);
-			colorBlock.setStrokeWidth(0.5);
-			String labelText = (i == thresholds.length - 1)
-					? (int)thresholds[i] + "+"
-					: String.valueOf((int)thresholds[i]);
-			javafx.scene.control.Label label = new javafx.scene.control.Label(labelText);
-			label.setStyle("-fx-font-size: 10px;");
-
-			item.getChildren().addAll(colorBlock, label);
-			legendItems.getChildren().add(item);
-		}
-
-		// 5. Make it visible
-		legendContainer.setVisible(true);
-		legendContainer.setManaged(true);
-		}
-
 
 
 	@FXML
