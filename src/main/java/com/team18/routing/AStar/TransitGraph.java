@@ -1,20 +1,20 @@
 package com.team18.routing.AStar;
 
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
-
-import com.team18.model.Edge;
-import com.team18.parser.GTFSParser;
-import com.team18.model.Stop;
-import com.team18.model.Trip;
-import com.team18.model.StopTime;
-import com.team18.util.GeoCalculator;
-import com.team18.model.Calendar;
-import com.team18.model.CalendarDates;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import com.team18.model.Calendar;
+import com.team18.model.CalendarDates;
+import com.team18.model.Edge;
+import com.team18.model.Stop;
+import com.team18.model.StopTime;
+import com.team18.model.Trip;
+import com.team18.parser.GTFSParser;
+import com.team18.util.GeoCalculator;
 
 public class TransitGraph {
     private Map<String, List<Edge>> adjacency = new java.util.HashMap<>();
@@ -61,23 +61,23 @@ public class TransitGraph {
                 
                 int exceptionStartDate = Integer.parseInt(calendarDates.get(trip.serviceId).startDate);
                 int exceptionEndDate = Integer.parseInt(calendarDates.get(trip.serviceId).endDate);
-                if(exceptionStartDate <= Integer.parseInt(formattedDate) && exceptionEndDate >= Integer.parseInt((formattedDate))){
+                // if(exceptionStartDate <= Integer.parseInt(formattedDate) && exceptionEndDate >= Integer.parseInt((formattedDate))){
 
-                    for(LocalDate j = LocalDate.parse(calendarDates.get(trip.serviceId).startDate); !j.isAfter(LocalDate.parse(calendarDates.get(trip.serviceId).endDate)); j = j.plusDays(1)){
+                //     for(LocalDate j = LocalDate.parse(calendarDates.get(trip.serviceId).startDate); !j.isAfter(LocalDate.parse(calendarDates.get(trip.serviceId).endDate)); j = j.plusDays(1)){
 
-                        CalendarDates checkDate = new CalendarDates(trip.serviceId, j);
+                //         CalendarDates checkDate = new CalendarDates(trip.serviceId, j);
                         
-                        if ((calendarDates.get(trip.serviceId).week[dayIndex] = false )|| exceptionDates.get(checkDate).equals("2")){
-                            continue;
-                        }
+                //         if ((calendarDates.get(trip.serviceId).week[dayIndex] = false )|| exceptionDates.get(checkDate).equals("2")){
+                //             continue;
+                //         }
 
-                        dayIndex++;
-                        if(dayIndex > 6){
-                            dayIndex = 0;
-                        }
+                //         dayIndex++;
+                //         if(dayIndex > 6){
+                //             dayIndex = 0;
+                //         }
 
-                    }
-                }
+                //     }
+                // }
 
                 Edge transitEdge = new Edge(next.stop, "transit",  trip.id, current.departureTime, travelTime, walkingTime, trip);
 

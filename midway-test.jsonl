@@ -1,0 +1,10 @@
+{"load":"gtfs-midwaytest.zip"}
+{"routeFrom":{"lat":52.520008,"lon":13.404954},"to":{"lat":52.525084,"lon":13.369402},"startingAt":"08:30"}
+{"routeFrom":{"lat":52.520008,"lon":13.404954},"to":{"lat":52.516275,"lon":13.377704},"startingAt":"12:00"}
+{"routeFrom":{"lat":52.525084,"lon":13.369402},"to":{"lat":52.455900,"lon":13.510500},"startingAt":"23:45"}
+{"routeFrom":{"lat":52.520008,"lon":13.404954},"to":{"lat":52.505018,"lon":13.332594},"startingAt":"00:00"}
+{"routeFrom":{"lat":52.520008,"lon":13.404954},"to":{"lat":52.505018,"lon":13.332594},"startingAt":"25:99"}
+{"routeFrom":{"lat":52.520008},"to":{"lat":52.525084,"lon":13.369402},"startingAt":"08:30"}
+{"routeFrom":{"lat":52.520008,"lon":13.404954},"startingAt":"08:30"}
+{"valid":"json"}
+invalid json

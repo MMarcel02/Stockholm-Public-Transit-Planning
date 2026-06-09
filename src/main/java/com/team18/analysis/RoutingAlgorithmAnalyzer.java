@@ -1,14 +1,5 @@
 package com.team18.analysis;
 
-import com.team18.parser.GTFSParser;
-import com.team18.routing.Router;
-import com.team18.routing.raptor.RaptorAlgorithm;
-import com.team18.routing.raptor.RaptorBuilder;
-import com.team18.routing.raptor.RaptorNetwork;
-import com.team18.model.RouteStep;
-import com.team18.util.ParsingUtil;
-import com.team18.routing.AStar.*;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -16,6 +7,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.team18.model.RouteStep;
+import com.team18.parser.GTFSParser;
+import com.team18.routing.AStar.AStarRouter;
+import com.team18.routing.AStar.TransitGraph;
+import com.team18.routing.Router;
+import com.team18.routing.raptor.RaptorAlgorithm;
+import com.team18.routing.raptor.RaptorBuilder;
+import com.team18.routing.raptor.RaptorNetwork;
+import com.team18.util.ParsingUtil;
+
 
 public class RoutingAlgorithmAnalyzer {
 
@@ -71,18 +73,18 @@ public class RoutingAlgorithmAnalyzer {
         Report raptorReport = timeRouting(raptorRouter, requests);
         raptorReport.printReport();
 
-        // System.err.println("Building A* adjacency list...");
-        // long startAStarBuild = System.currentTimeMillis();
-        // TransitGraph graph = new TransitGraph();
-        // graph.build(parser);
-        // long aStarBuildTime = System.currentTimeMillis() - startAStarBuild;
-        // System.err.printf("A* Build Time: %,d ms%n", aStarBuildTime);
+        System.err.println("Building A* adjacency list...");
+        long startAStarBuild = System.currentTimeMillis();
+        TransitGraph graph = new TransitGraph();
+        graph.build(parser);
+        long aStarBuildTime = System.currentTimeMillis() - startAStarBuild;
+        System.err.printf("A* Build Time: %,d ms%n", aStarBuildTime);
 
-        // Router aStarRouter = new AStarRouter(parser);
-        // System.err.println("Analyzing all trips with A*...");
-        // Report aStarReport = timeRouting(aStarRouter, requests);
-        // aStarReport.printReport();
-        // raptorReport.printComparison(aStarReport);
+        Router aStarRouter = new AStarRouter(parser);
+        System.err.println("Analyzing all trips with A*...");
+        Report aStarReport = timeRouting(aStarRouter, requests);
+        aStarReport.printReport();
+        raptorReport.printComparison(aStarReport);
     }
 
     private static List<RouteRequest> loadRequests(String filename) {

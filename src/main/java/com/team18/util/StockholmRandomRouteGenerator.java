@@ -2,8 +2,8 @@ package com.team18.util;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Random;
 import java.util.Locale;
+import java.util.Random;
 
 public class StockholmRandomRouteGenerator {
 
@@ -35,7 +35,7 @@ public class StockholmRandomRouteGenerator {
         AreaConfig metroArea = new AreaConfig(
             "Stockholm Outer Bounding Box Area", 
             "stockholm_outer_urban_routes.jsonl", 
-            1500, 
+            10000, 
             StockholmUrbanArea.OUTER_MIN_LAT, StockholmUrbanArea.OUTER_MAX_LAT,
             StockholmUrbanArea.OUTER_MIN_LON, StockholmUrbanArea.OUTER_MAX_LON
         );
@@ -44,7 +44,7 @@ public class StockholmRandomRouteGenerator {
         AreaConfig urbanArea = new AreaConfig(
             "Stockholm Urban Area", 
             "stockholm_inner_urban_routes.jsonl", 
-            1500, 
+            10000, 
             StockholmUrbanArea.INNER_MIN_LAT, StockholmUrbanArea.INNER_MAX_LAT,
             StockholmUrbanArea.INNER_MIN_LON, StockholmUrbanArea.INNER_MAX_LON
         );
