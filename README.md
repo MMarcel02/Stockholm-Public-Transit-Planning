@@ -1,3 +1,7 @@
+
+## To run GUI launch from src/main/java/team18/App.java
+
+## For testing generic routing engine look below
 ## Instructions to Run and Test Routing Engine
 
 ### 0. Make sure data is in correct place
