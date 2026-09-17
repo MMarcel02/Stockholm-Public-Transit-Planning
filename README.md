@@ -1,4 +1,8 @@
 
+## Year 1 Project 2
+
+Research goal: create analysis tool for identifying best public transit routes to cut
+
 ## To run GUI launch from src/main/java/team18/App.java
 
 ## For testing generic routing engine look below
