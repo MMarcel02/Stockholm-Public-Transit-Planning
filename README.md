@@ -1,7 +1,9 @@
 
-## Year 1 Project 2
+# Year 1 Project 2
 
 Research goal: create analysis tool for identifying best public transit routes to cut
+
+# Stockholm Public Transit RAPTOR Implementation
 
 ## To run GUI launch from src/main/java/team18/App.java
 
